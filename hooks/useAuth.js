@@ -12,6 +12,8 @@ import {
   signUpRequest,
   verifyAccountRequest,
   requestVerificationRequest,
+  forgotPasswordRequest,
+  resetPasswordRequest,
 } from '../api/authApi';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -78,6 +80,28 @@ export const useAuth = () => {
     }
   };
 
+  const forgotPassword = async (email) => {
+    try {
+      dispatch(authStart());
+      const response = await forgotPasswordRequest(email);
+      return { success: true, data: response.data };
+    } catch (err) {
+      dispatch(authFail(err?.response?.data || 'Şifre sıfırlama başarısız'));
+      return { success: false, error: err?.response?.data };
+    }
+  };
+
+  const resetPassword = async ({ email, verificationCode, newPassword }) => {
+    try {
+      dispatch(authStart());
+      const response = await resetPasswordRequest({ email, verificationCode, newPassword });
+      return { success: true, data: response.data };
+    } catch (err) {
+      dispatch(authFail(err?.response?.data || 'Şifre sıfırlama başarısız'));
+      return { success: false, error: err?.response?.data };
+    }
+  };
+
   const logout = async () => {
     await dispatch(logoutAsync());
   };
@@ -87,6 +111,8 @@ export const useAuth = () => {
     signUp,
     verifyAccount,
     requestVerification,
+    forgotPassword,
+    resetPassword,
     logout,
     token,
     user,

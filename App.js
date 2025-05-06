@@ -10,6 +10,8 @@ import { store } from './storage/store';
 import { StatusBar, ActivityIndicator, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DashboardScreen from './screens/DashboardScreen';
+import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
+import ResetPasswordScreen from './screens/ResetPasswordScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -58,6 +60,8 @@ const App = () => {
           <Stack.Screen name="VerifyAccount" component={VerifyAccountScreen} />
           <Stack.Screen name="Home" component={HomeScreen} />
           <Stack.Screen name="Dashboard" component={DashboardScreen} />
+          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+          <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </Provider>
