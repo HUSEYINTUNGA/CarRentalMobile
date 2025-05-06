@@ -3,13 +3,13 @@ import { Provider } from 'react-redux';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import SigninScreen from './screens/SigninScreen';
+import SignupScreen from './screens/SignupScreen';
+import VerifyAccountScreen from './screens/VerifyAccountScreen';
 import HomeScreen from './screens/HomeScreen';
 import { store } from './storage/store';
 import { StatusBar, ActivityIndicator, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DashboardScreen from './screens/DashboardScreen';
-
-
 
 const Stack = createNativeStackNavigator();
 
@@ -54,6 +54,8 @@ const App = () => {
           }}
         >
           <Stack.Screen name="Signin" component={SigninScreen} />
+          <Stack.Screen name="Signup" component={SignupScreen} />
+          <Stack.Screen name="VerifyAccount" component={VerifyAccountScreen} />
           <Stack.Screen name="Home" component={HomeScreen} />
           <Stack.Screen name="Dashboard" component={DashboardScreen} />
         </Stack.Navigator>

@@ -36,10 +36,10 @@ export const SigninScreen = () => {
     const result = await signIn({ emailOrUsername: email, password });
 
     if (result.success) {
-      Alert.alert('🎉 Giriş Başarılı', 'Hoş geldin!');
+      Alert.alert('Hoş geldin!', 'Hoş geldin be! Sensiz borç batağına düştüm vallahi...');
       navigation.navigate('Home');
     } else {
-      Alert.alert('Hata', result.error || 'Giriş başarısız');
+      Alert.alert('Dram Sayfası', 'Şifreni mi unuttun? Korkutma beni bak…Yoksa seni dram sayfasına düşürürüm! Hadi tekrar dene… Ben bakmıyorum… Gerçekten. 🙈');
     }
   };
 
@@ -105,7 +105,7 @@ export const SigninScreen = () => {
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+        <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
           <Text style={styles.bottomLink}>Taze cüzdan mı geldi? Hemen tanışalım 😎</Text>
         </TouchableOpacity>
       </View>
