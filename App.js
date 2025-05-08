@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Provider } from 'react-redux';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import SigninScreen from './screens/SigninScreen';
 import SignupScreen from './screens/SignupScreen';
 import VerifyAccountScreen from './screens/VerifyAccountScreen';
@@ -12,8 +14,85 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import DashboardScreen from './screens/DashboardScreen';
 import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
 import ResetPasswordScreen from './screens/ResetPasswordScreen';
+import ResendVerificationScreen from './screens/ResendVerificationScreen';
+import ProfileScreen from './screens/ProfileScreen';
+import CarsScreen from './screens/CarsScreen';
+import RentalHistoryScreen from './screens/RentalHistoryScreen';
+import SettingsScreen from './screens/SettingsScreen';
 
 const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
+
+const TabNavigator = () => {
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        tabBarActiveTintColor: '#2196F3',
+        tabBarInactiveTintColor: '#666',
+        tabBarStyle: {
+          backgroundColor: '#fff',
+          borderTopWidth: 1,
+          borderTopColor: '#eee',
+          paddingBottom: 5,
+          paddingTop: 5,
+          height: 60,
+        },
+        headerStyle: {
+          backgroundColor: '#fff',
+          elevation: 0,
+          shadowOpacity: 0,
+          borderBottomWidth: 1,
+          borderBottomColor: '#eee',
+        },
+        headerTitleStyle: {
+          fontWeight: 'bold',
+          color: '#333',
+        },
+      }}
+    >
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{
+          title: 'Profil',
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="person" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Cars"
+        component={CarsScreen}
+        options={{
+          title: 'Araçlar',
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="directions-car" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="RentalHistory"
+        component={RentalHistoryScreen}
+        options={{
+          title: 'Kiralamalar',
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="history" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{
+          title: 'Ayarlar',
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="settings" size={size} color={color} />
+          ),
+        }}
+      />
+    </Tab.Navigator>
+  );
+};
 
 const App = () => {
   const [initialRoute, setInitialRoute] = useState(null);
@@ -62,6 +141,8 @@ const App = () => {
           <Stack.Screen name="Dashboard" component={DashboardScreen} />
           <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
           <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+          <Stack.Screen name="ResendVerification" component={ResendVerificationScreen} />
+          <Stack.Screen name="MainApp" component={TabNavigator} />
         </Stack.Navigator>
       </NavigationContainer>
     </Provider>
