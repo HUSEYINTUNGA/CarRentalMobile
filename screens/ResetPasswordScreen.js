@@ -22,33 +22,34 @@ const ResetPasswordScreen = () => {
   const [code, setCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [message, setMessage] = useState({ text: '', type: '' });
 
   useEffect(() => {
     if (error) {
-      Alert.alert('Hata', error);
+      setMessage({ text: error, type: 'error' });
       clearError();
     }
   }, [error]);
 
   const handleReset = async () => {
     if (!email || !code || !newPassword || !confirmPassword) {
-      Alert.alert('Eksik Bilgi', 'Tüm alanları doldurman lazım, yoksa sistemin damadı olamazsın!');
+      setMessage({ text: 'Lütfen tüm alanları doldurun', type: 'error' });
       return;
     }
     if (newPassword !== confirmPassword) {
-      Alert.alert('Şifreler Uyuşmuyor', 'Yeni şifreler aynı olmalı, yoksa sistem seni affetmez!');
+      setMessage({ text: 'Yeni şifreler eşleşmiyor', type: 'error' });
       return;
     }
     if (newPassword.length < 6) {
-      Alert.alert('Kısa Şifre', 'Yeni şifre en az 6 karakter olmalı!');
+      setMessage({ text: 'Yeni şifre en az 6 karakter olmalı', type: 'error' });
       return;
     }
     const result = await resetPassword({ email, verificationCode: code, newPassword });
     if (result.success) {
-      Alert.alert('Şifre Sıfırlandı!', 'Yeni şifrenle giriş yapabilirsin. Maili gelen kutunda göremezsen spam klasörüne göz atmayı unutma!');
+      setMessage({ text: 'Şifre başarıyla sıfırlandı! Giriş sayfasına yönlendiriliyorsunuz...', type: 'success' });
       setTimeout(() => {
         navigation.navigate('Signin');
-      }, 2500);
+      }, 1500);
     }
   };
 
@@ -118,6 +119,15 @@ const ResetPasswordScreen = () => {
           >
             <Text style={styles.buttonText}>{loadingStates.signIn ? 'Sıfırlanıyor...' : 'Şifreyi Sıfırla'}</Text>
           </TouchableOpacity>
+
+          {message.text ? (
+            <Text style={[
+              styles.message,
+              message.type === 'success' ? styles.successMessage : styles.errorMessage
+            ]}>
+              {message.text}
+            </Text>
+          ) : null}
 
           <Text style={styles.footerText}>
             Kod gelmediyse spam klasörüne bakmayı unutma!
@@ -222,6 +232,22 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
     fontWeight: '500',
   },
+  message: {
+    marginTop: 10,
+    padding: 10,
+    borderRadius: 8,
+    textAlign: 'center',
+    fontSize: 14,
+    width: '100%',
+  },
+  successMessage: {
+    backgroundColor: '#e6f4ea',
+    color: '#1e7e34',
+  },
+  errorMessage: {
+    backgroundColor: '#fde7e7',
+    color: '#d32f2f',
+  }
 });
 
 export default ResetPasswordScreen; 

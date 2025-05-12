@@ -24,56 +24,55 @@ const SignupScreen = () => {
     surname: '',
     email: '',
     phoneNumber: '',
-    username: '',
+    tcNo: '',
     password: '',
     confirmPassword: ''
   });
-  const [accepted, setAccepted] = useState(false);
+
+  const [message, setMessage] = useState({ text: '', type: '' });
 
   useEffect(() => {
     if (error) {
-      Alert.alert('Hata', error);
+      setMessage({ text: error, type: 'error' });
       clearError();
     }
   }, [error]);
 
   const handleSignUp = async () => {
     if (!formData.name || !formData.surname || !formData.email || 
-        !formData.phoneNumber || !formData.username || 
+        !formData.phoneNumber || !formData.tcNo ||
         !formData.password || !formData.confirmPassword) {
-      Alert.alert('Hata', 'Lütfen tüm alanları doldurun');
+      setMessage({ text: 'Lütfen tüm alanları doldurun', type: 'error' });
       return;
     }
     if (formData.password !== formData.confirmPassword) {
-      Alert.alert('Hata', 'Şifreler eşleşmiyor');
+      setMessage({ text: 'Şifreler eşleşmiyor', type: 'error' });
       return;
     }
     if (formData.password.length < 6) {
-      Alert.alert('Hata', 'Şifre en az 6 karakter olmalıdır');
+      setMessage({ text: 'Şifre en az 6 karakter olmalıdır', type: 'error' });
       return;
     }
-    if (!accepted) {
-      Alert.alert('Hata', 'Devam etmek için şartları kabul etmelisin!');
-      return;
-    }
-    const result = await signUp(formData);
+    const payload = {
+      Name: formData.name,
+      Surname: formData.surname,
+      Email: formData.email,
+      Password: formData.password,
+      TCNo: formData.tcNo,
+      PhoneNumber: formData.phoneNumber
+    };
+    const result = await signUp(payload);
 
     if (!result.success && result.error === 'Bu e-posta adresi zaten kullanımda.') {
-      Alert.alert('Taklitler Aslını Yaşatır', 'Hmm... Bu e-posta sistemde zaten var. Taklitler aslını yaşatır diyorsan bilemedik 😎');
+      setMessage({ text: 'Bu e-posta adresi zaten kullanımda', type: 'error' });
       return;
     }
 
     if (result.success) {
-      Alert.alert(
-        '🎉 Kayıt Başarılı!',
-        'Hayırlı olsun, artık bir taksit ödemen var 💸\n\nHesabınızı doğrulamak için e-posta adresinize gönderilen kodu girin.\n\nMaili gelen kutunda göremezsen spam klasörüne göz atmayı unutma!',
-        [
-          {
-            text: 'Tamam',
-            onPress: () => navigation.navigate('VerifyAccount', { email: formData.email })
-          }
-        ]
-      );
+      setMessage({ text: 'Kayıt başarılı! Doğrulama sayfasına yönlendiriliyorsunuz...', type: 'success' });
+      setTimeout(() => {
+        navigation.navigate('VerifyAccount', { email: formData.email });
+      }, 1500);
     }
   };
 
@@ -118,6 +117,27 @@ const SignupScreen = () => {
           />
           <TextInput
             style={styles.input}
+            placeholder="Telefon numaran?"
+            placeholderTextColor="#999"
+            value={formData.phoneNumber}
+            onChangeText={text => setFormData({ ...formData, phoneNumber: text })}
+            keyboardType="phone-pad"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="TC Kimlik Numaran?"
+            placeholderTextColor="#999"
+            value={formData.tcNo}
+            onChangeText={text => setFormData({ ...formData, tcNo: text })}
+            keyboardType="number-pad"
+            autoCapitalize="none"
+            autoCorrect={false}
+            maxLength={11}
+          />
+          <TextInput
+            style={styles.input}
             placeholder="Sakın 123456 olmasın!"
             placeholderTextColor="#999"
             value={formData.password}
@@ -125,35 +145,19 @@ const SignupScreen = () => {
             secureTextEntry
             autoCorrect={false}
           />
+          <TextInput
+            style={styles.input}
+            placeholder="Şifreyi tekrar gir"
+            placeholderTextColor="#999"
+            value={formData.confirmPassword}
+            onChangeText={text => setFormData({ ...formData, confirmPassword: text })}
+            secureTextEntry
+            autoCorrect={false}
+          />
           <Text style={styles.helperText}>Lütfen şifreni unutma. Unutursan, dram sayfasına düşersin.</Text>
-
-          <View style={styles.checkboxRow}>
-            <TouchableOpacity
-              style={styles.checkbox}
-              onPress={() => setAccepted(!accepted)}
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: accepted }}
-            >
-              <View style={[styles.checkboxBox, accepted && styles.checkboxBoxChecked]}>
-                {accepted && <View style={styles.checkboxTick} />}
-              </View>
-            </TouchableOpacity>
-            <Text style={styles.checkboxLabel}>
-              <Text onPress={() => setAccepted(!accepted)}>
-                {' '} 
-              </Text>
-              <Text onPress={() => Linking.openURL('https://example.com/terms')} style={styles.link}>Terms of Service</Text>
-              {' '}and{' '}
-              <Text onPress={() => Linking.openURL('https://example.com/privacy')} style={styles.link}>Privacy Policy</Text>.
-            </Text>
-          </View>
 
           <Text style={styles.policyText}>
             Kaydolurken 'Araba tıklanırken ağlamam' sözleşmesini, Gizlilik Politikasını ve içeride çok para döndüğünü ama sana dönmeyeceğini peşinen kabul ediyorsun.
-          </Text>
-
-          <Text style={styles.funText}>
-            Bunu söylemeyi çok seviyorum: Boş kağıda bir parmağını bas.
           </Text>
 
           <Image
@@ -163,14 +167,23 @@ const SignupScreen = () => {
           />
 
           <TouchableOpacity
-            style={[styles.button, !accepted && { opacity: 0.6 }]}
+            style={styles.button}
             onPress={handleSignUp}
-            disabled={loadingStates.signUp || !accepted}
+            disabled={loadingStates.signUp}
           >
             <Text style={styles.buttonText}>
               {loadingStates.signUp ? 'Yükleniyor...' : 'Boş Kağıt'}
             </Text>
           </TouchableOpacity>
+
+          {message.text ? (
+            <Text style={[
+              styles.message,
+              message.type === 'success' ? styles.successMessage : styles.errorMessage
+            ]}>
+              {message.text}
+            </Text>
+          ) : null}
 
           <TouchableOpacity onPress={() => navigation.navigate('Signin')}>
             <Text style={styles.bottomLink}>
@@ -249,41 +262,6 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     width: '100%',
   },
-  checkboxRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
-    width: '100%',
-  },
-  checkbox: {
-    marginRight: 8,
-  },
-  checkboxBox: {
-    width: 20,
-    height: 20,
-    borderWidth: 1.5,
-    borderColor: '#2563eb',
-    borderRadius: 5,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkboxBoxChecked: {
-    backgroundColor: '#2563eb',
-    borderColor: '#2563eb',
-  },
-  checkboxTick: {
-    width: 10,
-    height: 10,
-    backgroundColor: '#fff',
-    borderRadius: 2,
-  },
-  checkboxLabel: {
-    fontSize: 12,
-    color: '#222',
-    flex: 1,
-    flexWrap: 'wrap',
-  },
   link: {
     color: '#2563eb',
     textDecorationLine: 'underline',
@@ -304,9 +282,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   cartoon: {
-    width: 120,
-    height: 120,
-    marginBottom: 10,
+    width: 210,
+    height:200,
+    marginBottom: 0,
     marginTop: 2,
   },
   button: {
@@ -314,7 +292,7 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     paddingHorizontal: 28,
     borderRadius: 10,
-    marginTop: 8,
+    marginTop: 0,
     width: '100%',
     marginBottom: 2,
     elevation: 2,
@@ -333,6 +311,22 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
     fontWeight: '500',
   },
+  message: {
+    marginTop: 10,
+    padding: 10,
+    borderRadius: 8,
+    textAlign: 'center',
+    fontSize: 14,
+    width: '100%',
+  },
+  successMessage: {
+    backgroundColor: '#e6f4ea',
+    color: '#1e7e34',
+  },
+  errorMessage: {
+    backgroundColor: '#fde7e7',
+    color: '#d32f2f',
+  }
 });
 
 export default SignupScreen; 

@@ -4,7 +4,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const initialState = {
   token: null,
   user: null,
-  loading: false,
+  loading: {
+    signIn: false,
+    signUp: false,
+    verifyAccount: false,
+    requestVerification: false,
+    forgotPassword: false,
+    resetPassword: false,
+  },
   error: null,
 };
 
@@ -12,18 +19,27 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    authStart: (state) => {
-      state.loading = true;
+    authStart: (state, action) => {
+      const type = action.payload;
+      if (type && state.loading.hasOwnProperty(type)) {
+        state.loading[type] = true;
+      }
       state.error = null;
     },
     authSuccess: (state, action) => {
-      state.loading = false;
-      state.token = action.payload.token;
-      state.user = action.payload.user;
+      const type = action.payload?.type;
+      if (type && state.loading.hasOwnProperty(type)) {
+        state.loading[type] = false;
+      }
+      if (action.payload?.token) state.token = action.payload.token;
+      if (action.payload?.user) state.user = action.payload.user;
     },
     authFail: (state, action) => {
-      state.loading = false;
-      state.error = action.payload;
+      const type = action.payload?.type;
+      if (type && state.loading.hasOwnProperty(type)) {
+        state.loading[type] = false;
+      }
+      state.error = action.payload?.error ?? action.payload;
     },
     logout: (state) => {
       state.token = null;

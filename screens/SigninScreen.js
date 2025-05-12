@@ -19,27 +19,41 @@ export const SigninScreen = () => {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [message, setMessage] = useState({ text: '', type: '' });
 
   useEffect(() => {
     if (error) {
-      Alert.alert('Hata', error);
+      setMessage({ text: error, type: 'error' });
       clearError();
     }
   }, [error]);
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Hata', 'Lütfen tüm alanları doldurun');
+      setMessage({ text: 'Lütfen tüm alanları doldurun', type: 'error' });
       return;
     }
 
     const result = await signIn({ emailOrUsername: email, password });
 
     if (result.success) {
-      Alert.alert('Hoş geldin!', 'Hoş geldin be! Sensiz borç batağına düştüm vallahi...');
-      navigation.navigate('Home');
+      setMessage({ text: 'Giriş başarılı! Yönlendiriliyorsunuz...', type: 'success' });
+      setTimeout(() => {
+        if (result.role === 'admin') {
+          navigation.navigate('Dashboard');
+        } else {
+          navigation.navigate('Home');
+        }
+      }, 1000);
     } else {
-      Alert.alert('Dram Sayfası', 'Şifreni mi unuttun? Korkutma beni bak…Yoksa seni dram sayfasına düşürürüm! Hadi tekrar dene… Ben bakmıyorum… Gerçekten. 🙈');
+      if (result.error && typeof result.error === 'string' && result.error.includes('Hesabınız doğrulanmadı')) {
+        setMessage({ text: 'Hesabınız doğrulanmadı. Doğrulama sayfasına yönlendiriliyorsunuz...', type: 'error' });
+        setTimeout(() => {
+          navigation.navigate('ResendVerification', { email });
+        }, 1500);
+      } else {
+        setMessage({ text: 'Giriş başarısız! Lütfen bilgilerinizi kontrol edin.', type: 'error' });
+      }
     }
   };
 
@@ -104,6 +118,15 @@ export const SigninScreen = () => {
             {loadingStates.signIn ? 'Yükleniyor...' : 'Tıkla da borçlarım biraz erisin 😭'}
           </Text>
         </TouchableOpacity>
+
+        {message.text ? (
+          <Text style={[
+            styles.message,
+            message.type === 'success' ? styles.successMessage : styles.errorMessage
+          ]}>
+            {message.text}
+          </Text>
+        ) : null}
 
         <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
           <Text style={styles.bottomLink}>Taze cüzdan mı geldi? Hemen tanışalım 😎</Text>
@@ -195,6 +218,22 @@ const styles = StyleSheet.create({
     color: '#7b3fd3',
     textAlign: 'center',
     textDecorationLine: 'underline',
+  },
+  message: {
+    marginTop: 10,
+    padding: 10,
+    borderRadius: 8,
+    textAlign: 'center',
+    fontSize: 14,
+    width: '100%',
+  },
+  successMessage: {
+    backgroundColor: '#e6f4ea',
+    color: '#1e7e34',
+  },
+  errorMessage: {
+    backgroundColor: '#fde7e7',
+    color: '#d32f2f',
   }
 });
 

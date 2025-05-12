@@ -16,31 +16,36 @@ import { useAuth } from '../hooks/useAuth';
 
 const ResendVerificationScreen = () => {
   const navigation = useNavigation();
-  const { requestVerification, loadingStates, error, clearError } = useAuth();
+  const { requestVerification, loadingStates, error: globalError, clearError } = useAuth();
   const [email, setEmail] = useState('');
+  const [message, setMessage] = useState({ text: '', type: '' });
 
   useEffect(() => {
-    if (error) {
-      Alert.alert('Hata', error);
+    if (globalError) {
+      setMessage({ text: globalError, type: 'error' });
       clearError();
     }
-  }, [error]);
+  }, [globalError]);
 
   const handleResend = async () => {
     if (!email) {
-      Alert.alert('Hata', 'Lütfen e-posta adresini gir!');
+      setMessage({ text: 'Lütfen e-posta adresinizi girin', type: 'error' });
       return;
     }
     const result = await requestVerification(email);
     if (result.success) {
-      Alert.alert('Başarılı', 'Kod tekrar gönderildi! Lütfen e-postanı (ve spam klasörünü) kontrol et.\n\nMaili gelen kutunda göremezsen spam klasörüne göz atmayı unutma!');
-      navigation.navigate('VerifyAccount', { email });
+      setMessage({ text: 'Kod tekrar gönderildi! Doğrulama sayfasına yönlendiriliyorsunuz...', type: 'success' });
+      setTimeout(() => {
+        navigation.navigate('VerifyAccount', { email });
+      }, 1500);
+    } else if (result.error) {
+      setMessage({ text: result.error, type: 'error' });
     }
   };
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
     >
@@ -73,6 +78,15 @@ const ResendVerificationScreen = () => {
           >
             <Text style={styles.buttonText}>{loadingStates.signIn ? 'Gönderiliyor...' : 'Kodu tekrar gönder'}</Text>
           </TouchableOpacity>
+
+          {message.text ? (
+            <Text style={[
+              styles.message,
+              message.type === 'success' ? styles.successMessage : styles.errorMessage
+            ]}>
+              {message.text}
+            </Text>
+          ) : null}
 
           <Text style={styles.hintText}>
             Kod hala gelmediyse, spam klasörüne de bakmayı unutma!
@@ -128,8 +142,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   cartoon: {
-    width: 120,
-    height: 120,
+    width: 180,
+    height: 180,
     marginBottom: 10,
     marginTop: 2,
   },
@@ -175,6 +189,22 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
     fontWeight: '500',
   },
+  message: {
+    marginTop: 10,
+    padding: 10,
+    borderRadius: 8,
+    textAlign: 'center',
+    fontSize: 14,
+    width: '100%',
+  },
+  successMessage: {
+    backgroundColor: '#e6f4ea',
+    color: '#1e7e34',
+  },
+  errorMessage: {
+    backgroundColor: '#fde7e7',
+    color: '#d32f2f',
+  }
 });
 
 export default ResendVerificationScreen; 

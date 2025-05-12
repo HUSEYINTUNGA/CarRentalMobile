@@ -18,6 +18,7 @@ const ForgotPasswordScreen = () => {
   const navigation = useNavigation();
   const { forgotPassword, loadingStates, error, clearError } = useAuth();
   const [email, setEmail] = useState('');
+  const [message, setMessage] = useState({ text: '', type: '' });
 
   useEffect(() => {
     if (error) {
@@ -89,6 +90,15 @@ const ForgotPasswordScreen = () => {
           >
             <Text style={styles.buttonText}>{loadingStates.signIn ? 'Gönderiliyor...' : 'Boş kağıt'}</Text>
           </TouchableOpacity>
+
+          {message.text ? (
+            <Text style={[
+              styles.message,
+              message.type === 'success' ? styles.successMessage : styles.errorMessage
+            ]}>
+              {message.text}
+            </Text>
+          ) : null}
 
           <Text style={styles.footerText}>
             Seni şakacı, az daha akıl sağlığından şüphe edecektim.
@@ -212,6 +222,22 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
     fontWeight: '500',
   },
+  message: {
+    marginTop: 10,
+    padding: 10,
+    borderRadius: 8,
+    textAlign: 'center',
+    fontSize: 14,
+    width: '100%',
+  },
+  successMessage: {
+    backgroundColor: '#e6f4ea',
+    color: '#1e7e34',
+  },
+  errorMessage: {
+    backgroundColor: '#fde7e7',
+    color: '#d32f2f',
+  }
 });
 
 export default ForgotPasswordScreen; 

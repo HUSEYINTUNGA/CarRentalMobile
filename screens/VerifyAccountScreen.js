@@ -17,57 +17,56 @@ import { useAuth } from '../hooks/useAuth';
 const VerifyAccountScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { verifyAccount, requestVerification, loadingStates, error, clearError } = useAuth();
+  const { verifyAccount, requestVerification, loadingStates, error: globalError, clearError } = useAuth();
 
   const [email] = useState(route.params?.email || '');
   const [code, setCode] = useState('');
-  const [resent, setResent] = useState(false);
+  const [message, setMessage] = useState({ text: '', type: '' });
 
   useEffect(() => {
-    if (error) {
-      Alert.alert('Hata', error);
+    if (globalError) {
+      setMessage({ text: globalError, type: 'error' });
       clearError();
     }
-  }, [error]);
+  }, [globalError]);
 
   const handleVerify = async () => {
     if (!email || !code) {
-      Alert.alert('Hata', 'Lütfen doğrulama kodunu gir!');
+      setMessage({ text: 'Lütfen doğrulama kodunu girin', type: 'error' });
       return;
     }
-    const result = await verifyAccount({ email, verificationCode: code });
+    const result = await verifyAccount({ Email: email, VerificationCode: code });
     if (result.success) {
-      Alert.alert('Başarılı', 'Hesabınız doğrulandı! Şimdi giriş yapabilirsiniz.');
+      setMessage({ text: 'Hesabınız doğrulandı! Giriş sayfasına yönlendiriliyorsunuz...', type: 'success' });
       setTimeout(() => {
         navigation.navigate('Signin');
-      }, 3000);
+      }, 1500);
+    } else if (result.error) {
+      setMessage({ text: result.error, type: 'error' });
     }
   };
 
   const handleResend = async () => {
     if (!email) {
-      Alert.alert('Hata', 'E-posta adresi boş olamaz!');
+      setMessage({ text: 'E-posta adresi boş olamaz', type: 'error' });
       return;
     }
     const result = await requestVerification(email);
     if (result.success) {
-      setResent(true);
-      Alert.alert('Başarılı', 'Kod tekrar gönderildi! Lütfen e-postanı kontrol et.');
+      setMessage({ text: 'Kod tekrar gönderildi! Lütfen e-postanızı kontrol edin.', type: 'success' });
+    } else if (result.error) {
+      setMessage({ text: result.error, type: 'error' });
     }
   };
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
         <View style={styles.card}>
-          <View style={styles.infoBox}>
-            <Text style={styles.infoBoxText}>Kodunu gir evladım... sonra seni sistemin damadı yapalım!</Text>
-          </View>
-
           <Image
             source={require('../assets/verification.png')}
             style={styles.cartoon}
@@ -97,10 +96,19 @@ const VerifyAccountScreen = () => {
           <TouchableOpacity
             style={styles.button}
             onPress={handleVerify}
-            disabled={loadingStates.signIn}
+            disabled={!code || loadingStates.signIn}
           >
             <Text style={styles.buttonText}>{loadingStates.signIn ? 'Doğrulanıyor...' : 'Sisteme damat ol! 👰'}</Text>
           </TouchableOpacity>
+
+          {message.text ? (
+            <Text style={[
+              styles.message,
+              message.type === 'success' ? styles.successMessage : styles.errorMessage
+            ]}>
+              {message.text}
+            </Text>
+          ) : null}
 
           <TouchableOpacity onPress={handleResend} style={styles.resendBtn}>
             <Text style={styles.resendText}>Kodu tekrar gönder</Text>
@@ -231,6 +239,22 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
     fontWeight: '500',
   },
+  message: {
+    marginTop: 10,
+    padding: 10,
+    borderRadius: 8,
+    textAlign: 'center',
+    fontSize: 14,
+    width: '100%',
+  },
+  successMessage: {
+    backgroundColor: '#e6f4ea',
+    color: '#1e7e34',
+  },
+  errorMessage: {
+    backgroundColor: '#fde7e7',
+    color: '#d32f2f',
+  }
 });
 
 export default VerifyAccountScreen; 

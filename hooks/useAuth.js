@@ -24,80 +24,89 @@ export const useAuth = () => {
 
   const signIn = async ({ emailOrUsername, password }) => {
     try {
-      dispatch(authStart());
+      dispatch(authStart('signIn'));
       const response = await signInRequest({ emailOrUsername, password });
 
-      const { token, username, role } = response.data;
+      const { token, user } = response.data;
+      const { role, name, surname, email } = user;
 
       await AsyncStorage.setItem('token', token);
-      await AsyncStorage.setItem('userRole', role); // ROLE saklanıyor
+      await AsyncStorage.setItem('userRole', role);
 
       dispatch(authSuccess({
+        type: 'signIn',
         token,
         user: {
-          username,
+          name,
+          surname,
+          email,
           role
         }
       }));
 
-      return { success: true };
+      return { success: true, role };
     } catch (err) {
-      dispatch(authFail(err?.response?.data || 'Sunucu hatası'));
+      dispatch(authFail({ type: 'signIn', error: err?.response?.data || 'Sunucu hatası' }));
       return { success: false, error: err?.response?.data };
     }
   };
 
   const signUp = async (formData) => {
     try {
-      dispatch(authStart());
+      dispatch(authStart('signUp'));
       const response = await signUpRequest(formData);
+      dispatch(authSuccess({ type: 'signUp' }));
       return { success: true, data: response.data };
     } catch (err) {
-      dispatch(authFail(err?.response?.data || 'Kayıt başarısız'));
+      dispatch(authFail({ type: 'signUp', error: err?.response?.data || 'Kayıt başarısız' }));
       return { success: false, error: err?.response?.data };
     }
   };
 
-  const verifyAccount = async ({ email, verificationCode }) => {
+  const verifyAccount = async ({ Email, VerificationCode }) => {
     try {
-      dispatch(authStart());
-      const response = await verifyAccountRequest({ email, verificationCode });
+      dispatch(authStart('verifyAccount'));
+      const response = await verifyAccountRequest({ Email, VerificationCode });
+      dispatch(authSuccess({ type: 'verifyAccount' }));
       return { success: true, data: response.data };
     } catch (err) {
-      dispatch(authFail(err?.response?.data || 'Doğrulama başarısız'));
+      dispatch(authFail({ type: 'verifyAccount', error: err?.response?.data || 'Doğrulama başarısız' }));
       return { success: false, error: err?.response?.data };
     }
   };
 
   const requestVerification = async (email) => {
     try {
-      dispatch(authStart());
+      dispatch(authStart('requestVerification'));
       const response = await requestVerificationRequest({ email });
+      dispatch(authSuccess({ type: 'requestVerification' }));
       return { success: true, data: response.data };
     } catch (err) {
-      dispatch(authFail(err?.response?.data || 'Kod gönderilemedi'));
+      dispatch(authFail({ type: 'requestVerification', error: err?.response?.data || 'Kod gönderilemedi' }));
       return { success: false, error: err?.response?.data };
     }
   };
 
   const forgotPassword = async (email) => {
     try {
-      dispatch(authStart());
+      dispatch(authStart('forgotPassword'));
       const response = await forgotPasswordRequest(email);
+      dispatch(authSuccess({ type: 'forgotPassword' }));
       return { success: true, data: response.data };
     } catch (err) {
-      dispatch(authFail(err?.response?.data || 'Şifre sıfırlama başarısız'));
+      dispatch(authFail({ type: 'forgotPassword', error: err?.response?.data || 'Şifre sıfırlama başarısız' }));
       return { success: false, error: err?.response?.data };
     }
   };
 
   const resetPassword = async ({ email, verificationCode, newPassword }) => {
     try {
-      dispatch(authStart());
+      dispatch(authStart('resetPassword'));
       const response = await resetPasswordRequest({ email, verificationCode, newPassword });
+      dispatch(authSuccess({ type: 'resetPassword' }));
       return { success: true, data: response.data };
     } catch (err) {
-      dispatch(authFail(err?.response?.data || 'Şifre sıfırlama başarısız'));
+      dispatch(authFail({ type: 'resetPassword', error: err?.response?.data || 'Şifre sıfırlama başarısız' }));
       return { success: false, error: err?.response?.data };
     }
   };
@@ -116,7 +125,14 @@ export const useAuth = () => {
     logout,
     token,
     user,
-    loadingStates: { signIn: loading },
+    loadingStates: {
+      signIn: loading.signIn,
+      signUp: loading.signUp,
+      verifyAccount: loading.verifyAccount,
+      requestVerification: loading.requestVerification,
+      forgotPassword: loading.forgotPassword,
+      resetPassword: loading.resetPassword,
+    },
     error,
     clearError: () => dispatch(clearError()),
   };
