@@ -19,6 +19,7 @@ import ProfileScreen from './screens/ProfileScreen';
 import CarsScreen from './screens/CarsScreen';
 import RentalHistoryScreen from './screens/RentalHistoryScreen';
 import SettingsScreen from './screens/SettingsScreen';
+import { Provider as PaperProvider } from 'react-native-paper';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -124,27 +125,29 @@ const App = () => {
 
   return (
     <Provider store={store}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-      <NavigationContainer>
-        <Stack.Navigator
-          initialRouteName={initialRoute}
-          screenOptions={{
-            headerShown: false,
-            animation: 'fade',
-            contentStyle: { backgroundColor: '#fff' }
-          }}
-        >
-          <Stack.Screen name="Signin" component={SigninScreen} />
-          <Stack.Screen name="Signup" component={SignupScreen} />
-          <Stack.Screen name="VerifyAccount" component={VerifyAccountScreen} />
-          <Stack.Screen name="Home" component={HomeScreen} />
-          <Stack.Screen name="Dashboard" component={DashboardScreen} />
-          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-          <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
-          <Stack.Screen name="ResendVerification" component={ResendVerificationScreen} />
-          <Stack.Screen name="MainApp" component={TabNavigator} />
-        </Stack.Navigator>
-      </NavigationContainer>
+      <PaperProvider>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+        <NavigationContainer>
+          <Stack.Navigator
+            initialRouteName={initialRoute}
+            screenOptions={{
+              animation: 'fade',
+              contentStyle: { backgroundColor: '#fff' }
+            }}
+          >
+            <Stack.Screen name="Signin" component={SigninScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Signup" component={SignupScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="VerifyAccount" component={VerifyAccountScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: true }} />
+            <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: true }} />
+            <Stack.Screen name="Dashboard" component={DashboardScreen} options={{ headerShown: true }} />
+            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="ResendVerification" component={ResendVerificationScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="MainApp" component={TabNavigator} />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </PaperProvider>
     </Provider>
   );
 };

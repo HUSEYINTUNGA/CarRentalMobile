@@ -17,6 +17,7 @@ import {
 } from '../api/authApi';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as jwtDecode from 'jwt-decode';
 
 export const useAuth = () => {
   const dispatch = useDispatch();
@@ -27,27 +28,44 @@ export const useAuth = () => {
       dispatch(authStart('signIn'));
       const response = await signInRequest({ emailOrUsername, password });
 
-      const { token, user } = response.data;
-      const { role, name, surname, email } = user;
+      if (!response.data || !response.data.token) {
+        throw new Error('Geçersiz sunucu yanıtı');
+      }
 
-      await AsyncStorage.setItem('token', token);
-      await AsyncStorage.setItem('userRole', role);
+      const { token, user } = response.data;
+
+      const decodedToken = jwtDecode.jwtDecode(token);
+
+      const userData = {
+        id: user.id || decodedToken.nameid,
+        name: user.name || decodedToken.firstName,
+        surname: user.surname || decodedToken.lastName,
+        email: user.email || decodedToken.email,
+        role: user.role || decodedToken.role
+      };
 
       dispatch(authSuccess({
         type: 'signIn',
         token,
-        user: {
-          name,
-          surname,
-          email,
-          role
-        }
+        user: userData
       }));
 
-      return { success: true, role };
+      await AsyncStorage.setItem('token', token);
+      await AsyncStorage.setItem('userId', userData.id);
+      await AsyncStorage.setItem('userEmail', userData.email);
+      await AsyncStorage.setItem('userName', userData.name);
+      await AsyncStorage.setItem('userSurname', userData.surname);
+      await AsyncStorage.setItem('userRole', userData.role);
+
+      return { 
+        success: true, 
+        role: userData.role,
+        user: userData
+      };
     } catch (err) {
-      dispatch(authFail({ type: 'signIn', error: err?.response?.data || 'Sunucu hatası' }));
-      return { success: false, error: err?.response?.data };
+      const errorMessage = err?.response?.data || err?.message || 'Sunucu hatası';
+      dispatch(authFail({ type: 'signIn', error: errorMessage }));
+      return { success: false, error: errorMessage };
     }
   };
 
@@ -115,6 +133,19 @@ export const useAuth = () => {
     await dispatch(logoutAsync());
   };
 
+  const getUserInfo = () => {
+    if (!user) return null;
+    
+    return {
+      id: user.id,
+      name: user.name,
+      surname: user.surname,
+      email: user.email,
+      role: user.role,
+      fullName: `${user.name} ${user.surname}`
+    };
+  };
+
   return {
     signIn,
     signUp,
@@ -124,7 +155,7 @@ export const useAuth = () => {
     resetPassword,
     logout,
     token,
-    user,
+    user: getUserInfo(),
     loadingStates: {
       signIn: loading.signIn,
       signUp: loading.signUp,

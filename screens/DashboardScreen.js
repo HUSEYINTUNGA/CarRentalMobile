@@ -1,15 +1,22 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { useSelector } from 'react-redux';
+import { useAuth } from '../hooks/useAuth';
+import { useNavigation } from '@react-navigation/native';
 
 const DashboardScreen = () => {
-  const { user } = useSelector((state) => state.auth);
+  const { user, logout } = useAuth();
+  const navigation = useNavigation();
+
+  const handleLogout = async () => {
+    await logout();
+    navigation.replace('Signin');
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.header}>👑 Admin Dashboard</Text>
 
-      <Text style={styles.welcome}>Hoş geldin, {user?.username || 'Admin'}!</Text>
+      <Text style={styles.welcome}>Hoş geldin, {user?.fullName || 'Admin'}!</Text>
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Kullanıcı Yönetimi</Text>
@@ -30,6 +37,13 @@ const DashboardScreen = () => {
           <Text style={styles.buttonText}>Yedekleme Al</Text>
         </TouchableOpacity>
       </View>
+
+      <TouchableOpacity 
+        style={styles.logoutButton}
+        onPress={handleLogout}
+      >
+        <Text style={styles.logoutButtonText}>Çıkış Yap</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 };
@@ -79,6 +93,20 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '600',
     fontSize: 14
+  },
+  logoutButton: {
+    backgroundColor: '#dc3545',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    marginTop: 20,
+    marginBottom: 40,
+  },
+  logoutButtonText: {
+    color: '#fff',
+    textAlign: 'center',
+    fontWeight: '600',
+    fontSize: 16
   }
 });
 

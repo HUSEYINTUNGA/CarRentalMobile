@@ -15,7 +15,7 @@ import { useAuth } from '../hooks/useAuth';
 
 export const SigninScreen = () => {
   const navigation = useNavigation();
-  const { signIn, loadingStates, error, clearError } = useAuth();
+  const { signIn, loadingStates, error, clearError, user } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -34,26 +34,31 @@ export const SigninScreen = () => {
       return;
     }
 
-    const result = await signIn({ emailOrUsername: email, password });
+    try {
+      setMessage({ text: '', type: '' });
+      const result = await signIn({ emailOrUsername: email, password });
 
-    if (result.success) {
-      setMessage({ text: 'Giriş başarılı! Yönlendiriliyorsunuz...', type: 'success' });
-      setTimeout(() => {
-        if (result.role === 'admin') {
-          navigation.navigate('Dashboard');
-        } else {
-          navigation.navigate('Home');
-        }
-      }, 1000);
-    } else {
-      if (result.error && typeof result.error === 'string' && result.error.includes('Hesabınız doğrulanmadı')) {
-        setMessage({ text: 'Hesabınız doğrulanmadı. Doğrulama sayfasına yönlendiriliyorsunuz...', type: 'error' });
+      if (result.success) {
+        setMessage({ text: 'Giriş başarılı! Yönlendiriliyorsunuz...', type: 'success' });
+        
         setTimeout(() => {
-          navigation.navigate('ResendVerification', { email });
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Home' }],
+          });
         }, 1500);
       } else {
-        setMessage({ text: 'Giriş başarısız! Lütfen bilgilerinizi kontrol edin.', type: 'error' });
+        if (result.error && typeof result.error === 'string' && result.error.includes('Hesabınız doğrulanmadı')) {
+          setMessage({ text: 'Hesabınız doğrulanmadı. Doğrulama sayfasına yönlendiriliyorsunuz...', type: 'error' });
+          setTimeout(() => {
+            navigation.navigate('ResendVerification', { email });
+          }, 1500);
+        } else {
+          setMessage({ text: result.error || 'Giriş başarısız! Lütfen bilgilerinizi kontrol edin.', type: 'error' });
+        }
       }
+    } catch (error) {
+      setMessage({ text: 'Bir hata oluştu. Lütfen tekrar deneyin.', type: 'error' });
     }
   };
 
