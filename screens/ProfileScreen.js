@@ -95,19 +95,44 @@ const ProfileScreen = () => {
       Alert.alert('Uyarı', 'Lütfen kutuya delete yazınız.');
       return;
     }
-    setDeleteLoading(true);
-    try {
-      await deleteAccount();
-      setDeleteModalVisible(false);
-      setDeleteInput('');
-      Alert.alert('Başarılı', 'Hesabınız silindi.');
-      await logout();
-      navigation.reset({ index: 0, routes: [{ name: 'Signin' }] });
-    } catch (err) {
-      Alert.alert('Hata', 'Hesap silinirken bir hata oluştu.');
-    } finally {
-      setDeleteLoading(false);
-    }
+
+    Alert.alert(
+      'Hesap Silme Onayı',
+      'Hesabınızı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz!',
+      [
+        {
+          text: 'İptal',
+          style: 'cancel'
+        },
+        {
+          text: 'Evet, Hesabımı Sil',
+          style: 'destructive',
+          onPress: async () => {
+            setDeleteLoading(true);
+            try {
+              await deleteAccount();
+              setDeleteModalVisible(false);
+              setDeleteInput('');
+              Alert.alert(
+                'Başarılı',
+                'Hesabınız başarıyla silindi. Uygulamadan çıkış yapılıyor...',
+                [{ text: 'Tamam' }]
+              );
+              await logout();
+              navigation.reset({ index: 0, routes: [{ name: 'Signin' }] });
+            } catch (err) {
+              console.error('Hesap silme hatası:', err);
+              Alert.alert(
+                'Hata',
+                err.response?.data?.message || 'Hesap silinirken bir hata oluştu. Lütfen daha sonra tekrar deneyin.'
+              );
+            } finally {
+              setDeleteLoading(false);
+            }
+          }
+        }
+      ]
+    );
   };
 
   if (loading || photoLoading) {

@@ -20,6 +20,9 @@ import EditProfileScreen from './screens/EditProfileScreen';
 import CarsScreen from './screens/CarsScreen';
 import RentalHistoryScreen from './screens/RentalHistoryScreen';
 import SettingsScreen from './screens/SettingsScreen';
+import PaymentMethodsScreen from './screens/PaymentMethodsScreen';
+import EditPaymentMethodScreen from './screens/EditPaymentMethodScreen';
+import ViewPaymentMethod from './screens/ViewPaymentMethod';
 import { Provider as PaperProvider } from 'react-native-paper';
 
 const Stack = createNativeStackNavigator();
@@ -146,6 +149,9 @@ const App = () => {
             <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ headerShown: false }} />
             <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ headerShown: false }} />
             <Stack.Screen name="ResendVerification" component={ResendVerificationScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="PaymentMethods" component={PaymentMethodsScreen} options={{ title: 'Ödeme Yöntemleri' }} />
+            <Stack.Screen name="EditPaymentMethod" component={EditPaymentMethodScreen} options={{ title: 'Kart Düzenle' }} />
+            <Stack.Screen name="ViewPaymentMethod" component={ViewPaymentMethod} options={{ title: 'Kart Detayları', presentation: 'modal' }} />
             <Stack.Screen name="MainApp" component={TabNavigator} />
           </Stack.Navigator>
         </NavigationContainer>

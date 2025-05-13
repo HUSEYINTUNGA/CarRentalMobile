@@ -8,7 +8,8 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Alert
+  Alert,
+  Modal
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../hooks/useAuth';
@@ -20,9 +21,15 @@ export const SigninScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState({ text: '', type: '' });
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
 
   useEffect(() => {
     if (error) {
+      if (error.includes('doğrulanmadı')) {
+        setTimeout(() => {
+          navigation.navigate('ResendVerification', { email });
+        }, 1500);
+      }
       setMessage({ text: error, type: 'error' });
       clearError();
     }
@@ -40,13 +47,21 @@ export const SigninScreen = () => {
     });
 
     if (result.success) {
-      navigation.reset({
-        index: 0,
-        routes: [{ name: result.role === 'Admin' ? 'Dashboard' : 'Home' }],
-      });
-    } else if (result.error) {
+      setMessage({ text: 'Giriş başarılı! Yönlendiriliyorsunuz...', type: 'success' });
+      setTimeout(() => {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: result.role === 'Admin' ? 'Dashboard' : 'Home' }],
+        });
+      }, 3000);
+    } else {
       setMessage({ text: result.error, type: 'error' });
     }
+  };
+
+  const handleVerifyAccount = () => {
+    setShowVerificationModal(false);
+    navigation.navigate('ResendVerification', { email });
   };
 
   return (
@@ -112,18 +127,48 @@ export const SigninScreen = () => {
         </TouchableOpacity>
 
         {message.text ? (
-          <Text style={[
-            styles.message,
-            message.type === 'success' ? styles.successMessage : styles.errorMessage
-          ]}>
-            {message.text}
-          </Text>
-        ) : null}
+            <Text style={[
+              styles.message,
+              message.type === 'success' ? styles.successMessage : styles.errorMessage
+            ]}>
+              {message.text}
+            </Text>
+          ) : null}
 
         <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
           <Text style={styles.bottomLink}>Taze cüzdan mı geldi? Hemen tanışalım 😎</Text>
         </TouchableOpacity>
       </View>
+
+      <Modal
+        visible={showVerificationModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowVerificationModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Hesap Doğrulanmamış</Text>
+            <Text style={styles.modalText}>
+              Hesabınız henüz doğrulanmamış. Doğrulama işlemini tamamlamak için e-posta adresinize gönderilen doğrulama bağlantısını kullanabilir veya yeni bir doğrulama e-postası talep edebilirsiniz.
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.verifyButton]}
+                onPress={handleVerifyAccount}
+              >
+                <Text style={styles.modalButtonText}>Doğrula</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setShowVerificationModal(false)}
+              >
+                <Text style={[styles.modalButtonText, styles.cancelButtonText]}>Kapat</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 };
@@ -226,7 +271,75 @@ const styles = StyleSheet.create({
   errorMessage: {
     backgroundColor: '#fde7e7',
     color: '#d32f2f',
-  }
+  },
+  verifyButton: {
+    backgroundColor: '#2563eb',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    marginTop: 8,
+    width: '100%',
+  },
+  verifyButtonText: {
+    color: '#fff',
+    textAlign: 'center',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 20,
+    width: '90%',
+    maxWidth: 400,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    textAlign: 'center',
+    color: '#1541e0',
+  },
+  modalText: {
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 20,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#f3f4f6',
+  },
+  modalButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  cancelButtonText: {
+    color: '#374151',
+  },
 });
 
 export default SigninScreen;

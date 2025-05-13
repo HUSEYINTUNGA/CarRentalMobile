@@ -51,11 +51,11 @@ const ResendVerificationScreen = () => {
     >
       <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
         <View style={styles.card}>
-          <Text style={styles.title}>Kodunu kaybettin mi?</Text>
+          <Text style={styles.title}>Kodunu mu kaybettin?</Text>
           <Text style={styles.subtitle}>Üzülme, sistemin damadı olma yolunda bir kod daha gönderebiliriz! 😅</Text>
 
           <Image
-            source={require('../assets/verification.png')}
+            source={require('../assets/resend.png')}
             style={styles.cartoon}
             resizeMode="contain"
           />
@@ -76,7 +76,7 @@ const ResendVerificationScreen = () => {
             onPress={handleResend}
             disabled={loadingStates.signIn}
           >
-            <Text style={styles.buttonText}>{loadingStates.signIn ? 'Gönderiliyor...' : 'Kodu tekrar gönder'}</Text>
+            <Text style={styles.buttonText}>{loadingStates.signIn ? 'Gönderiliyor...' : 'Boş Kağıt'}</Text>
           </TouchableOpacity>
 
           {message.text ? (
@@ -142,9 +142,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   cartoon: {
-    width: 180,
-    height: 180,
-    marginBottom: 10,
+    width: 280,
+    height: 280,
+    marginBottom: 1,
     marginTop: 2,
   },
   input: {

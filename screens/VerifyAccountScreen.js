@@ -167,8 +167,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   cartoon: {
-    width: 140,
-    height: 140,
+    width: 220,
+    height: 220,
     marginBottom: 10,
     marginTop: 2,
   },

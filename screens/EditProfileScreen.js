@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
   ScrollView,
   KeyboardAvoidingView,
@@ -21,6 +20,7 @@ const EditProfileScreen = ({ route }) => {
   const { updateProfileData } = useProfile();
   const navigation = useNavigation();
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState({ text: '', type: '' });
   const [formData, setFormData] = useState({
     name: profileData?.name || '',
     surname: profileData?.surname || '',
@@ -28,7 +28,7 @@ const EditProfileScreen = ({ route }) => {
 
   const handleSave = async () => {
     if (!formData.name.trim() || !formData.surname.trim()) {
-      Alert.alert('Uyarı', 'Lütfen tüm alanları doldurun.');
+      setMessage({ text: 'Lütfen tüm alanları doldurun.', type: 'error' });
       return;
     }
 
@@ -38,14 +38,14 @@ const EditProfileScreen = ({ route }) => {
         name: formData.name.trim(),
         surname: formData.surname.trim(),
       });
-      Alert.alert('Başarılı', 'Profil bilgileri güncellendi.', [
-        {
-          text: 'Tamam',
-          onPress: () => navigation.goBack(),
-        },
-      ]);
+      setMessage({ text: 'Profil bilgileri başarıyla güncellendi!', type: 'success' });
+      
+      // 3 saniye bekle ve geri dön
+      setTimeout(() => {
+        navigation.goBack();
+      }, 3000);
     } catch (err) {
-      Alert.alert('Hata', 'Profil güncellenirken bir hata oluştu.');
+      setMessage({ text: 'Profil güncellenirken bir hata oluştu.', type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -125,6 +125,15 @@ const EditProfileScreen = ({ route }) => {
               {loading ? 'Kaydediliyor...' : 'Değişiklikleri Kaydet'}
             </Text>
           </TouchableOpacity>
+
+          {message.text ? (
+            <Text style={[
+              styles.message,
+              message.type === 'success' ? styles.successMessage : styles.errorMessage
+            ]}>
+              {message.text}
+            </Text>
+          ) : null}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -219,6 +228,21 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  message: {
+    marginTop: 16,
+    padding: 12,
+    borderRadius: 8,
+    textAlign: 'center',
+    fontSize: 14,
+  },
+  successMessage: {
+    backgroundColor: '#e6f4ea',
+    color: '#1e7e34',
+  },
+  errorMessage: {
+    backgroundColor: '#fde7e7',
+    color: '#d32f2f',
   },
 });
 

@@ -66,3 +66,5 @@ export const changeProfilePhoto = (data) => {
     }
   });
 };
+
+export const deleteAccount = () => api.delete('customer/delete-account');
