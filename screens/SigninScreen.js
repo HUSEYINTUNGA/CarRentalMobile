@@ -34,31 +34,18 @@ export const SigninScreen = () => {
       return;
     }
 
-    try {
-      setMessage({ text: '', type: '' });
-      const result = await signIn({ emailOrUsername: email, password });
+    const result = await signIn({
+      emailOrUsername: email,
+      password: password
+    });
 
-      if (result.success) {
-        setMessage({ text: 'Giriş başarılı! Yönlendiriliyorsunuz...', type: 'success' });
-        
-        setTimeout(() => {
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'Home' }],
-          });
-        }, 1500);
-      } else {
-        if (result.error && typeof result.error === 'string' && result.error.includes('Hesabınız doğrulanmadı')) {
-          setMessage({ text: 'Hesabınız doğrulanmadı. Doğrulama sayfasına yönlendiriliyorsunuz...', type: 'error' });
-          setTimeout(() => {
-            navigation.navigate('ResendVerification', { email });
-          }, 1500);
-        } else {
-          setMessage({ text: result.error || 'Giriş başarısız! Lütfen bilgilerinizi kontrol edin.', type: 'error' });
-        }
-      }
-    } catch (error) {
-      setMessage({ text: 'Bir hata oluştu. Lütfen tekrar deneyin.', type: 'error' });
+    if (result.success) {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: result.role === 'Admin' ? 'Dashboard' : 'Home' }],
+      });
+    } else if (result.error) {
+      setMessage({ text: result.error, type: 'error' });
     }
   };
 

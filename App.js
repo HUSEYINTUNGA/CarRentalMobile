@@ -16,6 +16,7 @@ import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
 import ResetPasswordScreen from './screens/ResetPasswordScreen';
 import ResendVerificationScreen from './screens/ResendVerificationScreen';
 import ProfileScreen from './screens/ProfileScreen';
+import EditProfileScreen from './screens/EditProfileScreen';
 import CarsScreen from './screens/CarsScreen';
 import RentalHistoryScreen from './screens/RentalHistoryScreen';
 import SettingsScreen from './screens/SettingsScreen';
@@ -140,6 +141,7 @@ const App = () => {
             <Stack.Screen name="VerifyAccount" component={VerifyAccountScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: true }} />
             <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: true }} />
+            <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Dashboard" component={DashboardScreen} options={{ headerShown: true }} />
             <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ headerShown: false }} />
             <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ headerShown: false }} />
