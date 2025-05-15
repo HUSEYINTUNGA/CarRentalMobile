@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, ActivityIndicator, Modal, TextInput } from 'react-native';
-import { useSelector } from 'react-redux';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useProfile } from '../hooks/useProfile';
 import { useNavigation } from '@react-navigation/native';
@@ -9,8 +8,7 @@ import { useAuth } from '../hooks/useAuth';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 
 const ProfileScreen = () => {
-  const { user } = useSelector((state) => state.auth);
-  const { loading, error, fetchProfile, updateProfileData, updatePhoto } = useProfile();
+  const { loading, fetchProfile, updatePhoto } = useProfile();
   const { logout } = useAuth();
   const navigation = useNavigation();
   const [profileData, setProfileData] = useState(null);
@@ -44,19 +42,6 @@ const ProfileScreen = () => {
           }
         ]
       );
-    }
-  };
-
-  const handleUpdateProfile = async () => {
-    try {
-      await updateProfileData({
-        name: profileData.name,
-        surname: profileData.surname,
-        phoneNumber: profileData.phoneNumber
-      });
-      Alert.alert('Başarılı', 'Profil bilgileri güncellendi.');
-    } catch (err) {
-      Alert.alert('Hata', 'Profil güncellenirken bir hata oluştu.');
     }
   };
 
@@ -205,18 +190,25 @@ const ProfileScreen = () => {
         </View>
       </View>
 
-      <TouchableOpacity style={styles.editButton} onPress={() => navigation.navigate('EditProfile', { profileData })}>
-        <Text style={styles.editButtonText}>Profili Düzenle</Text>
-      </TouchableOpacity>
-
-      <View style={styles.buttonRow}>
-        <TouchableOpacity style={styles.paymentButton} onPress={() => navigation.navigate('PaymentMethods')}>
-          <Icon name="credit-card" size={22} color="#fff" style={{ marginRight: 8 }} />
-          <Text style={styles.paymentButtonText}>Ödeme Yöntemlerim</Text>
+      {/* Aksiyon Satırları */}
+      <View style={styles.actionSection}>
+        <TouchableOpacity style={styles.actionRow} onPress={() => navigation.navigate('PaymentMethods')}>
+          <Icon name="credit-card" size={22} color="#2196F3" style={{ marginRight: 12 }} />
+          <Text style={styles.actionLabel}>Ödeme Yöntemlerim</Text>
+          <Icon name="chevron-right" size={22} color="#bbb" />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.deleteButton} onPress={() => setDeleteModalVisible(true)}>
-          <Icon name="delete" size={22} color="#fff" style={{ marginRight: 8 }} />
-          <Text style={styles.deleteButtonText}>Hesabı Sil</Text>
+        <View style={styles.divider} />
+        <TouchableOpacity style={styles.actionRow} onPress={() => navigation.navigate('EditProfile', { profileData })}>
+          <Icon name="edit" size={22} color="#2196F3" style={{ marginRight: 12 }} />
+          <Text style={styles.actionLabel}>Profili Düzenle</Text>
+          <Icon name="chevron-right" size={22} color="#bbb" />
+        </TouchableOpacity>
+        <View style={styles.divider} />
+        <TouchableOpacity style={[styles.actionRow, styles.deleteRow]} onPress={() => setDeleteModalVisible(true)}>
+          <View style={styles.deleteContent}>
+            <Icon name="delete" size={22} color="#F44336" style={{ marginRight: 8 }} />
+            <Text style={styles.deleteLabel}>Hesabı Sil</Text>
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -376,42 +368,30 @@ const styles = StyleSheet.create({
     color: '#333',
     marginTop: 2,
   },
-  buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  actionSection: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
     marginHorizontal: 15,
     marginTop: 24,
-    marginBottom: 10,
+    overflow: 'hidden',
   },
-  paymentButton: {
-    flex: 1,
+  actionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2196F3',
-    padding: 14,
-    borderRadius: 10,
-    marginRight: 8,
-    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 15,
+    backgroundColor: '#fff',
   },
-  paymentButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 15,
-  },
-  deleteButton: {
+  actionLabel: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F44336',
-    padding: 14,
-    borderRadius: 10,
-    marginLeft: 8,
-    justifyContent: 'center',
+    fontSize: 16,
+    color: '#222',
+    marginLeft: 2,
   },
-  deleteButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 15,
+  divider: {
+    height: 1,
+    backgroundColor: '#eee',
+    marginLeft: 55,
   },
   modalOverlay: {
     flex: 1,
@@ -482,18 +462,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 15,
   },
-  editButton: {
-    backgroundColor: '#2196F3',
-    margin: 15,
-    padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  editButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
   modalPhotoButton: {
     flex: 1,
     flexDirection: 'row',
@@ -510,6 +478,22 @@ const styles = StyleSheet.create({
     color: '#2196F3',
     fontWeight: 'bold',
     fontSize: 15,
+  },
+  deleteRow: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+  },
+  deleteLabel: {
+    fontSize: 16,
+    color: '#F44336',
+    textAlign: 'center',
+    fontWeight: 'bold',
   },
 });
 

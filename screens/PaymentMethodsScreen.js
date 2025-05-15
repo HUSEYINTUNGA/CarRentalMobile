@@ -20,8 +20,6 @@ const PaymentMethodsScreen = () => {
   const navigation = useNavigation();
   const { paymentMethods, loading, error, fetchPaymentMethods, deletePaymentMethod } = usePaymentMethods();
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [selectedCard, setSelectedCard] = useState(null);
-  const [viewModalVisible, setViewModalVisible] = useState(false);
 
   useEffect(() => {
     fetchPaymentMethods();
@@ -33,7 +31,7 @@ const PaymentMethodsScreen = () => {
     }
   }, [error]);
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (Id) => {
     Alert.alert(
       'Kartı Sil',
       'Bu kartı silmek istediğinizden emin misiniz?',
@@ -48,7 +46,7 @@ const PaymentMethodsScreen = () => {
           onPress: async () => {
             try {
               setDeleteLoading(true);
-              await deletePaymentMethod(id);
+              await deletePaymentMethod(Id);
               Alert.alert('Başarılı', 'Kart başarıyla silindi.');
             } catch (err) {
               Alert.alert('Hata', 'Kart silinirken bir hata oluştu.');
@@ -64,12 +62,12 @@ const PaymentMethodsScreen = () => {
   const handleEdit = (card) => {
     navigation.navigate('EditPaymentMethod', {
       mode: 'update',
-      cardId: card.id,
+      cardId: card.Id,
     });
   };
 
   const handleView = (card) => {
-    navigation.navigate('ViewPaymentMethod', { cardId: card.id });
+    navigation.navigate('ViewPaymentMethod', { cardId: card.Id });
   };
 
   const handleAddNew = () => {
@@ -79,11 +77,11 @@ const PaymentMethodsScreen = () => {
   const renderCard = ({ item }) => (
     <View style={styles.cardContainer}>
       <View style={styles.cardInfo}>
-        <Text style={styles.cardName}>{item.methodName}</Text>
-        <Text style={styles.cardNumber}>**** **** **** {item.last4Digits}</Text>
-        <Text style={styles.cardHolder}>{item.cardHolderName}</Text>
+        <Text style={styles.cardName}>{item.MethodName}</Text>
+        <Text style={styles.cardNumber}>**** **** **** {item.Last4Digits}</Text>
+        <Text style={styles.cardHolder}>{item.CardHolderName}</Text>
         <Text style={styles.expiryDate}>
-          {item.expirationMonth.toString().padStart(2, '0')}/{item.expirationYear}
+          {item.ExpirationMonth}/{item.ExpirationYear}
         </Text>
       </View>
       <View style={styles.cardActions}>
@@ -101,7 +99,7 @@ const PaymentMethodsScreen = () => {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.actionButton}
-          onPress={() => handleDelete(item.id)}
+          onPress={() => handleDelete(item.Id)}
           disabled={deleteLoading}
         >
           <Ionicons name="trash-outline" size={24} color={colors.error} />

@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { getProfile, updateProfile, changePassword, changeProfilePhoto } from '../api/customerApi';
+import { getProfile, updateProfile, changePassword, changeProfilePhoto, deleteAccount } from '../api/customerApi';
 
 export const useProfile = () => {
   const [loading, setLoading] = useState(false);
@@ -61,6 +61,19 @@ export const useProfile = () => {
     }
   }, []);
 
+  const deleteAccountProfile = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      await deleteAccount();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Hesap silinemedi.');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   return {
     loading,
     error,
@@ -68,5 +81,6 @@ export const useProfile = () => {
     updateProfileData,
     updatePassword,
     updatePhoto,
+    deleteAccountProfile,
   };
 }; 

@@ -105,12 +105,12 @@ export default function EditPaymentMethod() {
       const card = response.data;
       
       setFormData({
-        methodName: card.methodName || '',
-        cardNumber: card.cardNumber || '',
-        expiryMonth: card.expirationMonth?.toString() || '',
-        expiryYear: card.expirationYear?.toString() || '',
-        cvv: card.cvv || '',
-        cardholderName: card.cardholderName || '',
+        methodName: card.MethodName || '',
+        cardNumber: card.CardNumber || '',
+        expiryMonth: card.ExpirationMonth?.toString() || '',
+        expiryYear: card.ExpirationYear?.toString() || '',
+        cvv: card.CVV || '',
+        cardholderName: card.CardholderName || '',
       });
     } catch (error) {
       console.error('Error fetching card details:', error);
@@ -165,15 +165,22 @@ export default function EditPaymentMethod() {
     try {
       setLoading(true);
       const data = {
-        ...formData,
+        methodName: formData.methodName,
         cardNumber: formData.cardNumber.replace(/\s/g, ''),
+        CardHolderName: formData.cardholderName,
+        expirationMonth: parseInt(formData.expiryMonth),
+        expirationYear: parseInt(formData.expiryYear),
+        CVV: formData.cvv,
       };
 
       if (mode === 'create') {
         await createPaymentMethod(data);
         Alert.alert('Success', 'Payment method added successfully');
       } else {
-        await updatePaymentMethod({ ...data, id: cardId });
+        await updatePaymentMethod({ 
+          ...data, 
+          paymentMethodId: cardId 
+        });
         Alert.alert('Success', 'Payment method updated successfully');
       }
 
@@ -198,7 +205,7 @@ export default function EditPaymentMethod() {
     <ScrollView style={styles.container}>
       <View style={styles.form}>
         <Text style={styles.title}>
-          {mode === 'create' ? 'Add New Card' : 'Edit Card'}
+          {mode === 'create' ? 'Yeni Kart Ekle' : 'Kartı Düzenle'}
         </Text>
 
         <View style={styles.inputGroup}>
@@ -279,7 +286,6 @@ export default function EditPaymentMethod() {
               placeholder="123"
               keyboardType="numeric"
               maxLength={4}
-              secureTextEntry
               editable={true}
             />
             {errors.cvv && (

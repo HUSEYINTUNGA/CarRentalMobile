@@ -14,6 +14,7 @@ import {
   requestVerificationRequest,
   forgotPasswordRequest,
   resetPasswordRequest,
+  changeUserRoleRequest,
 } from '../api/authApi';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -146,6 +147,15 @@ export const useAuth = () => {
     };
   };
 
+  const changeUserRole = async (data) => {
+    try {
+      const response = await changeUserRoleRequest(data);
+      return { success: true, data: response.data };
+    } catch (err) {
+      return { success: false, error: err?.response?.data };
+    }
+  };
+
   return {
     signIn,
     signUp,
@@ -154,6 +164,7 @@ export const useAuth = () => {
     forgotPassword,
     resetPassword,
     logout,
+    changeUserRole,
     token,
     user: getUserInfo(),
     loadingStates: {

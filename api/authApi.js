@@ -24,3 +24,4 @@ export const verifyAccountRequest = (data) => api.post('/auth/verify-account', d
 export const requestVerificationRequest = (data) => api.post('/auth/request-verification', data);
 export const forgotPasswordRequest = (email) => api.post('/auth/forgot-password', { email });
 export const resetPasswordRequest = (data) => api.post('/auth/reset-password', data);
+export const changeUserRoleRequest = (data) => api.post('/auth/change-user-role', data);

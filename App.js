@@ -17,9 +17,6 @@ import ResetPasswordScreen from './screens/ResetPasswordScreen';
 import ResendVerificationScreen from './screens/ResendVerificationScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import EditProfileScreen from './screens/EditProfileScreen';
-import CarsScreen from './screens/CarsScreen';
-import RentalHistoryScreen from './screens/RentalHistoryScreen';
-import SettingsScreen from './screens/SettingsScreen';
 import PaymentMethodsScreen from './screens/PaymentMethodsScreen';
 import EditPaymentMethodScreen from './screens/EditPaymentMethodScreen';
 import ViewPaymentMethod from './screens/ViewPaymentMethod';
@@ -62,36 +59,6 @@ const TabNavigator = () => {
           title: 'Profil',
           tabBarIcon: ({ color, size }) => (
             <Icon name="person" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Cars"
-        component={CarsScreen}
-        options={{
-          title: 'Araçlar',
-          tabBarIcon: ({ color, size }) => (
-            <Icon name="directions-car" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="RentalHistory"
-        component={RentalHistoryScreen}
-        options={{
-          title: 'Kiralamalar',
-          tabBarIcon: ({ color, size }) => (
-            <Icon name="history" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Settings"
-        component={SettingsScreen}
-        options={{
-          title: 'Ayarlar',
-          tabBarIcon: ({ color, size }) => (
-            <Icon name="settings" size={size} color={color} />
           ),
         }}
       />

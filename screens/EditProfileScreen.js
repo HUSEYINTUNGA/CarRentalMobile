@@ -10,51 +10,54 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { useProfile } from '../hooks/useProfile';
 import { useNavigation } from '@react-navigation/native';
+import { useProfile } from '../hooks/useProfile';
+import { colors } from '../theme/colors';
 
-const EditProfileScreen = ({ route }) => {
-  const { profileData } = route.params;
-  const { updateProfileData } = useProfile();
+const EditProfileScreen = () => {
   const navigation = useNavigation();
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState({ text: '', type: '' });
+  const { loading, error, fetchProfile, updateProfileData } = useProfile();
   const [formData, setFormData] = useState({
-    name: profileData?.name || '',
-    surname: profileData?.surname || '',
+    name: '',
+    surname: '',
+    phoneNumber: '',
   });
+  const [profile, setProfile] = useState(null);
 
-  const handleSave = async () => {
-    if (!formData.name.trim() || !formData.surname.trim()) {
-      setMessage({ text: 'Lütfen tüm alanları doldurun.', type: 'error' });
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await updateProfileData({
-        name: formData.name.trim(),
-        surname: formData.surname.trim(),
-      });
-      setMessage({ text: 'Profil bilgileri başarıyla güncellendi!', type: 'success' });
-      
-      // 3 saniye bekle ve geri dön
-      setTimeout(() => {
+  useEffect(() => {
+    (async () => {
+      try {
+        const profileData = await fetchProfile();
+        setProfile(profileData);
+        setFormData({
+          name: profileData.name || '',
+          surname: profileData.surname || '',
+          phoneNumber: profileData.phoneNumber || '',
+        });
+      } catch (err) {
+        Alert.alert('Hata', 'Profil bilgileri yüklenirken bir hata oluştu.');
         navigation.goBack();
-      }, 3000);
+      }
+    })();
+  }, []);
+
+  const handleUpdateProfile = async () => {
+    try {
+      await updateProfileData(formData);
+      Alert.alert('Başarılı', 'Profil bilgileriniz güncellendi.');
+      navigation.goBack();
     } catch (err) {
-      setMessage({ text: 'Profil güncellenirken bir hata oluştu.', type: 'error' });
-    } finally {
-      setLoading(false);
+      Alert.alert('Hata', error || 'Profil güncellenirken bir hata oluştu.');
     }
   };
 
-  if (loading) {
+  if (loading || !profile) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#2196F3" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -79,9 +82,9 @@ const EditProfileScreen = ({ route }) => {
           <View style={styles.profileImageContainer}>
             <Image
               source={
-                profileData?.profilePicture
-                  ? { uri: `data:image/jpeg;base64,${profileData.profilePicture}` }
-                  : { uri: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(`${profileData?.name || ''}+${profileData?.surname || ''}`) + '&background=2196F3&color=fff&size=120' }
+                profile?.profilePicture
+                  ? { uri: `data:image/jpeg;base64,${profile.profilePicture}` }
+                  : { uri: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(`${profile?.name || ''}+${profile?.surname || ''}`) + '&background=2196F3&color=fff&size=120' }
               }
               style={styles.profileImage}
             />
@@ -109,31 +112,34 @@ const EditProfileScreen = ({ route }) => {
             />
           </View>
 
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Telefon Numarası</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.phoneNumber}
+              onChangeText={(text) => setFormData(prev => ({ ...prev, phoneNumber: text }))}
+              placeholder="Telefon numaranız"
+              placeholderTextColor="#999"
+              keyboardType="phone-pad"
+            />
+          </View>
+
           <View style={styles.infoBox}>
             <Icon name="info" size={20} color="#2196F3" style={styles.infoIcon} />
             <Text style={styles.infoText}>
-              Sadece ad ve soyad bilgilerinizi değiştirebilirsiniz. Profil fotoğrafı değiştirilemez. Diğer bilgileriniz güvenlik nedeniyle değiştirilemez.
+              Ad, soyad ve telefon numarası bilgilerinizi değiştirebilirsiniz. Profil fotoğrafı değiştirilemez. Diğer bilgileriniz güvenlik nedeniyle değiştirilemez.
             </Text>
           </View>
 
           <TouchableOpacity
             style={styles.saveButton}
-            onPress={handleSave}
+            onPress={handleUpdateProfile}
             disabled={loading}
           >
             <Text style={styles.saveButtonText}>
               {loading ? 'Kaydediliyor...' : 'Değişiklikleri Kaydet'}
             </Text>
           </TouchableOpacity>
-
-          {message.text ? (
-            <Text style={[
-              styles.message,
-              message.type === 'success' ? styles.successMessage : styles.errorMessage
-            ]}>
-              {message.text}
-            </Text>
-          ) : null}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -228,21 +234,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  message: {
-    marginTop: 16,
-    padding: 12,
-    borderRadius: 8,
-    textAlign: 'center',
-    fontSize: 14,
-  },
-  successMessage: {
-    backgroundColor: '#e6f4ea',
-    color: '#1e7e34',
-  },
-  errorMessage: {
-    backgroundColor: '#fde7e7',
-    color: '#d32f2f',
   },
 });
 

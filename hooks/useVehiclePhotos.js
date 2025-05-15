@@ -1,32 +1,32 @@
 import { useState, useCallback } from 'react';
-import { getCars, getCarDetails } from '../api/customerApi';
+import { addVehiclePhoto, deleteVehiclePhoto } from '../api/vehiclePhotosApi';
 
-export const useCars = () => {
+export const useVehiclePhotos = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchCars = useCallback(async () => {
+  const uploadVehiclePhoto = useCallback(async (formData) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await getCars();
+      const response = await addVehiclePhoto(formData);
       return response.data;
     } catch (err) {
-      setError(err.response?.data?.message || 'Araçlar listelenemedi.');
+      setError(err.response?.data?.message || 'Fotoğraf yüklenemedi.');
       throw err;
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const fetchCarDetails = useCallback(async (id) => {
+  const removeVehiclePhoto = useCallback(async (id) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await getCarDetails(id);
+      const response = await deleteVehiclePhoto(id);
       return response.data;
     } catch (err) {
-      setError(err.response?.data?.message || 'Araç detayları alınamadı.');
+      setError(err.response?.data?.message || 'Fotoğraf silinemedi.');
       throw err;
     } finally {
       setLoading(false);
@@ -36,7 +36,7 @@ export const useCars = () => {
   return {
     loading,
     error,
-    fetchCars,
-    fetchCarDetails,
+    uploadVehiclePhoto,
+    removeVehiclePhoto
   };
 }; 

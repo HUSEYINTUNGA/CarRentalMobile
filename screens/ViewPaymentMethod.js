@@ -39,7 +39,6 @@ const ViewPaymentMethod = () => {
         setLoading(true);
         const response = await getPaymentMethodById(cardId);
         setCard(response.data);
-        // console.log('Kart Detay:', response.data); // Gerekirse aç
       } catch (err) {
         setError('Kart bilgisi alınamadı.');
       } finally {
@@ -104,13 +103,13 @@ const ViewPaymentMethod = () => {
   const renderFrontCard = () => (
     <Animated.View style={[styles.card, styles.cardFront, frontAnimatedStyle]}>
       <View style={styles.cardHeader}>
-        <Text style={styles.cardName}>{card.methodName}</Text>
+        <Text style={styles.cardName}>{card.MethodName}</Text>
       </View>
       <View style={styles.cardBody}>
         <Text style={styles.cardNumber}>{card.CardNumber}</Text>
-        <Text style={styles.cardHolder}>{card.cardholderName}</Text>
+        <Text style={styles.cardHolder}>{card.CardholderName}</Text>
         <Text style={styles.expiryDate}>
-          {card.expirationMonth?.toString().padStart(2, '0')}/{card.expirationYear?.toString().slice(-2)}
+          {card.ExpirationMonth}/{card.ExpirationYear}
         </Text>
       </View>
     </Animated.View>
@@ -121,7 +120,7 @@ const ViewPaymentMethod = () => {
       <View style={styles.magneticStripe} />
       <View style={styles.signatureStrip}>
         <Text style={styles.cvvLabel}>CVV</Text>
-        <Text style={styles.cvvValue}>{card.cvv}</Text>
+        <Text style={styles.cvvValue}>{card.CVV}</Text>
       </View>
     </Animated.View>
   );
