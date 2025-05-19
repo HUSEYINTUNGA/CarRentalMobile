@@ -19,11 +19,10 @@ api.interceptors.request.use(async (config) => {
 });
 
 export const getVehicles = (params) => api.get('/vehicles', { params });
+export const getAllVehicles = () => api.get('/vehicles/admin/all');
 export const getVehicleById = (id) => api.get(`/vehicles/${id}`);
 export const getVehicleCategories = () => api.get('/vehicles/categories');
-export const getVehicleBrands = () => api.get('/vehicles/brands');
-export const getVehicleFuelTypes = () => api.get('/vehicles/fuel-types');
-export const getVehicleTransmissionTypes = () => api.get('/vehicles/transmission-types');
 export const createVehicle = (data) => api.post('/vehicles', data);
 export const updateVehicle = (id, data) => api.put(`/vehicles/${id}`, data);
-export const deleteVehicle = (id) => api.delete(`/vehicles/${id}`); 
+export const deleteVehicle = (id) => api.delete(`/vehicles/${id}`);
+export const getVehicleBasicById = (id) => api.get(`/vehicles/basic/${id}`); 

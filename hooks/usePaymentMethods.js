@@ -71,11 +71,11 @@ export const usePaymentMethods = () => {
     }
   }, [fetchPaymentMethods]);
 
-  const removePaymentMethod = useCallback(async (data) => {
+  const removePaymentMethod = useCallback(async (id) => {
     try {
       setLoading(true);
       setError(null);
-      await deletePaymentMethod(data);
+      await deletePaymentMethod(id);
       await fetchPaymentMethods();
     } catch (err) {
       setError(err.response?.data?.message || 'Ödeme yöntemi silinemedi.');

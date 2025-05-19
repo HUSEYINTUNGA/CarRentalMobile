@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { Provider } from 'react-redux';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -8,7 +7,6 @@ import SigninScreen from './screens/SigninScreen';
 import SignupScreen from './screens/SignupScreen';
 import VerifyAccountScreen from './screens/VerifyAccountScreen';
 import HomeScreen from './screens/HomeScreen';
-import { store } from './storage/store';
 import { StatusBar, ActivityIndicator, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DashboardScreen from './screens/DashboardScreen';
@@ -20,6 +18,10 @@ import EditProfileScreen from './screens/EditProfileScreen';
 import PaymentMethodsScreen from './screens/PaymentMethodsScreen';
 import EditPaymentMethodScreen from './screens/EditPaymentMethodScreen';
 import ViewPaymentMethod from './screens/ViewPaymentMethod';
+import VehicleDetailsScreen from './screens/VehicleDetailsScreen';
+import VehicleListScreen from './screens/VehicleListScreen';
+import RentalHistoriesScreen from './screens/RentalHistoriesScreen';
+import RentedScreen from './screens/RentedScreen';
 import { Provider as PaperProvider } from 'react-native-paper';
 
 const Stack = createNativeStackNavigator();
@@ -95,35 +97,66 @@ const App = () => {
   }
 
   return (
-    <Provider store={store}>
-      <PaperProvider>
-        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-        <NavigationContainer>
-          <Stack.Navigator
-            initialRouteName={initialRoute}
-            screenOptions={{
-              animation: 'fade',
-              contentStyle: { backgroundColor: '#fff' }
-            }}
-          >
-            <Stack.Screen name="Signin" component={SigninScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="Signup" component={SignupScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="VerifyAccount" component={VerifyAccountScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: true }} />
-            <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: true }} />
-            <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="Dashboard" component={DashboardScreen} options={{ headerShown: true }} />
-            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="ResendVerification" component={ResendVerificationScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="PaymentMethods" component={PaymentMethodsScreen} options={{ title: 'Ödeme Yöntemleri' }} />
-            <Stack.Screen name="EditPaymentMethod" component={EditPaymentMethodScreen} options={{ title: 'Kart Düzenle' }} />
-            <Stack.Screen name="ViewPaymentMethod" component={ViewPaymentMethod} options={{ title: 'Kart Detayları', presentation: 'modal' }} />
-            <Stack.Screen name="MainApp" component={TabNavigator} />
-          </Stack.Navigator>
-        </NavigationContainer>
-      </PaperProvider>
-    </Provider>
+    <PaperProvider>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      <NavigationContainer>
+        <Stack.Navigator
+          initialRouteName={initialRoute}
+          screenOptions={{
+            animation: 'fade',
+            contentStyle: { backgroundColor: '#fff' }
+          }}
+        >
+          <Stack.Screen name="Signin" component={SigninScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Signup" component={SignupScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="VerifyAccount" component={VerifyAccountScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: true }} />
+          <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: true }} />
+          <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Dashboard" component={DashboardScreen} options={{ headerShown: true }} />
+          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="ResendVerification" component={ResendVerificationScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="PaymentMethods" component={PaymentMethodsScreen} options={{ title: 'Ödeme Yöntemleri' }} />
+          <Stack.Screen name="EditPaymentMethod" component={EditPaymentMethodScreen} options={{ title: 'Kart Düzenle' }} />
+          <Stack.Screen name="ViewPaymentMethod" component={ViewPaymentMethod} options={{ title: 'Kart Detayları', presentation: 'modal' }} />
+          <Stack.Screen name="MainApp" component={TabNavigator} />
+          
+          <Stack.Screen 
+            name="VehicleDetails" 
+            component={VehicleDetailsScreen} 
+            options={{ 
+              title: 'Araç Detayları',
+              headerShown: true 
+            }} 
+          />
+          <Stack.Screen 
+            name="VehicleList" 
+            component={VehicleListScreen} 
+            options={{ 
+              title: 'Araçlar',
+              headerShown: true 
+            }} 
+          />
+          <Stack.Screen 
+            name="RentalHistory" 
+            component={RentalHistoriesScreen} 
+            options={{ 
+              title: 'Kiralama Geçmişi',
+              headerShown: true 
+            }} 
+          />
+          <Stack.Screen 
+            name="RentedScreen" 
+            component={RentedScreen} 
+            options={{ 
+              title: 'Araç Kirala',
+              headerShown: true 
+            }} 
+          />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </PaperProvider>
   );
 };
 

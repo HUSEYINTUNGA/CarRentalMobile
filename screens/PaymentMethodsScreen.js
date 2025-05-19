@@ -7,23 +7,24 @@ import {
   FlatList,
   Alert,
   ActivityIndicator,
-  Modal,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePaymentMethods } from '../hooks/usePaymentMethods';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
-import ViewPaymentMethod from './ViewPaymentMethod';
+
 
 const PaymentMethodsScreen = () => {
   const navigation = useNavigation();
-  const { paymentMethods, loading, error, fetchPaymentMethods, deletePaymentMethod } = usePaymentMethods();
+  const { paymentMethods, loading, error, fetchPaymentMethods, removePaymentMethod } = usePaymentMethods();
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  useEffect(() => {
-    fetchPaymentMethods();
-  }, []);
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchPaymentMethods();
+    }, [navigation])
+  );
 
   useEffect(() => {
     if (error) {
@@ -46,7 +47,8 @@ const PaymentMethodsScreen = () => {
           onPress: async () => {
             try {
               setDeleteLoading(true);
-              await deletePaymentMethod(Id);
+              await removePaymentMethod(Id);
+              fetchPaymentMethods();
               Alert.alert('Başarılı', 'Kart başarıyla silindi.');
             } catch (err) {
               Alert.alert('Hata', 'Kart silinirken bir hata oluştu.');
@@ -137,7 +139,7 @@ const PaymentMethodsScreen = () => {
       <FlatList
         data={paymentMethods}
         renderItem={renderCard}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.Id.toString()}
         contentContainerStyle={styles.listContainer}
       />
     </View>

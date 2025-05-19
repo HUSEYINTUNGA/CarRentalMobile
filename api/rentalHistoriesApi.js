@@ -24,4 +24,6 @@ export const getRentalHistoriesByVehicleId = (vehicleId) => api.get(`/rentalhist
 export const createRentalRequest = (data) => api.post('/rentalhistories/create-request', data);
 export const approveRentalRequest = (data) => api.post('/rentalhistories/approve', data);
 export const rejectRentalRequest = (data) => api.post('/rentalhistories/reject', data);
-export const getRentalRequests = () => api.get('/rentalhistories/requests'); 
+export const getRentalRequests = () => api.get('/rentalhistories/requests');
+export const getPendingRentalHistories = () => api.get('/rentalhistories/pending');
+export const deletePendingRentalRequest = (id) => api.delete(`/rentalhistories/pending/${id}`); 

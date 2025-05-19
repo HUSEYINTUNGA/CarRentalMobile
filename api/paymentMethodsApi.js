@@ -26,12 +26,12 @@ api.interceptors.response.use(
   }
 );
 
-export const getPaymentMethods = () => api.get('/paymentmethods/list');
+export const getPaymentMethods = () => api.get('paymentmethods/list');
 
-export const createPaymentMethod = (data) => api.post('/paymentmethods/create', data);
+export const createPaymentMethod = (data) => api.post('paymentmethods/create', data);
 
-export const updatePaymentMethod = (data) => api.put('/paymentmethods/update', data);
+export const updatePaymentMethod = (data) => api.put('paymentmethods/update', data);
 
-export const deletePaymentMethod = (data) => api.delete('/paymentmethods/delete', { data });
+export const deletePaymentMethod = (id) => api.delete('paymentmethods/delete', { data: { PaymentMethodId: id } });
 
-export const getPaymentMethodById = (id) => api.get(`/paymentmethods/${id}`); 
+export const getPaymentMethodById = (id) => api.get(`paymentmethods/${id}`); 

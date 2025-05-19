@@ -1,23 +1,19 @@
 import { useState, useCallback } from 'react';
 import {
   getVehicles,
+  getAllVehicles,
   getVehicleById,
   getVehicleCategories,
-  getVehicleBrands,
-  getVehicleFuelTypes,
-  getVehicleTransmissionTypes,
   createVehicle,
   updateVehicle,
-  deleteVehicle
+  deleteVehicle,
+  getVehicleBasicById
 } from '../api/vehiclesApi';
 
 export const useVehicles = () => {
   const [vehicles, setVehicles] = useState([]);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [categories, setCategories] = useState([]);
-  const [brands, setBrands] = useState([]);
-  const [fuelTypes, setFuelTypes] = useState([]);
-  const [transmissionTypes, setTransmissionTypes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -29,6 +25,19 @@ export const useVehicles = () => {
       setVehicles(response.data);
     } catch (err) {
       setError(err.response?.data?.message || 'Araçlar yüklenirken hata oluştu.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const fetchAllVehicles = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await getAllVehicles();
+      setVehicles(response.data);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Tüm araçlar yüklenirken hata oluştu.');
     } finally {
       setLoading(false);
     }
@@ -49,6 +58,21 @@ export const useVehicles = () => {
     }
   }, []);
 
+  const fetchVehicleBasicById = useCallback(async (id) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await getVehicleBasicById(id);
+      setSelectedVehicle(response.data);
+      return response.data;
+    } catch (err) {
+      setError(err.response?.data?.message || 'Araç temel bilgisi alınamadı.');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const fetchCategories = useCallback(async () => {
     try {
       setLoading(true);
@@ -62,51 +86,12 @@ export const useVehicles = () => {
     }
   }, []);
 
-  const fetchBrands = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await getVehicleBrands();
-      setBrands(response.data);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Markalar yüklenemedi.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const fetchFuelTypes = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await getVehicleFuelTypes();
-      setFuelTypes(response.data);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Yakıt tipleri yüklenemedi.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const fetchTransmissionTypes = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await getVehicleTransmissionTypes();
-      setTransmissionTypes(response.data);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Vites tipleri yüklenemedi.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   const addVehicle = useCallback(async (data) => {
     try {
       setLoading(true);
       setError(null);
       const response = await createVehicle(data);
-      await fetchVehicles();
+      await fetchAllVehicles();
       return response.data;
     } catch (err) {
       setError(err.response?.data?.message || 'Araç eklenemedi.');
@@ -114,14 +99,14 @@ export const useVehicles = () => {
     } finally {
       setLoading(false);
     }
-  }, [fetchVehicles]);
+  }, [fetchAllVehicles]);
 
   const editVehicle = useCallback(async (id, data) => {
     try {
       setLoading(true);
       setError(null);
       const response = await updateVehicle(id, data);
-      await fetchVehicles();
+      await fetchAllVehicles();
       return response.data;
     } catch (err) {
       setError(err.response?.data?.message || 'Araç güncellenemedi.');
@@ -129,37 +114,33 @@ export const useVehicles = () => {
     } finally {
       setLoading(false);
     }
-  }, [fetchVehicles]);
+  }, [fetchAllVehicles]);
 
   const removeVehicle = useCallback(async (id) => {
     try {
       setLoading(true);
       setError(null);
       await deleteVehicle(id);
-      await fetchVehicles();
+      await fetchAllVehicles();
     } catch (err) {
       setError(err.response?.data?.message || 'Araç silinemedi.');
       throw err;
     } finally {
       setLoading(false);
     }
-  }, [fetchVehicles]);
+  }, [fetchAllVehicles]);
 
   return {
     vehicles,
     selectedVehicle,
     categories,
-    brands,
-    fuelTypes,
-    transmissionTypes,
     loading,
     error,
     fetchVehicles,
+    fetchAllVehicles,
     fetchVehicleById,
+    fetchVehicleBasicById,
     fetchCategories,
-    fetchBrands,
-    fetchFuelTypes,
-    fetchTransmissionTypes,
     addVehicle,
     editVehicle,
     removeVehicle,

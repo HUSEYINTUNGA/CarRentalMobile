@@ -165,29 +165,45 @@ export default function EditPaymentMethod() {
     try {
       setLoading(true);
       const data = {
-        methodName: formData.methodName,
-        cardNumber: formData.cardNumber.replace(/\s/g, ''),
+        MethodName: formData.methodName,
+        CardNumber: formData.cardNumber,
         CardHolderName: formData.cardholderName,
-        expirationMonth: parseInt(formData.expiryMonth),
-        expirationYear: parseInt(formData.expiryYear),
+        ExpirationMonth: parseInt(formData.expiryMonth),
+        ExpirationYear: parseInt(formData.expiryYear),
         CVV: formData.cvv,
       };
-
       if (mode === 'create') {
         await createPaymentMethod(data);
-        Alert.alert('Success', 'Payment method added successfully');
+        Alert.alert('Başarılı', 'Ödeme yöntemi başarıyla eklendi');
       } else {
         await updatePaymentMethod({ 
           ...data, 
-          paymentMethodId: cardId 
+          PaymentMethodId: cardId
         });
-        Alert.alert('Success', 'Payment method updated successfully');
+        Alert.alert('Başarılı', 'Ödeme yöntemi başarıyla güncellendi');
       }
 
       navigation.goBack();
     } catch (error) {
       console.error('Error saving payment method:', error);
-      Alert.alert('Error', 'Failed to save payment method');
+      let errorMsg = 'Ödeme yöntemi kaydedilemedi';
+      if (error?.response?.data) {
+        const data = error.response.data;
+        if (typeof data === 'string') {
+          if (data.includes('FluentValidation.AsyncValidatorInvokedSynchronouslyException')) {
+            errorMsg = 'Bir hata oluştu, lütfen daha sonra tekrar deneyin.';
+          } else {
+            errorMsg = data;
+          }
+        } else if (typeof data === 'object') {
+          if (data.errors) {
+            errorMsg = Object.values(data.errors).flat().join('\n');
+          } else {
+            errorMsg = JSON.stringify(data);
+          }
+        }
+      }
+      Alert.alert('Error', errorMsg);
     } finally {
       setLoading(false);
     }
@@ -218,7 +234,7 @@ export default function EditPaymentMethod() {
             editable={true}
           />
           {errors.methodName && (
-            <Text style={styles.errorText}>{errors.methodName}</Text>
+            <Text style={styles.errorText}>{errors.methodName === 'Card number is required' ? 'Kart adı zorunludur' : errors.methodName}</Text>
           )}
         </View>
 
@@ -237,7 +253,11 @@ export default function EditPaymentMethod() {
             editable={true}
           />
           {errors.cardNumber && (
-            <Text style={styles.errorText}>{errors.cardNumber}</Text>
+            <Text style={styles.errorText}>{
+              errors.cardNumber === 'Card number is required' ? 'Kart numarası zorunludur' :
+              errors.cardNumber === 'Invalid card number' ? 'Geçersiz kart numarası' :
+              errors.cardNumber
+            }</Text>
           )}
         </View>
 
@@ -289,7 +309,11 @@ export default function EditPaymentMethod() {
               editable={true}
             />
             {errors.cvv && (
-              <Text style={styles.errorText}>{errors.cvv}</Text>
+              <Text style={styles.errorText}>{
+                errors.cvv === 'CVV is required' ? 'CVV zorunludur' :
+                errors.cvv === 'Invalid CVV' ? 'Geçersiz CVV' :
+                errors.cvv
+              }</Text>
             )}
           </View>
         </View>
@@ -304,7 +328,7 @@ export default function EditPaymentMethod() {
             editable={true}
           />
           {errors.cardholderName && (
-            <Text style={styles.errorText}>{errors.cardholderName}</Text>
+            <Text style={styles.errorText}>{errors.cardholderName === 'Cardholder name is required' ? 'Kart sahibi adı zorunludur' : errors.cardholderName}</Text>
           )}
         </View>
 

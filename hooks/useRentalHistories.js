@@ -6,15 +6,20 @@ import {
   createRentalRequest,
   approveRentalRequest,
   rejectRentalRequest,
-  getRentalRequests
+  getRentalRequests,
+  getPendingRentalHistories,
+  deletePendingRentalRequest
 } from '../api/rentalHistoriesApi';
 
 export const useRentalHistories = () => {
   const [rentalHistories, setRentalHistories] = useState([]);
+  const [pendingRentalHistories, setPendingRentalHistories] = useState([]);
   const [selectedRental, setSelectedRental] = useState(null);
   const [rentalRequests, setRentalRequests] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [pendingLoading, setPendingLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [pendingError, setPendingError] = useState(null);
 
   const fetchAllRentalHistories = useCallback(async () => {
     try {
@@ -68,6 +73,19 @@ export const useRentalHistories = () => {
     }
   }, []);
 
+  const fetchPendingRentalHistories = useCallback(async () => {
+    try {
+      setPendingLoading(true);
+      setPendingError(null);
+      const response = await getPendingRentalHistories();
+      setPendingRentalHistories(response.data);
+    } catch (err) {
+      setPendingError(err.response?.data?.message || 'Bekleyen kiralama istekleri yüklenemedi.');
+    } finally {
+      setPendingLoading(false);
+    }
+  }, []);
+
   const createRental = useCallback(async (data) => {
     try {
       setLoading(true);
@@ -113,12 +131,21 @@ export const useRentalHistories = () => {
     }
   }, [fetchRentalRequests]);
 
+  const removePendingRentalRequest = useCallback(async (id) => {
+    await deletePendingRentalRequest(id);
+    const updated = pendingRentalHistories.filter(r => r.Id !== id);
+    setPendingRentalHistories(updated);
+  }, [pendingRentalHistories]);
+
   return {
     rentalHistories,
+    pendingRentalHistories,
     selectedRental,
     rentalRequests,
     loading,
+    pendingLoading,
     error,
+    pendingError,
     fetchAllRentalHistories,
     fetchRentalHistoriesByUserId,
     fetchRentalHistoriesByVehicleId,
@@ -126,6 +153,8 @@ export const useRentalHistories = () => {
     createRental,
     approveRental,
     rejectRental,
-    setSelectedRental
+    setSelectedRental,
+    fetchPendingRentalHistories,
+    removePendingRentalRequest
   };
 }; 

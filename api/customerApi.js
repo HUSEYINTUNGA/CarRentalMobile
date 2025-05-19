@@ -13,13 +13,9 @@ const api = axios.create({
 
 api.interceptors.request.use(async (config) => {
   try {
-    const token = await AsyncStorage.getItem('token');
-    console.log('Token alındı:', token ? 'Token var' : 'Token yok');
-    console.log('Token değeri:', token);
-    
+    const token = await AsyncStorage.getItem('token');   
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log('Authorization header:', config.headers.Authorization);
     } else {
       console.log('Token bulunamadı, istek token olmadan gönderiliyor');
     }
@@ -32,7 +28,6 @@ api.interceptors.request.use(async (config) => {
 
 api.interceptors.response.use(
   (response) => {
-    console.log('API Başarılı:', response.config.url);
     return response;
   },
   async (error) => {
@@ -47,7 +42,6 @@ api.interceptors.response.use(
 );
 
 export const getProfile = () => {
-  console.log('getProfile çağrıldı, endpoint:', `${BASE_URL}customer/profile`);
   return api.get('customer/profile');
 };
 
