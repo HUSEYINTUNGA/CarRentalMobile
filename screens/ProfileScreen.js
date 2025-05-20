@@ -6,6 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import { deleteAccount } from '../api/customerApi';
 import { useAuth } from '../hooks/useAuth';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ProfileScreen = () => {
   const { loading, fetchProfile, updatePhoto } = useProfile();
@@ -18,9 +19,11 @@ const ProfileScreen = () => {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [photoModalVisible, setPhotoModalVisible] = useState(false);
   const [photoLoading, setPhotoLoading] = useState(false);
+  const [userRole, setUserRole] = useState(null);
 
   useEffect(() => {
     loadProfile();
+    AsyncStorage.getItem('userRole').then(setUserRole);
   }, [retryCount]);
 
   const loadProfile = async () => {
@@ -192,12 +195,14 @@ const ProfileScreen = () => {
 
       {/* Aksiyon Satırları */}
       <View style={styles.actionSection}>
-        <TouchableOpacity style={styles.actionRow} onPress={() => navigation.navigate('PaymentMethods')}>
-          <Icon name="credit-card" size={22} color="#2196F3" style={{ marginRight: 12 }} />
-          <Text style={styles.actionLabel}>Ödeme Yöntemlerim</Text>
-          <Icon name="chevron-right" size={22} color="#bbb" />
-        </TouchableOpacity>
-        <View style={styles.divider} />
+        {userRole !== 'Admin' && (
+          <TouchableOpacity style={styles.actionRow} onPress={() => navigation.navigate('PaymentMethods')}>
+            <Icon name="credit-card" size={22} color="#2196F3" style={{ marginRight: 12 }} />
+            <Text style={styles.actionLabel}>Ödeme Yöntemlerim</Text>
+            <Icon name="chevron-right" size={22} color="#bbb" />
+          </TouchableOpacity>
+        )}
+        {userRole !== 'Admin' && <View style={styles.divider} />}
         <TouchableOpacity style={styles.actionRow} onPress={() => navigation.navigate('EditProfile', { profileData })}>
           <Icon name="edit" size={22} color="#2196F3" style={{ marginRight: 12 }} />
           <Text style={styles.actionLabel}>Profili Düzenle</Text>

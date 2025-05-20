@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useRentalHistories } from '../hooks/useRentalHistories';
 import { useAuth } from '../hooks/useAuth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const RentalHistoriesScreen = () => {
     const navigation = useNavigation();
@@ -14,21 +16,33 @@ const RentalHistoriesScreen = () => {
         fetchRentalHistoriesByUserId,
         fetchPendingRentalHistories,
         loading,
-        pendingLoading
+        pendingLoading,
+        removePendingRentalRequest
     } = useRentalHistories();
     const { type = 'history' } = route.params || {};
+    const [userId, setUserId] = useState(null);
 
     useEffect(() => {
-        loadRentalHistory();
-    }, [type, user]);
+        const loadUserId = async () => {
+            const storedUserId = await AsyncStorage.getItem('userId');
+            setUserId(storedUserId);
+        };
+        loadUserId();
+    }, []);
+
+    useEffect(() => {
+        if (userId) {
+            loadRentalHistory();
+        }
+    }, [type, userId]);
 
     const loadRentalHistory = async () => {
         try {
             if (type === 'pending') {
                 await fetchPendingRentalHistories();
             } else {
-                if (user?.id) {
-                    await fetchRentalHistoriesByUserId(user.id);
+                if (userId) {
+                    await fetchRentalHistoriesByUserId(userId);
                 }
             }
         } catch (error) {
@@ -36,32 +50,61 @@ const RentalHistoriesScreen = () => {
         }
     };
 
-    const renderRentalItem = ({ item }) => (
-        <TouchableOpacity 
-            style={styles.rentalCard}
-            onPress={() => navigation.navigate('VehicleDetails', { vehicleId: item.vehicle.id })}
-        >
-            <Image 
-                source={{ uri: item.vehicle.photo }} 
-                style={styles.rentalImage}
-            />
-            <View style={styles.rentalInfo}>
-                <Text style={styles.rentalTitle}>{item.vehicle.brand} {item.vehicle.model}</Text>
-                <Text style={styles.rentalDate}>
-                    {new Date(item.rentalDate).toLocaleDateString()} - {new Date(item.returnDate).toLocaleDateString()}
-                </Text>
-                <Text style={styles.rentalPrice}>{item.totalPrice} TL</Text>
-                <View style={[
-                    styles.statusBadge,
-                    { backgroundColor: item.isActive ? '#4CAF50' : '#FFC107' }
-                ]}>
-                    <Text style={styles.statusText}>
-                        {item.isActive ? 'Aktif' : 'Tamamlandı'}
+    const formatPlate = (plate) => {
+        if (!plate) return '';
+        const match = plate.match(/^(\d{2})([a-zA-Z]+)(\d+)$/);
+        if (match) {
+            return `${match[1]} ${match[2].toUpperCase()} ${match[3]}`;
+        }
+        return plate;
+    };
+
+    const renderRentalItem = ({ item }) => {
+        const handleCancel = () => {
+            Alert.alert(
+                'İsteği İptal Et',
+                'Bu isteği iptal etmek istediğinize emin misiniz?',
+                [
+                    { text: 'Hayır', style: 'cancel' },
+                    { text: 'Evet', style: 'destructive', onPress: () => removePendingRentalRequest(item.Id) }
+                ]
+            );
+        };
+        return (
+            <View style={styles.rentalCard}>
+                {item.MainPhoto ? (
+                    <Image 
+                        source={{ uri: `data:image/jpeg;base64,${item.MainPhoto}` }} 
+                        style={styles.rentalImage}
+                    />
+                ) : null}
+                <View style={styles.rentalInfo}>
+                    <Text style={styles.rentalTitle}>{item.Brand} {item.Model}</Text>
+                    <Text style={styles.rentalDate}>
+                        {new Date(item.StartDate).toLocaleDateString()} - {new Date(item.EndDate).toLocaleDateString()}
                     </Text>
+                    <View style={styles.infoRow}>
+                        <View style={styles.plateContainer}>
+                            <Icon name="car" size={18} color="#1976d2" style={{ marginRight: 4 }} />
+                            <Text style={styles.plateText}>{formatPlate(item.NumberPlate)}</Text>
+                        </View>
+                        <View style={[styles.priceBadge, type === 'pending' ? styles.priceBadgeGreen : styles.priceBadgeRed]}>
+                            <Text style={styles.priceBadgeText}>{item.TotalPrice} TL</Text>
+                        </View>
+                    </View>
+                    {type === 'pending' && (
+                        <TouchableOpacity
+                            style={styles.cancelButton}
+                            onPress={handleCancel}
+                            activeOpacity={0.8}
+                        >
+                            <Text style={styles.cancelButtonText}>İsteği İptal Et</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
             </View>
-        </TouchableOpacity>
-    );
+        );
+    };
 
     if ((type === 'pending' ? pendingLoading : loading)) {
         return (
@@ -73,10 +116,13 @@ const RentalHistoriesScreen = () => {
 
     return (
         <View style={styles.container}>
+            <Text style={styles.headerTitle}>
+                {type === 'pending' ? 'Bekleyen Kiralama İstekleriniz' : 'Geçmiş Kiralama Kayıtlarınız'}
+            </Text>
             <FlatList
                 data={type === 'pending' ? pendingRentalHistories : rentalHistories}
                 renderItem={renderRentalItem}
-                keyExtractor={item => item.id}
+                keyExtractor={item => item.Id?.toString() || item.id?.toString() || (item.StartDate + item.NumberPlate)}
                 contentContainerStyle={styles.listContainer}
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
@@ -134,22 +180,42 @@ const styles = StyleSheet.create({
         color: '#666',
         marginBottom: 4,
     },
-    rentalPrice: {
-        fontSize: 16,
-        color: '#2196F3',
-        fontWeight: 'bold',
-        marginBottom: 8,
+    infoRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 8,
     },
-    statusBadge: {
-        alignSelf: 'flex-start',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
+    plateContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#e3f2fd',
         borderRadius: 16,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        marginRight: 10,
     },
-    statusText: {
-        color: 'white',
-        fontSize: 12,
+    plateText: {
+        color: '#1976d2',
         fontWeight: 'bold',
+        fontSize: 14,
+    },
+    priceBadge: {
+        borderRadius: 16,
+        paddingHorizontal: 14,
+        paddingVertical: 4,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    priceBadgeText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 14,
+    },
+    priceBadgeGreen: {
+        backgroundColor: '#43a047',
+    },
+    priceBadgeRed: {
+        backgroundColor: '#e53935',
     },
     emptyContainer: {
         flex: 1,
@@ -161,6 +227,29 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#666',
         textAlign: 'center',
+    },
+    headerTitle: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: '#1976d2',
+        textAlign: 'center',
+        marginTop: 18,
+        marginBottom: 10,
+        letterSpacing: 0.2,
+    },
+    cancelButton: {
+        backgroundColor: '#e53935',
+        borderRadius: 18,
+        paddingHorizontal: 18,
+        paddingVertical: 7,
+        alignSelf: 'flex-end',
+        marginTop: 12,
+    },
+    cancelButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 15,
+        letterSpacing: 0.2,
     },
 });
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useLayoutEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigation } from '@react-navigation/native';
@@ -6,6 +6,12 @@ import { useNavigation } from '@react-navigation/native';
 const DashboardScreen = () => {
   const { user, logout } = useAuth();
   const navigation = useNavigation();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerTitle: 'Admin Dashboard',
+    });
+  }, [navigation]);
 
   const handleLogout = async () => {
     await logout();

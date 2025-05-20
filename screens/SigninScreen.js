@@ -51,7 +51,12 @@ export const SigninScreen = () => {
       setTimeout(() => {
         navigation.reset({
           index: 0,
-          routes: [{ name: result.role === 'Admin' ? 'Dashboard' : 'Home' }],
+          routes: [
+            { 
+              name: 'MainApp', 
+              params: { screen: result.role === 'Admin' ? 'DashboardTab' : 'HomeTab' } 
+            }
+          ],
         });
       }, 3000);
     } else {

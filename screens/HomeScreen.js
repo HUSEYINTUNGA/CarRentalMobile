@@ -24,19 +24,15 @@ const HomeScreen = () => {
     React.useCallback(() => {
       loadProfile();
       fetchVehicles({});
-      AsyncStorage.getItem('userId').then(setUserId);
+      AsyncStorage.getItem('userId').then(id => {
+        setUserId(id);
+        if (id) {
+          fetchRentalHistoriesByUserId(id);
+        }
+      });
+      fetchPendingRentalHistories();
     }, [])
   );
-
-  useEffect(() => {
-    AsyncStorage.getItem('userId').then(id => {
-      setUserId(id);
-      if (id) {
-        fetchRentalHistoriesByUserId(id);
-      }
-    });
-    fetchPendingRentalHistories();
-  }, []);
 
   const loadProfile = async () => {
     try {
@@ -72,16 +68,15 @@ const HomeScreen = () => {
 
   const handleDrawerNavigate = (screen, params = {}) => {
     setDrawerVisible(false);
+    if (screen === 'VehicleList') {
+      navigation.navigate('MainApp', { screen: 'VehicleListTab' });
+    } else {
     navigation.navigate(screen, params);
+    }
   };
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerLeft: () => (
-        <TouchableOpacity onPress={() => setDrawerVisible(true)} style={{ marginLeft: 16 }}>
-          <Icon name="menu" size={28} color="#333" />
-        </TouchableOpacity>
-      ),
       headerRight: () => (
         <Menu
           visible={menuVisible}
@@ -157,7 +152,11 @@ const HomeScreen = () => {
         new Date(current.CreatedAt) > new Date(latest.CreatedAt) ? current : latest
       )
     : null;
-  const firstFiveVehicles = vehicles ? vehicles.slice(0, 5) : [];
+  const firstFiveVehicles = vehicles
+    ? [...vehicles]
+        .sort((a, b) => (b.DailyPrice || 0) - (a.DailyPrice || 0))
+        .slice(0, 3)
+    : [];
 
   if (vehiclesLoading || rentalLoading) {
     return <ActivityIndicator size="large" color="#2196F3" style={{ marginTop: 40 }} />;
@@ -202,21 +201,21 @@ const HomeScreen = () => {
             style={styles.adCard}
             onPress={() => navigation.navigate('VehicleDetails', { vehicleId: latestVehicle.Id })}
           >
-            <Text style={styles.adTitle}>Yeni aracımızı denedin mi?</Text>
+            <View style={styles.sectionHeaderBlue}><Text style={styles.sectionHeaderText}>Yeni aracımızı denedin mi?</Text></View>
             <Image
               source={latestVehicle.Photo ? { uri: `data:image/jpeg;base64,${latestVehicle.Photo}` } : undefined}
               style={styles.adImage}
             />
             <Text style={styles.adCarName}>{latestVehicle.Brand} {latestVehicle.Model}</Text>
-            <Text style={styles.adCarPrice}>{latestVehicle.DailyPrice} TL / Günlük</Text>
+            <View style={styles.greenPriceBadge}><Text style={styles.greenPriceBadgeText}>{latestVehicle.DailyPrice} TL / Günlük</Text></View>
           </TouchableOpacity>
         )}
 
         <TouchableOpacity
           style={styles.listCard}
-          onPress={() => navigation.navigate('VehicleList')}
+          onPress={() => navigation.navigate('MainApp', { screen: 'VehicleListTab' })}
         >
-          <Text style={styles.sectionTitle}>Popüler Araçlar</Text>
+          <View style={styles.sectionHeaderBlue}><Text style={styles.sectionHeaderText}>Popüler Araçlar</Text></View>
           <View style={styles.vehicleListRow}>
             {firstFiveVehicles.map(vehicle => (
               <View key={vehicle.Id} style={styles.vehicleItem}>
@@ -225,7 +224,7 @@ const HomeScreen = () => {
                   style={styles.vehicleImage}
                 />
                 <Text style={styles.vehicleName}>{vehicle.Brand} {vehicle.Model}</Text>
-                <Text style={styles.vehiclePrice}>{vehicle.DailyPrice} TL</Text>
+                <View style={styles.greenPriceBadge}><Text style={styles.greenPriceBadgeText}>{vehicle.DailyPrice} TL</Text></View>
               </View>
             ))}
           </View>
@@ -233,9 +232,9 @@ const HomeScreen = () => {
 
         <TouchableOpacity
           style={styles.historyCard}
-          onPress={() => navigation.navigate('RentalHistory', { type: 'history' })}
+          onPress={() => navigation.navigate('MainApp', { screen: 'RentalHistoryTab' })}
         >
-          <Text style={styles.sectionTitle}>Kiralama Geçmişim</Text>
+          <View style={styles.sectionHeaderBlue}><Text style={styles.sectionHeaderText}>Kiralama Geçmişim</Text></View>
           {rentalLoading ? <ActivityIndicator /> : (
             rentalHistories.length === 0
               ? <Text style={styles.emptyText}>Onaylanmış kiralamanız yok.</Text>
@@ -257,15 +256,15 @@ const HomeScreen = () => {
         </TouchableOpacity>
 
         <View style={styles.historyCard}>
-          <TouchableOpacity style={{ flex: 1 }} onPress={() => navigation.navigate('RentalHistory', { type: 'pending' })}>
-            <Text style={styles.sectionTitle}>Bekleyen Kiralama İsteklerim</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('MainApp', { screen: 'PendingRequestsTab' })}>
+            <View style={styles.sectionHeaderBlue}><Text style={styles.sectionHeaderText}>Bekleyen Kiralama İsteklerim</Text></View>
             {pendingLoading ? <ActivityIndicator /> : (
               pendingRentalHistories.length === 0
                 ? <Text style={styles.emptyText}>Bekleyen kiralama isteğiniz yok.</Text>
                 : pendingRentalHistories.slice(0, 3).map(rental => (
                     <View key={rental.StartDate + rental.NumberPlate} style={styles.rentalItemRow}>
                       {rental.MainPhoto && (
-                        <Image
+                       <Image
                           source={{ uri: `data:image/jpeg;base64,${rental.MainPhoto}` }}
                           style={styles.rentalMiniImage}
                         />
@@ -584,6 +583,36 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   priceBadgePendingText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 15,
+  },
+  sectionHeaderBlue: {
+    backgroundColor: '#1976d2',
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginBottom: 8,
+  },
+  sectionHeaderText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 17,
+    letterSpacing: 0.2,
+  },
+  greenPriceBadge: {
+    backgroundColor: '#43a047',
+    paddingHorizontal: 14,
+    paddingVertical: 4,
+    borderRadius: 20,
+    minWidth: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 6,
+    alignSelf: 'flex-start',
+  },
+  greenPriceBadgeText: {
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 15,
