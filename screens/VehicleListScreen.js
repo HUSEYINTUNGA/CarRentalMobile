@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useVehicles } from '../hooks/useVehicles';
 import { Picker } from '@react-native-picker/picker';
 import { FuelTypeOptions, TransmissionTypeOptions } from '../enums/enum';
@@ -15,7 +15,8 @@ const VehicleListScreen = () => {
         fetchVehicles,
         fetchAllVehicles,
         loading,
-        error
+        error,
+        removeVehicle
     } = useVehicles();
 
     const [filters, setFilters] = useState({
@@ -50,8 +51,29 @@ const VehicleListScreen = () => {
         }
     }, [filters, role]);
 
+    useFocusEffect(
+        React.useCallback(() => {
+            if (role === 'Admin') {
+                fetchAllVehicles();
+            }
+        }, [role, fetchAllVehicles])
+    );
+
     const handleDelete = (vehicleId) => {
-        console.log('Silinecek araç ID:', vehicleId);
+        Alert.alert(
+            'Aracı Sil',
+            'Bu aracı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.',
+            [
+                { text: 'İptal', style: 'cancel' },
+                {
+                    text: 'Sil', style: 'destructive', onPress: async () => {
+                        try {
+                            await removeVehicle(vehicleId);
+                        } catch (err) {}
+                    }
+                }
+            ]
+        );
     };
 
     const renderVehicleItem = ({ item }) => (
@@ -77,11 +99,11 @@ const VehicleListScreen = () => {
                     </View>
                     <View style={styles.infoRowModernGridFixed}>
                         <IconFA name="gas-pump" size={18} color="#1976d2" style={styles.infoIconModern} />
-                        <Text style={styles.infoTextModernGridFixed}>{item.FuelType}</Text>
+                        <Text style={styles.infoTextModernGridFixed}>{getFuelTypeLabel(item.FuelType)}</Text>
                     </View>
                     <View style={styles.infoRowModernGridFixed}>
                         <IconFA name="cogs" size={18} color="#1976d2" style={styles.infoIconModern} />
-                        <Text style={styles.infoTextModernGridFixed}>{item.TransmissionType}</Text>
+                        <Text style={styles.infoTextModernGridFixed}>{getTransmissionTypeLabel(item.TransmissionType)}</Text>
                     </View>
                     <View style={styles.infoRowModernGridFixed}>
                         <IconFA name="handshake" size={18} color="#1976d2" style={styles.infoIconModern} />
@@ -111,6 +133,15 @@ const VehicleListScreen = () => {
             return `${match[1]} ${match[2].toUpperCase()} ${match[3]}`;
         }
         return plate;
+    };
+
+    const getTransmissionTypeLabel = (value) => {
+        const intValue = typeof value === 'string' ? parseInt(value, 10) : value;
+        return TransmissionTypeOptions.find(opt => opt.value === intValue)?.label || '-';
+    };
+    const getFuelTypeLabel = (value) => {
+        const intValue = typeof value === 'string' ? parseInt(value, 10) : value;
+        return FuelTypeOptions.find(opt => opt.value === intValue)?.label || '-';
     };
 
     const renderAdminVehicleItem = ({ item }) => {
@@ -143,12 +174,15 @@ const VehicleListScreen = () => {
                     </View>
                     <View style={styles.cardRightColFixed}>
                         <View style={styles.infoRowModernGridFixed}>
+                            <Text style={{ fontWeight: 'bold', fontSize: 17, color: '#222', marginBottom: 2 }}>{item.Brand} {item.Model}</Text>
+                        </View>
+                        <View style={styles.infoRowModernGridFixed}>
                             <IconFA name="gas-pump" size={18} color="#1976d2" style={styles.infoIconModern} />
-                            <Text style={styles.infoTextModernGridFixed}>{item.FuelType}</Text>
+                            <Text style={styles.infoTextModernGridFixed}>{getFuelTypeLabel(item.FuelType)}</Text>
                         </View>
                         <View style={styles.infoRowModernGridFixed}>
                             <IconFA name="cogs" size={18} color="#1976d2" style={styles.infoIconModern} />
-                            <Text style={styles.infoTextModernGridFixed}>{item.TransmissionType}</Text>
+                            <Text style={styles.infoTextModernGridFixed}>{getTransmissionTypeLabel(item.TransmissionType)}</Text>
                         </View>
                         <View style={styles.infoRowModernGridFixed}>
                             <IconFA name="id-card" size={18} color="#1976d2" style={styles.infoIconModern} />
@@ -170,7 +204,14 @@ const VehicleListScreen = () => {
                         onPress={() => setExpandedCardId(isExpanded ? null : item.Id)}
                         activeOpacity={0.7}
                     >
-                        <Text style={styles.fullWidthActionBtnTextGridFixed}>İşlemler {'>'}</Text>
+                        <Text style={styles.fullWidthActionBtnTextGridFixed}>İşlemler</Text>
+                        <Icon
+                            name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                            size={24}
+                            color="#000000"
+                            fontWeight='bold'
+                            style={{ marginLeft: 6 }}
+                        />
                     </TouchableOpacity>
                     {isExpanded && (
                         <View style={styles.actionIconsRowFixed}>
@@ -179,8 +220,15 @@ const VehicleListScreen = () => {
                                     key={icon.name}
                                     style={[styles.actionIconEllipseFixed, { backgroundColor: icon.bg }]}
                                     onPress={() => {
-                                        if (icon.mode === 'delete') handleDelete(item.Id);
-                                        else navigation.navigate('ManageVehiclesScreen', { mode: icon.mode, vehicleId: item.Id });
+                                        if (icon.mode === 'view') {
+                                            navigation.navigate('VehicleDetails', { vehicleId: item.Id });
+                                        } else if (icon.mode === 'delete') {
+                                            handleDelete(item.Id);
+                                        } else {
+                                            let navMode = icon.mode;
+                                            if (icon.mode === 'edit') navMode = 'Edit';
+                                            navigation.navigate('ManageVehicles', { mode: navMode, vehicleId: item.Id });
+                                        }
                                     }}
                                 >
                                     <Icon name={icon.name} size={28} color={icon.color} />
@@ -227,12 +275,12 @@ const VehicleListScreen = () => {
     return (
         <View style={[
             styles.container,
-            role === 'Admin' && { paddingTop: 0 }
+            role === 'Admin' && { paddingTop: 0}
         ]}>
             {role === 'Admin' && (
                 <TouchableOpacity
                     style={styles.fab}
-                    onPress={() => navigation.navigate('ManageVehiclesScreen', { mode: 'add' })}
+                    onPress={() => navigation.navigate('ManageVehicles', { mode: 'Add' })}
                     activeOpacity={0.85}
                 >
                     <Icon name="plus" size={32} color="#fff" />

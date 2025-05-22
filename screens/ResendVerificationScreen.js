@@ -45,11 +45,11 @@ const ResendVerificationScreen = () => {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 60}
     >
-      <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[styles.scrollContainer, { minHeight: 700 }]} keyboardShouldPersistTaps="handled">
         <View style={styles.card}>
           <Text style={styles.title}>Kodunu mu kaybettin?</Text>
           <Text style={styles.subtitle}>Üzülme, sistemin damadı olma yolunda bir kod daha gönderebiliriz! 😅</Text>

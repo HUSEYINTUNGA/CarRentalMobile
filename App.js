@@ -7,7 +7,7 @@ import SigninScreen from './screens/SigninScreen';
 import SignupScreen from './screens/SignupScreen';
 import VerifyAccountScreen from './screens/VerifyAccountScreen';
 import HomeScreen from './screens/HomeScreen';
-import { StatusBar, ActivityIndicator, View } from 'react-native';
+import { StatusBar, ActivityIndicator, View, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
 import ResetPasswordScreen from './screens/ResetPasswordScreen';
@@ -26,13 +26,46 @@ import RentalRequestsScreen from './screens/RentalRequestsScreen';
 import UsersListScreen from './screens/UsersListScreen';
 import { Provider as PaperProvider } from 'react-native-paper';
 import DashboardScreen from './screens/DashboardScreen';
+import { decode as atob, encode as btoa } from 'base-64';
+import * as jwtDecode from 'jwt-decode';
+import { useAuth } from './hooks/useAuth';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { TouchableOpacity } from 'react-native';
+import { navigationRef, resetToSignin } from './RootNavigation';
+
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-const TabNavigator = ({ role }) => {
+if (!global.atob) {
+  global.atob = atob;
+}
+if (!global.btoa) {
+  global.btoa = btoa;
+}
+
+const TabNavigator = (props) => {
+  const { logout } = useAuth();
+  const { setIsLoggedIn, setRole } = props;
+  const navigation = useNavigation();
+  const route = useRoute();
+  const role = route?.params?.role;
+
+  const handleLogout = async () => {
+    await logout();
+    setIsLoggedIn(false);
+    setRole(null);
+  };
+
+  useEffect(() => {
+    if (role === 'Admin') {
+      navigation.navigate('DashboardTab');
+    } else {
+      navigation.navigate('HomeTab');
+    }
+  }, [role]);
+
   return (
     <Tab.Navigator
-      initialRouteName={role === 'Admin' ? 'DashboardTab' : 'HomeTab'}
       screenOptions={{
         tabBarActiveTintColor: '#2196F3',
         tabBarInactiveTintColor: '#666',
@@ -64,6 +97,7 @@ const TabNavigator = ({ role }) => {
             component={DashboardScreen}
             options={{
               title: 'Dashboard',
+              headerShown: false,
               tabBarIcon: ({ color, size }) => (
                 <Icon name="home" size={size} color={color} />
               ),
@@ -83,7 +117,7 @@ const TabNavigator = ({ role }) => {
             name="RentalRequestsTab"
             component={RentalRequestsScreen}
             options={{
-              title: 'İstekler',
+              title: 'Kiralama İstekleri',
               tabBarIcon: ({ color, size }) => (
                 <Icon name="list" size={size} color={color} />
               ),
@@ -96,6 +130,32 @@ const TabNavigator = ({ role }) => {
               title: 'Kullanıcılar',
               tabBarIcon: ({ color, size }) => (
                 <Icon name="group" size={size} color={color} />
+              ),
+            }}
+          />
+          <Tab.Screen
+            name="ProfileTab"
+            component={ProfileScreen}
+            options={{
+              title: 'Profil',
+              tabBarIcon: ({ color, size }) => (
+                <Icon name="person" size={size} color={color} />
+              ),
+            }}
+          />
+          <Tab.Screen
+            name="LogoutTab"
+            component={View}
+            options={{
+              title: 'Çıkış',
+              tabBarIcon: ({ color, size }) => (
+                <Icon name="logout" size={size} color="#F44336" />
+              ),
+              tabBarButton: (props) => (
+                <TouchableOpacity
+                  {...props}
+                  onPress={handleLogout}
+                />
               ),
             }}
           />
@@ -127,7 +187,7 @@ const TabNavigator = ({ role }) => {
             component={RentalHistoriesScreen}
             initialParams={{ type: 'history' }}
             options={{
-              title: 'Geçmiş',
+              title: 'Geçmiş Kiralama İstekleriniz',
               tabBarIcon: ({ color, size }) => (
                 <Icon name="history" size={size} color={color} />
               ),
@@ -138,9 +198,35 @@ const TabNavigator = ({ role }) => {
             component={RentalHistoriesScreen}
             initialParams={{ type: 'pending' }}
             options={{
-              title: 'Bekleyen',
+              title: 'Bekleyen Kiralama İstekleriniz',
               tabBarIcon: ({ color, size }) => (
                 <Icon name="schedule" size={size} color={color} />
+              ),
+            }}
+          />
+          <Tab.Screen
+            name="ProfileTab"
+            component={ProfileScreen}
+            options={{
+              title: 'Profil',
+              tabBarIcon: ({ color, size }) => (
+                <Icon name="person" size={size} color={color} />
+              ),
+            }}
+          />
+          <Tab.Screen
+            name="LogoutTab"
+            component={View}
+            options={{
+              title: 'Çıkış',
+              tabBarIcon: ({ color, size }) => (
+                <Icon name="logout" size={size} color="#F44336" />
+              ),
+              tabBarButton: (props) => (
+                <TouchableOpacity
+                  {...props}
+                  onPress={handleLogout}
+                />
               ),
             }}
           />
@@ -151,31 +237,50 @@ const TabNavigator = ({ role }) => {
 };
 
 const App = () => {
-  const [initialRoute, setInitialRoute] = useState(null);
+  const [isAuthChecked, setIsAuthChecked] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [role, setRole] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const token = await AsyncStorage.getItem('token');
         const userRole = await AsyncStorage.getItem('userRole');
-        setRole(userRole);
-        if (!token || !userRole) {
-          setInitialRoute('Signin');
+
+        if (token && userRole) {
+          const decodedToken = jwtDecode.jwtDecode(token);
+          const currentTime = Date.now() / 1000;
+
+          if (decodedToken.exp > currentTime) {
+            setRole(userRole);
+            setIsLoggedIn(true);
+          } else {
+            await AsyncStorage.removeItem('token');
+            await AsyncStorage.removeItem('userRole');
+            await AsyncStorage.removeItem('userId');
+            await AsyncStorage.removeItem('userEmail');
+            await AsyncStorage.removeItem('userName');
+            await AsyncStorage.removeItem('userSurname');
+            setIsLoggedIn(false);
+            setRole(null);
+          }
         } else {
-          setInitialRoute('MainApp');
+          setIsLoggedIn(false);
+          setRole(null);
         }
       } catch (err) {
-        setInitialRoute('Signin');
+        console.error('Auth check error:', err);
+        setIsLoggedIn(false);
+        setRole(null);
       } finally {
-        setLoading(false);
+        setIsAuthChecked(true);
       }
     };
+
     checkAuth();
   }, []);
 
-  if (loading || !initialRoute || !role) {
+  if (!isAuthChecked) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color="#1541e0" />
@@ -186,31 +291,44 @@ const App = () => {
   return (
     <PaperProvider>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-      <NavigationContainer>
+      <NavigationContainer ref={navigationRef}>
         <Stack.Navigator
-          initialRouteName={initialRoute}
+          initialRouteName={isLoggedIn ? (role === 'Admin' ? 'MainApp' : 'Home') : 'Signin'}
           screenOptions={{
             animation: 'fade',
             contentStyle: { backgroundColor: '#fff' }
           }}
         >
-          <Stack.Screen name="Signin" component={SigninScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="Signup" component={SignupScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="VerifyAccount" component={VerifyAccountScreen} options={{ headerShown: false }} />
+          {isLoggedIn ? (
+            <Stack.Screen
+              name="MainApp"
+              options={{ headerShown: false }}
+              initialParams={{ role }}
+            >
+              {props => <TabNavigator {...props} setIsLoggedIn={setIsLoggedIn} setRole={setRole} />}
+            </Stack.Screen>
+          ) : (
+            <>
+              <Stack.Screen name="Signin" options={{ headerShown: false }}>
+                {props => <SigninScreen {...props} setIsLoggedIn={setIsLoggedIn} setRole={setRole} />}
+              </Stack.Screen>
+              <Stack.Screen name="Signup" component={SignupScreen} options={{ headerShown: false }} />
+              <Stack.Screen name="VerifyAccount" component={VerifyAccountScreen} options={{ headerShown: false }} />
+              <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ headerShown: false }} />
+              <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ headerShown: false }} />
+              <Stack.Screen name="ResendVerification" component={ResendVerificationScreen} options={{ headerShown: false }} />
+            </>
+          )}
           <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: true }} />
           <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="ResendVerification" component={ResendVerificationScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="PaymentMethods" component={PaymentMethodsScreen} options={{ title: 'Ödeme Yöntemleri' }} />
+          <Stack.Screen name="PaymentMethods" component={PaymentMethodsScreen} options={{ title: 'Ödeme Yöntemleriniz' }} />
           <Stack.Screen name="EditPaymentMethod" component={EditPaymentMethodScreen} options={{ title: 'Kart Düzenle' }} />
           <Stack.Screen name="ViewPaymentMethod" component={ViewPaymentMethod} options={{ title: 'Kart Detayları', presentation: 'modal' }} />
-          <Stack.Screen name="MainApp" options={{ headerShown: false }}>
-            {() => <TabNavigator role={role} />}
-          </Stack.Screen>
           <Stack.Screen name="VehicleDetails" component={VehicleDetailsScreen} options={{ title: 'Araç Detayları', headerShown: true }} />
           <Stack.Screen name="RentedScreen" component={RentedScreen} options={{ title: 'Araç Kirala', headerShown: true }} />
-          <Stack.Screen name="ManageVehiclesScreen" component={ManageVehiclesScreen} options={{ title: 'Araç Yönetimi', headerShown: true }} />
+          <Stack.Screen name="ManageVehicles" component={ManageVehiclesScreen} options={{ title: 'Araç Yönetimi', headerShown: true }} />
+          <Stack.Screen name="RentalRequests" component={RentalRequestsScreen} options={{ title: 'Kiralama İstekleri', headerShown: true }} />
+          <Stack.Screen name="UsersList" component={UsersListScreen} options={{ title: 'Kullanıcılar', headerShown: true }} />
         </Stack.Navigator>
       </NavigationContainer>
     </PaperProvider>

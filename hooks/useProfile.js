@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { getProfile, updateProfile, changePassword, changeProfilePhoto, deleteAccount } from '../api/customerApi';
+import { getProfile, updateProfile, changePassword, changeProfilePhoto, deleteAccount, getUsers } from '../api/customerApi';
 
 export const useProfile = () => {
   const [loading, setLoading] = useState(false);
@@ -83,4 +83,26 @@ export const useProfile = () => {
     updatePhoto,
     deleteAccountProfile,
   };
+};
+
+export const useUsers = () => {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const fetchUsers = useCallback(async (params = {}) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await getUsers(params);
+      setUsers(response.data);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Kullanıcılar yüklenemedi.');
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { users, loading, error, fetchUsers };
 }; 

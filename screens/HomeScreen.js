@@ -1,6 +1,5 @@
 import React, { useState, useLayoutEffect, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Image, Alert, ActivityIndicator } from 'react-native';
-import { useAuth } from '../hooks/useAuth';
 import { useProfile } from '../hooks/useProfile';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -8,9 +7,9 @@ import { Menu } from 'react-native-paper';
 import { useVehicles } from '../hooks/useVehicles';
 import { useRentalHistories } from '../hooks/useRentalHistories';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as jwtDecode from 'jwt-decode';
 
 const HomeScreen = () => {
-  const { user, token, logout } = useAuth();
   const { fetchProfile } = useProfile();
   const navigation = useNavigation();
   const [menuVisible, setMenuVisible] = useState(false);
@@ -22,56 +21,40 @@ const HomeScreen = () => {
 
   useFocusEffect(
     React.useCallback(() => {
-      loadProfile();
-      fetchVehicles({});
-      AsyncStorage.getItem('userId').then(id => {
-        setUserId(id);
-        if (id) {
-          fetchRentalHistoriesByUserId(id);
+      const loadData = async () => {
+        try {
+          const token = await AsyncStorage.getItem('token');
+          if (token) {
+            const decodedToken = jwtDecode.jwtDecode(token);
+            setUserId(decodedToken.nameid);
+            
+            const profileData = await fetchProfile();
+            setProfileData(profileData);
+            
+            await fetchVehicles({});
+            await fetchRentalHistoriesByUserId(decodedToken.nameid);
+            await fetchPendingRentalHistories();
+          }
+        } catch (error) {
+          console.error('Veri yükleme hatası:', error);
+          Alert.alert('Hata', 'Veriler yüklenirken bir hata oluştu.');
         }
-      });
-      fetchPendingRentalHistories();
+      };
+      
+      loadData();
     }, [])
   );
-
-  const loadProfile = async () => {
-    try {
-      const data = await fetchProfile();
-      setProfileData(data);
-    } catch (error) {
-      console.error('Profil bilgileri yüklenirken hata:', error);
-    }
-  };
-
-  const handleLogout = async () => {
-    setMenuVisible(false);
-    Alert.alert(
-      'Çıkış Yap',
-      'Çıkış yapmak istediğine emin misin? Kendini özletme ama kısa sürede geri dön',
-      [
-        { text: 'Vazgeç', style: 'cancel' },
-        { text: 'Çıkış Yap', style: 'destructive', onPress: async () => {
-            try {
-              await logout();
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Signin' }],
-              });
-            } catch (error) {
-              console.error('Çıkış yapılırken hata oluştu:', error);
-            }
-          }
-        }
-      ]
-    );
-  };
 
   const handleDrawerNavigate = (screen, params = {}) => {
     setDrawerVisible(false);
     if (screen === 'VehicleList') {
-      navigation.navigate('MainApp', { screen: 'VehicleListTab' });
+      navigation.navigate('VehicleListTab');
+    } else if (screen === 'RentalHistory') {
+      navigation.navigate('RentalHistoryTab', params);
+    } else if (screen === 'PendingRequests') {
+      navigation.navigate('PendingRequestsTab', params);
     } else {
-    navigation.navigate(screen, params);
+      navigation.navigate(screen, params);
     }
   };
 
@@ -108,6 +91,7 @@ const HomeScreen = () => {
               style={styles.menuProfileImageLarge}
             />
             <Text style={styles.menuUserNameCenter}>{profileData?.name} {profileData?.surname}</Text>
+            <Text style={styles.menuUserNameCenter}>{profileData?.email}</Text>
             <View style={styles.menuVerifiedRowCenter}>
               {profileData?.isVerified ? (
                 <>
@@ -119,28 +103,6 @@ const HomeScreen = () => {
               )}
             </View>
           </View>
-          <View style={styles.menuDivider} />
-          <Menu.Item
-            onPress={() => {
-              setMenuVisible(false);
-              navigation.navigate('Profile');
-            }}
-            titleStyle={styles.menuProfileItemText}
-            title="Profilim"
-            leadingIcon={({ color, size }) => (
-              <Icon name="account" size={size} color="#2196F3" />
-            )}
-            style={styles.menuProfileItem}
-          />
-          <Menu.Item
-            onPress={handleLogout}
-            titleStyle={styles.menuLogoutItemText}
-            title="Çıkış Yap"
-            leadingIcon={({ color, size }) => (
-              <Icon name="logout" size={size} color="#F44336" />
-            )}
-            style={styles.menuLogoutItem}
-          />
         </Menu>
       ),
       headerTitle: 'Ana Sayfa',
@@ -213,7 +175,7 @@ const HomeScreen = () => {
 
         <TouchableOpacity
           style={styles.listCard}
-          onPress={() => navigation.navigate('MainApp', { screen: 'VehicleListTab' })}
+          onPress={() => navigation.navigate('VehicleListTab')}
         >
           <View style={styles.sectionHeaderBlue}><Text style={styles.sectionHeaderText}>Popüler Araçlar</Text></View>
           <View style={styles.vehicleListRow}>
@@ -232,7 +194,7 @@ const HomeScreen = () => {
 
         <TouchableOpacity
           style={styles.historyCard}
-          onPress={() => navigation.navigate('MainApp', { screen: 'RentalHistoryTab' })}
+          onPress={() => navigation.navigate('RentalHistoryTab')}
         >
           <View style={styles.sectionHeaderBlue}><Text style={styles.sectionHeaderText}>Kiralama Geçmişim</Text></View>
           {rentalLoading ? <ActivityIndicator /> : (
@@ -256,7 +218,7 @@ const HomeScreen = () => {
         </TouchableOpacity>
 
         <View style={styles.historyCard}>
-          <TouchableOpacity onPress={() => navigation.navigate('MainApp', { screen: 'PendingRequestsTab' })}>
+          <TouchableOpacity onPress={() => navigation.navigate('PendingRequestsTab')}>
             <View style={styles.sectionHeaderBlue}><Text style={styles.sectionHeaderText}>Bekleyen Kiralama İsteklerim</Text></View>
             {pendingLoading ? <ActivityIndicator /> : (
               pendingRentalHistories.length === 0

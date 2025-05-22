@@ -13,10 +13,12 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../hooks/useAuth';
+import { navigationRef } from '../RootNavigation';
 
-export const SigninScreen = () => {
+export const SigninScreen = (props) => {
   const navigation = useNavigation();
   const { signIn, loadingStates, error, clearError, user } = useAuth();
+  const { setIsLoggedIn, setRole } = props;
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -35,32 +37,17 @@ export const SigninScreen = () => {
     }
   }, [error]);
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      setMessage({ text: 'Lütfen tüm alanları doldurun', type: 'error' });
-      return;
-    }
-
-    const result = await signIn({
-      emailOrUsername: email,
-      password: password
-    });
-
-    if (result.success) {
-      setMessage({ text: 'Giriş başarılı! Yönlendiriliyorsunuz...', type: 'success' });
-      setTimeout(() => {
-        navigation.reset({
-          index: 0,
-          routes: [
-            { 
-              name: 'MainApp', 
-              params: { screen: result.role === 'Admin' ? 'DashboardTab' : 'HomeTab' } 
-            }
-          ],
-        });
-      }, 3000);
-    } else {
-      setMessage({ text: result.error, type: 'error' });
+  const handleSignIn = async () => {
+    try {
+      const result = await signIn({ emailOrUsername: email, password: password });
+      if (result.success) {
+        setRole(result.role);
+        setIsLoggedIn(true);
+      } else {
+        Alert.alert('Hata', result.error);
+      }
+    } catch (error) {
+      Alert.alert('Hata', 'Giriş yapılırken bir hata oluştu.');
     }
   };
 
@@ -123,7 +110,7 @@ export const SigninScreen = () => {
 
         <TouchableOpacity
           style={styles.button}
-          onPress={handleLogin}
+          onPress={handleSignIn}
           disabled={loadingStates.signIn}
         >
           <Text style={styles.buttonText}>

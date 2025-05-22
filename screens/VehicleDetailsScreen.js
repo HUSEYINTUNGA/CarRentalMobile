@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Image } from 'react-native';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useVehicles } from '../hooks/useVehicles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -19,7 +19,7 @@ const VehicleDetailsScreen = () => {
     const route = useRoute();
     const navigation = useNavigation();
     const { vehicleId } = route.params || {};
-    const { fetchVehicleBasicById, loading, error } = useVehicles();
+    const { fetchVehicleBasicById, fetchVehicleById, loading, error } = useVehicles();
     const [vehicle, setVehicle] = useState(null);
     const [localError, setLocalError] = useState(null);
     const [role, setRole] = useState(null);
@@ -29,27 +29,33 @@ const VehicleDetailsScreen = () => {
         AsyncStorage.getItem('userRole').then(setRole);
     }, []);
 
-    useEffect(() => {
-        if (!vehicleId) {
-            setLocalError('Araç ID bulunamadı.');
-            return;
-        }
-        fetchVehicleBasicById(vehicleId)
-            .then(setVehicle)
-            .catch(() => setVehicle(null));
-    }, [vehicleId]);
+    useFocusEffect(
+        React.useCallback(() => {
+            if (vehicleId) {
+                if (role === 'Admin') {
+                    fetchVehicleById(vehicleId)
+                        .then(setVehicle)
+                        .catch(() => setVehicle(null));
+                } else {
+                    fetchVehicleBasicById(vehicleId)
+                        .then(setVehicle)
+                        .catch(() => setVehicle(null));
+                }
+            }
+        }, [vehicleId, role])
+    );
 
     const handlePreviousPhoto = () => {
-        if (!vehicle?.Photos) return;
+        if (photoList.length <= 1) return;
         setCurrentPhotoIndex((prevIndex) => 
-            prevIndex === 0 ? vehicle.Photos.length - 1 : prevIndex - 1
+            prevIndex === 0 ? photoList.length - 1 : prevIndex - 1
         );
     };
 
     const handleNextPhoto = () => {
-        if (!vehicle?.Photos) return;
+        if (photoList.length <= 1) return;
         setCurrentPhotoIndex((prevIndex) => 
-            prevIndex === vehicle.Photos.length - 1 ? 0 : prevIndex + 1
+            prevIndex === photoList.length - 1 ? 0 : prevIndex + 1
         );
     };
 
@@ -82,20 +88,35 @@ const VehicleDetailsScreen = () => {
 
     const transmissionTypeLabel = TransmissionTypeOptions.find(opt => opt.value === vehicle.TransmissionType)?.label || '-';
     const fuelTypeLabel = FuelTypeOptions.find(opt => opt.value === vehicle.FuelType)?.label || '-';
-    const sortedPhotos = vehicle.Photos ? [...vehicle.Photos] : [];
-    const currentPhoto = sortedPhotos[currentPhotoIndex];
+    
+    let photoList = [];
+    if (vehicle.VehiclePhotos && Array.isArray(vehicle.VehiclePhotos)) {
+        const mainPhoto = vehicle.VehiclePhotos.find(photo => photo.IsMain);
+        const otherPhotos = vehicle.VehiclePhotos.filter(photo => !photo.IsMain);
+        photoList = mainPhoto ? [mainPhoto, ...otherPhotos] : vehicle.VehiclePhotos;
+    } else if (vehicle.Photos && Array.isArray(vehicle.Photos)) {
+        const mainPhoto = vehicle.Photos.find(photo => photo.IsMain);
+        const otherPhotos = vehicle.Photos.filter(photo => !photo.IsMain);
+        photoList = mainPhoto ? [mainPhoto, ...otherPhotos] : vehicle.Photos;
+    }
+    
+    const currentPhoto = photoList[currentPhotoIndex] || null;
     const photoUri = currentPhoto?.Photo ? `data:image/jpeg;base64,${currentPhoto.Photo}` : undefined;
 
     return (
         <ScrollView style={styles.container}>
             <View style={styles.photoContainer}>
-                {photoUri && (
+                {photoUri ? (
                     <Image 
                         source={{ uri: photoUri }}
                         style={styles.vehicleImage}
                     />
+                ) : (
+                    <View style={[styles.vehicleImage, { backgroundColor: '#e0e0e0', justifyContent: 'center', alignItems: 'center' }]}> 
+                        <Icon name="car" size={40} color="#666" />
+                    </View>
                 )}
-                {vehicle.Photos && vehicle.Photos.length > 1 && (
+                {photoList.length > 1 && (
                     <>
                         <TouchableOpacity 
                             style={[styles.navButton, styles.leftButton]} 
@@ -110,7 +131,7 @@ const VehicleDetailsScreen = () => {
                             <Icon name="chevron-right" size={32} color="#fff" />
                         </TouchableOpacity>
                         <View style={styles.pagination}>
-                            {vehicle.Photos.map((_, index) => (
+                            {photoList.map((_, index) => (
                                 <View
                                     key={index}
                                     style={[
@@ -187,28 +208,51 @@ const VehicleDetailsScreen = () => {
                             <Text style={styles.detailValue}>{formatPlate(vehicle.NumberPlate)}</Text>
                         </View>
                     </View>
+                    {role === 'Admin' && (
+                        <>
+                            <View style={styles.detailRow}>
+                                <View style={styles.detailItem}>
+                                    <Icon name="check-circle" size={24} color={vehicle.IsAvailable ? "#4CAF50" : "#9E9E9E"} />
+                                    <Text style={styles.detailLabel}>Müsaitlik</Text>
+                                    <Text style={styles.detailValue}>{vehicle.IsAvailable ? 'Aktif' : 'Pasif'}</Text>
+                                </View>
+                                <View style={styles.detailItem}>
+                                    <Icon name="car-side" size={24} color={vehicle.IsRented ? "#F44336" : "#4CAF50"} />
+                                    <Text style={styles.detailLabel}>Durum</Text>
+                                    <Text style={styles.detailValue}>{vehicle.IsRented ? 'Kirada' : 'Boşta'}</Text>
+                                </View>
+                            </View>
+                        </>
+                    )}
                 </View>
                 {role === 'Admin' && (
                     <View style={styles.historyContainer}>
                         <Text style={styles.sectionTitle}>Kiralama Geçmişi</Text>
                         {vehicle.RentalHistories && vehicle.RentalHistories.length > 0 ? (
                             vehicle.RentalHistories.map((history, idx) => (
-                                <View key={history.Id || idx} style={styles.historyItem}>
-                                    <Text style={styles.historyLabel}>Kiralayan:</Text>
-                                    <Text style={styles.historyValue}>{history.User?.Name || '-'} {history.User?.Surname || '-'}</Text>
-                                    <Text style={styles.historyLabel}>Kullanıcı Adı:</Text>
-                                    <Text style={styles.historyValue}>{history.User?.UserName || '-'}</Text>
-                                    <Text style={styles.historyLabel}>E-posta:</Text>
-                                    <Text style={styles.historyValue}>{history.User?.Email || '-'}</Text>
-                                    <Text style={styles.historyLabel}>Kiralama Tarihi:</Text>
-                                    <Text style={styles.historyValue}>{history.RentalDate ? new Date(history.RentalDate).toLocaleDateString() : '-'}</Text>
-                                    <Text style={styles.historyLabel}>İade Tarihi:</Text>
-                                    <Text style={styles.historyValue}>{history.ReturnDate ? new Date(history.ReturnDate).toLocaleDateString() : '-'}</Text>
-                                    <Text style={styles.historyLabel}>Toplam Fiyat:</Text>
-                                    <Text style={styles.historyValue}>{history.TotalPrice != null ? history.TotalPrice + ' TL' : '-'}</Text>
-                                    <Text style={styles.historyLabel}>Durum:</Text>
-                                    <Text style={styles.historyValue}>{history.IsActive ? 'Aktif' : 'Tamamlandı'}</Text>
-                                    <View style={styles.historyDivider} />
+                                <View key={history.Id || idx} style={styles.historyCard}>
+                                    <View style={styles.historyCardHeader}>
+                                        <View style={styles.avatarCircle}>
+                                            <Icon name="account" size={28} color="#3393dc" />
+                                        </View>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={styles.historyUserName}>{history.User?.Name || '-'} {history.User?.Surname || '-'}</Text>
+                                            <Text style={styles.historyUserUsername}>{history.User?.UserName || '-'}</Text>
+                                        </View>
+                                        <View style={[styles.statusBadge, history.IsActive ? styles.activeBadge : styles.completedBadge]}>
+                                            <Text style={[styles.statusBadgeText, history.IsActive ? styles.activeBadgeText : styles.completedBadgeText]}>{history.IsActive ? 'Aktif' : 'Tamamlandı'}</Text>
+                                        </View>
+                                    </View>
+                                    <View style={styles.historyCardBody}>
+                                        <Text style={styles.historyLabel}>E-posta:</Text>
+                                        <Text style={styles.historyValue}>{history.User?.Email || '-'}</Text>
+                                        <Text style={styles.historyLabel}>Kiralama Tarihi:</Text>
+                                        <Text style={styles.historyValue}>{history.RentalDate ? new Date(history.RentalDate).toLocaleDateString('tr-TR') : '-'}</Text>
+                                        <Text style={styles.historyLabel}>İade Tarihi:</Text>
+                                        <Text style={styles.historyValue}>{history.ReturnDate ? new Date(history.ReturnDate).toLocaleDateString('tr-TR') : '-'}</Text>
+                                        <Text style={styles.historyLabel}>Toplam Fiyat:</Text>
+                                        <Text style={[styles.historyValue, { color: '#222', fontWeight: 'bold' }]}>{history.TotalPrice != null ? `₺${history.TotalPrice.toLocaleString('tr-TR')}` : '-'}</Text>
+                                    </View>
                                 </View>
                             ))
                         ) : (
@@ -355,33 +399,85 @@ const styles = StyleSheet.create({
     },
     historyContainer: {
         marginTop: 16,
-        padding: 16,
-        backgroundColor: '#fff',
+        padding: 0,
+        backgroundColor: 'transparent',
         borderRadius: 12,
     },
     sectionTitle: {
-        fontSize: 24,
+        fontSize: 18,
         fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 16,
+        color: '#000',
+        marginBottom: 15,
     },
-    historyItem: {
-        marginBottom: 16,
+    historyCard: {
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 14,
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 6,
     },
-    historyLabel: {
-        fontSize: 14,
-        color: '#666',
-        marginBottom: 4,
+    historyCardHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 10,
     },
-    historyValue: {
+    avatarCircle: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: '#f5f5f5',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+    },
+    historyUserName: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: '#333',
+        color: '#222',
     },
-    historyDivider: {
-        height: 1,
-        backgroundColor: '#f0f0f0',
-        marginVertical: 16,
+    historyUserUsername: {
+        fontSize: 13,
+        color: '#3393dc',
+        fontWeight: '600',
+    },
+    statusBadge: {
+        paddingHorizontal: 12,
+        paddingVertical: 5,
+        borderRadius: 12,
+        alignSelf: 'flex-start',
+    },
+    activeBadge: {
+        backgroundColor: '#E8F5E9',
+    },
+    completedBadge: {
+        backgroundColor: '#FFEBEE',
+    },
+    statusBadgeText: {
+        fontSize: 13,
+        fontWeight: 'bold',
+    },
+    activeBadgeText: {
+        color: '#43a047',
+    },
+    completedBadgeText: {
+        color: '#e53935',
+    },
+    historyCardBody: {
+        marginTop: 2,
+    },
+    historyLabel: {
+        fontSize: 13,
+        color: '#888',
+        marginTop: 6,
+    },
+    historyValue: {
+        fontSize: 15,
+        color: '#222',
+        fontWeight: '500',
     },
     historyEmpty: {
         color: '#666',

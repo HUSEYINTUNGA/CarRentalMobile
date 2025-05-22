@@ -1,15 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useRoute, useFocusEffect } from '@react-navigation/native';
 import { useRentalHistories } from '../hooks/useRentalHistories';
-import { useAuth } from '../hooks/useAuth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const RentalHistoriesScreen = () => {
-    const navigation = useNavigation();
     const route = useRoute();
-    const { user } = useAuth();
     const {
         rentalHistories,
         pendingRentalHistories,
@@ -106,6 +103,12 @@ const RentalHistoriesScreen = () => {
         );
     };
 
+    useFocusEffect(
+        React.useCallback(() => {
+            // fetchRentalHistoriesByUserId && fetchRentalHistoriesByUserId();
+        }, [])
+    );
+
     if ((type === 'pending' ? pendingLoading : loading)) {
         return (
             <View style={styles.loadingContainer}>
@@ -116,9 +119,6 @@ const RentalHistoriesScreen = () => {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.headerTitle}>
-                {type === 'pending' ? 'Bekleyen Kiralama İstekleriniz' : 'Geçmiş Kiralama Kayıtlarınız'}
-            </Text>
             <FlatList
                 data={type === 'pending' ? pendingRentalHistories : rentalHistories}
                 renderItem={renderRentalItem}
@@ -227,15 +227,6 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#666',
         textAlign: 'center',
-    },
-    headerTitle: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        color: '#1976d2',
-        textAlign: 'center',
-        marginTop: 18,
-        marginBottom: 10,
-        letterSpacing: 0.2,
     },
     cancelButton: {
         backgroundColor: '#e53935',

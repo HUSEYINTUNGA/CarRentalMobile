@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, ActivityIndicator, Modal, TextInput } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useProfile } from '../hooks/useProfile';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import { deleteAccount } from '../api/customerApi';
 import { useAuth } from '../hooks/useAuth';
-import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { resetToSignin } from '../RootNavigation';
 
 const ProfileScreen = () => {
   const { loading, fetchProfile, updatePhoto } = useProfile();
@@ -52,21 +53,42 @@ const ProfileScreen = () => {
     setPhotoModalVisible(false);
     setPhotoLoading(true);
     try {
-      const options = { mediaType: 'photo', quality: 0.8 };
       let result;
       if (type === 'camera') {
-        result = await launchCamera(options);
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Kamera izni gerekli!');
+          setPhotoLoading(false);
+          return;
+        }
+        result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          quality: 0.8,
+          base64: true,
+        });
       } else {
-        result = await launchImageLibrary(options);
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Galeri izni gerekli!');
+          setPhotoLoading(false);
+          return;
+        }
+        result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          quality: 0.8,
+          base64: true,
+        });
       }
-      if (result.didCancel || !result.assets || !result.assets[0]) {
+      if (result.canceled || !result.assets || !result.assets[0]) {
         setPhotoLoading(false);
         return;
       }
+      const asset = result.assets[0];
       const imageData = {
-        uri: result.assets[0].uri,
-        type: result.assets[0].type,
-        name: result.assets[0].fileName || 'profile.jpg',
+        uri: asset.uri,
+        type: asset.type || 'image/jpeg',
+        name: asset.fileName || 'profile.jpg',
+        base64: asset.base64,
       };
       await updatePhoto(imageData);
       Alert.alert('Başarılı', 'Profil fotoğrafı güncellendi.');
@@ -107,7 +129,7 @@ const ProfileScreen = () => {
                 [{ text: 'Tamam' }]
               );
               await logout();
-              navigation.reset({ index: 0, routes: [{ name: 'Signin' }] });
+              resetToSignin();
             } catch (err) {
               console.error('Hesap silme hatası:', err);
               Alert.alert(
@@ -121,6 +143,11 @@ const ProfileScreen = () => {
         }
       ]
     );
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    resetToSignin();
   };
 
   if (loading || photoLoading) {

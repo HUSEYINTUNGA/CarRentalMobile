@@ -62,3 +62,11 @@ export const changeProfilePhoto = (data) => {
 };
 
 export const deleteAccount = () => api.delete('customer/delete-account');
+
+export const getUsers = (params = {}) => {
+  const query = Object.entries(params)
+    .filter(([_, v]) => v !== '' && v !== undefined && v !== null)
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+    .join('&');
+  return api.get(`customer/users${query ? `?${query}` : ''}`);
+};

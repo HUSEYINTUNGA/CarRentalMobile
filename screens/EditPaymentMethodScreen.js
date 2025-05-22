@@ -169,7 +169,7 @@ export default function EditPaymentMethod() {
         CardNumber: formData.cardNumber,
         CardHolderName: formData.cardholderName,
         ExpirationMonth: parseInt(formData.expiryMonth),
-        ExpirationYear: parseInt(formData.expiryYear),
+        ExpirationYear: parseInt(formData.expiryYear+2000),
         CVV: formData.cvv,
       };
       if (mode === 'create') {
