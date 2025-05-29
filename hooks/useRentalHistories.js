@@ -20,15 +20,24 @@ export const useRentalHistories = () => {
   const [pendingLoading, setPendingLoading] = useState(false);
   const [error, setError] = useState(null);
   const [pendingError, setPendingError] = useState(null);
+  const [apiError, setApiError] = useState(null);
+
+  const handleError = (error, defaultMessage) => {
+    const errorMessage = error.response?.data?.Message || defaultMessage;
+    const errorData = error.response?.data?.Data;
+    setApiError({ message: errorMessage, data: errorData });
+    return { message: errorMessage, data: errorData };
+  };
 
   const fetchAllRentalHistories = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
+      setApiError(null);
       const response = await getAllRentalHistories();
       setRentalHistories(response.data);
     } catch (err) {
-      setError(err.response?.data?.message || 'Kiralama geçmişleri yüklenemedi.');
+      handleError(err, 'Kiralama geçmişleri yüklenemedi.');
     } finally {
       setLoading(false);
     }
@@ -38,10 +47,11 @@ export const useRentalHistories = () => {
     try {
       setLoading(true);
       setError(null);
+      setApiError(null);
       const response = await getRentalHistoriesByUserId(userId);
       setRentalHistories(response.data);
     } catch (err) {
-      setError(err.response?.data?.message || 'Kullanıcıya ait kiralama geçmişleri yüklenemedi.');
+      handleError(err, 'Kullanıcıya ait kiralama geçmişleri yüklenemedi.');
     } finally {
       setLoading(false);
     }
@@ -51,10 +61,11 @@ export const useRentalHistories = () => {
     try {
       setLoading(true);
       setError(null);
+      setApiError(null);
       const response = await getRentalHistoriesByVehicleId(vehicleId);
       setRentalHistories(response.data);
     } catch (err) {
-      setError(err.response?.data?.message || 'Araca ait kiralama geçmişleri yüklenemedi.');
+      handleError(err, 'Araca ait kiralama geçmişleri yüklenemedi.');
     } finally {
       setLoading(false);
     }
@@ -64,10 +75,11 @@ export const useRentalHistories = () => {
     try {
       setLoading(true);
       setError(null);
+      setApiError(null);
       const response = await getRentalRequests();
       setRentalRequests(response.data);
     } catch (err) {
-      setError(err.response?.data?.message || 'Kiralama talepleri yüklenemedi.');
+      handleError(err, 'Kiralama talepleri yüklenemedi.');
     } finally {
       setLoading(false);
     }
@@ -77,10 +89,11 @@ export const useRentalHistories = () => {
     try {
       setPendingLoading(true);
       setPendingError(null);
+      setApiError(null);
       const response = await getPendingRentalHistories();
       setPendingRentalHistories(response.data);
     } catch (err) {
-      setPendingError(err.response?.data?.message || 'Bekleyen kiralama istekleri yüklenemedi.');
+      handleError(err, 'Bekleyen kiralama istekleri yüklenemedi.');
     } finally {
       setPendingLoading(false);
     }
@@ -90,27 +103,28 @@ export const useRentalHistories = () => {
     try {
       setLoading(true);
       setError(null);
+      setApiError(null);
       const response = await createRentalRequest(data);
-      await fetchAllRentalHistories();
       return response.data;
     } catch (err) {
-      setError(err.response?.data?.message || 'Kiralama talebi oluşturulamadı.');
-      throw err;
+      const error = handleError(err, 'Kiralama talebi oluşturulamadı.');
+      throw error;
     } finally {
       setLoading(false);
     }
-  }, [fetchAllRentalHistories]);
+  }, []);
 
   const approveRental = useCallback(async (data) => {
     try {
       setLoading(true);
       setError(null);
+      setApiError(null);
       const response = await approveRentalRequest(data);
       await fetchRentalRequests();
       return response.data;
     } catch (err) {
-      setError(err.response?.data?.message || 'Kiralama talebi onaylanamadı.');
-      throw err;
+      const error = handleError(err, 'Kiralama talebi onaylanamadı.');
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -120,21 +134,31 @@ export const useRentalHistories = () => {
     try {
       setLoading(true);
       setError(null);
+      setApiError(null);
       const response = await rejectRentalRequest(data);
       await fetchRentalRequests();
       return response.data;
     } catch (err) {
-      setError(err.response?.data?.message || 'Kiralama talebi reddedilemedi.');
-      throw err;
+      const error = handleError(err, 'Kiralama talebi reddedilemedi.');
+      throw error;
     } finally {
       setLoading(false);
     }
   }, [fetchRentalRequests]);
 
   const removePendingRentalRequest = useCallback(async (id) => {
-    await deletePendingRentalRequest(id);
-    const updated = pendingRentalHistories.filter(r => r.Id !== id);
-    setPendingRentalHistories(updated);
+    try {
+      setLoading(true);
+      setError(null);
+      setApiError(null);
+      await deletePendingRentalRequest(id);
+      const updated = pendingRentalHistories.filter(r => r.Id !== id);
+      setPendingRentalHistories(updated);
+    } catch (err) {
+      handleError(err, 'Bekleyen kiralama isteği silinemedi.');
+    } finally {
+      setLoading(false);
+    }
   }, [pendingRentalHistories]);
 
   return {
@@ -146,6 +170,7 @@ export const useRentalHistories = () => {
     pendingLoading,
     error,
     pendingError,
+    apiError,
     fetchAllRentalHistories,
     fetchRentalHistoriesByUserId,
     fetchRentalHistoriesByVehicleId,

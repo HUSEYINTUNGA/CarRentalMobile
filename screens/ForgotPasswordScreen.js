@@ -27,9 +27,18 @@ const ForgotPasswordScreen = () => {
     }
   }, [error]);
 
+  const validateEmail = (email) => {
+    const re = /^(([^<>()\[\]\\.,;:\s@\"]+(\.[^<>()\[\]\\.,;:\s@\"]+)*)|(".+"))@(([^<>()[\]\\.,;:\s@\"]+\.)+[^<>()[\]\\.,;:\s@\"]{2,})$/i;
+    return re.test(String(email).toLowerCase());
+  };
+
   const handleForgot = async () => {
     if (!email) {
       Alert.alert('Unutkanlık Seviyesi: Yüksek', 'E-posta adresini yazmadan bu iş olmaz!');
+      return;
+    }
+    if (!validateEmail(email)) {
+      Alert.alert('Geçersiz E-posta', 'Lütfen geçerli bir e-posta adresi girin.');
       return;
     }
     const result = await forgotPassword(email);
@@ -72,10 +81,6 @@ const ForgotPasswordScreen = () => {
             autoCapitalize="none"
             autoCorrect={false}
           />
-
-          <Text style={styles.hintText}>
-            Bu işin tek bir yolu var: E-posta adresini yazdıysan, aşağıdaki boş kağıda bir parmağını bas.
-          </Text>
 
           <Image
             source={require('../assets/boskagit.png')}
@@ -186,10 +191,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   bottomCartoon: {
-    width: 110,
-    height: 110,
-    marginBottom: 8,
-    marginTop: 2,
+    width: 240,
+    height: 190,
   },
   button: {
     backgroundColor: '#2563eb',

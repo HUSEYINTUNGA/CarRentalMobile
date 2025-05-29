@@ -8,8 +8,7 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Alert,
-  ScrollView
+  Alert
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../hooks/useAuth';
@@ -27,9 +26,18 @@ const ResendVerificationScreen = () => {
     }
   }, [globalError]);
 
+  const validateEmail = (email) => {
+    const re = /^(([^<>()\[\]\\.,;:\s@\"]+(\.[^<>()\[\]\\.,;:\s@\"]+)*)|(".+"))@(([^<>()[\]\\.,;:\s@\"]+\.)+[^<>()[\]\\.,;:\s@\"]{2,})$/i;
+    return re.test(String(email).toLowerCase());
+  };
+
   const handleResend = async () => {
     if (!email) {
       setMessage({ text: 'Lütfen e-posta adresinizi girin', type: 'error' });
+      return;
+    }
+    if (!validateEmail(email)) {
+      setMessage({ text: 'Lütfen geçerli bir e-posta adresi girin', type: 'error' });
       return;
     }
     const result = await requestVerification(email);
@@ -49,54 +57,52 @@ const ResendVerificationScreen = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 60}
     >
-      <ScrollView contentContainerStyle={[styles.scrollContainer, { minHeight: 700 }]} keyboardShouldPersistTaps="handled">
-        <View style={styles.card}>
-          <Text style={styles.title}>Kodunu mu kaybettin?</Text>
-          <Text style={styles.subtitle}>Üzülme, sistemin damadı olma yolunda bir kod daha gönderebiliriz! 😅</Text>
+      <View style={styles.card}>
+        <Text style={styles.title}>Kodunu mu kaybettin?</Text>
+        <Text style={styles.subtitle}>Üzülme, sistemin damadı olma yolunda bir kod daha gönderebiliriz! 😅</Text>
 
-          <Image
-            source={require('../assets/resend.png')}
-            style={styles.cartoon}
-            resizeMode="contain"
-          />
+        <Image
+          source={require('../assets/resend.png')}
+          style={styles.cartoon}
+          resizeMode="contain"
+        />
 
-          <TextInput
-            style={styles.input}
-            placeholder="E-posta adresini yaz, kodu uçuralım!"
-            placeholderTextColor="#888"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
+        <TextInput
+          style={styles.input}
+          placeholder="E-posta adresini yaz, kodu uçuralım!"
+          placeholderTextColor="#888"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
 
-          <TouchableOpacity
-            style={styles.button}
-            onPress={handleResend}
-            disabled={loadingStates.signIn}
-          >
-            <Text style={styles.buttonText}>{loadingStates.signIn ? 'Gönderiliyor...' : 'Boş Kağıt'}</Text>
-          </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={handleResend}
+          disabled={loadingStates.signIn}
+        >
+          <Text style={styles.buttonText}>{loadingStates.signIn ? 'Gönderiliyor...' : 'Boş Kağıt'}</Text>
+        </TouchableOpacity>
 
-          {message.text ? (
-            <Text style={[
-              styles.message,
-              message.type === 'success' ? styles.successMessage : styles.errorMessage
-            ]}>
-              {message.text}
-            </Text>
-          ) : null}
-
-          <Text style={styles.hintText}>
-            Kod hala gelmediyse, spam klasörüne de bakmayı unutma!
+        {message.text ? (
+          <Text style={[
+            styles.message,
+            message.type === 'success' ? styles.successMessage : styles.errorMessage
+          ]}>
+            {message.text}
           </Text>
+        ) : null}
 
-          <TouchableOpacity onPress={() => navigation.navigate('Signin')}>
-            <Text style={styles.backLink}>Giriş ekranına dön</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+        <Text style={styles.hintText}>
+          Kod hala gelmediyse, spam klasörüne de bakmayı unutma!
+        </Text>
+
+        <TouchableOpacity onPress={() => navigation.navigate('Signin')}>
+          <Text style={styles.backLink}>Giriş ekranına dön</Text>
+        </TouchableOpacity>
+      </View>
     </KeyboardAvoidingView>
   );
 };
@@ -105,12 +111,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f4f6ff',
-  },
-  scrollContainer: {
-    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 20,
+    paddingHorizontal: 5,
   },
   card: {
     width: '95%',
@@ -125,8 +128,7 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     borderWidth: 2,
     borderColor: '#e0e7ff',
-    marginTop: 20,
-    marginBottom: 20,
+    minHeight: 350,
   },
   title: {
     fontSize: 22,

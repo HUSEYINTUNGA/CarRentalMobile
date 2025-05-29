@@ -5,6 +5,7 @@ import { useVehicles } from '../hooks/useVehicles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { TransmissionTypeOptions, FuelTypeOptions } from '../enums/enum';
+import { LinearGradient } from 'expo-linear-gradient';
 
 function formatPlate(plate) {
     if (!plate) return '-';
@@ -26,7 +27,15 @@ const VehicleDetailsScreen = () => {
     const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
 
     useEffect(() => {
-        AsyncStorage.getItem('userRole').then(setRole);
+        const fetchRole = async () => {
+            try {
+                const userRole = await AsyncStorage.getItem('userRole');
+                setRole(userRole);
+            } catch (error) {
+                console.error('Error fetching role:', error);
+            }
+        };
+        fetchRole();
     }, []);
 
     useFocusEffect(
@@ -35,11 +44,17 @@ const VehicleDetailsScreen = () => {
                 if (role === 'Admin') {
                     fetchVehicleById(vehicleId)
                         .then(setVehicle)
-                        .catch(() => setVehicle(null));
+                        .catch((error) => {
+                            console.error('Error fetching vehicle details:', error);
+                            setVehicle(null);
+                        });
                 } else {
                     fetchVehicleBasicById(vehicleId)
                         .then(setVehicle)
-                        .catch(() => setVehicle(null));
+                        .catch((error) => {
+                            console.error('Error fetching basic vehicle details:', error);
+                            setVehicle(null);
+                        });
                 }
             }
         }, [vehicleId, role])
@@ -101,176 +116,190 @@ const VehicleDetailsScreen = () => {
     }
     
     const currentPhoto = photoList[currentPhotoIndex] || null;
-    const photoUri = currentPhoto?.Photo ? `data:image/jpeg;base64,${currentPhoto.Photo}` : undefined;
+    const photoUri = currentPhoto?.Photo ? currentPhoto.Photo : undefined;
 
     return (
-        <ScrollView style={styles.container}>
-            <View style={styles.photoContainer}>
-                {photoUri ? (
-                    <Image 
-                        source={{ uri: photoUri }}
-                        style={styles.vehicleImage}
-                    />
-                ) : (
-                    <View style={[styles.vehicleImage, { backgroundColor: '#e0e0e0', justifyContent: 'center', alignItems: 'center' }]}> 
-                        <Icon name="car" size={40} color="#666" />
-                    </View>
-                )}
-                {photoList.length > 1 && (
-                    <>
-                        <TouchableOpacity 
-                            style={[styles.navButton, styles.leftButton]} 
-                            onPress={handlePreviousPhoto}
-                        >
-                            <Icon name="chevron-left" size={32} color="#fff" />
-                        </TouchableOpacity>
-                        <TouchableOpacity 
-                            style={[styles.navButton, styles.rightButton]} 
-                            onPress={handleNextPhoto}
-                        >
-                            <Icon name="chevron-right" size={32} color="#fff" />
-                        </TouchableOpacity>
-                        <View style={styles.pagination}>
-                            {photoList.map((_, index) => (
-                                <View
-                                    key={index}
-                                    style={[
-                                        styles.paginationDot,
-                                        index === currentPhotoIndex && styles.paginationDotActive
-                                    ]}
-                                />
-                            ))}
+        <View style={{ flex: 1, backgroundColor: '#f8fafd' }}>
+            <LinearGradient
+                colors={['#0066cc', '#0052a3']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.gradientHeader}
+            >
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                    <Text style={styles.backIcon}>{'‹'}</Text>
+                </TouchableOpacity>
+                <Text style={styles.gradientHeaderTitle}>Araç Detayları</Text>
+            </LinearGradient>
+            <ScrollView style={styles.container} contentContainerStyle={{ paddingTop: 100 }}>
+                <View style={{ height: 8 }} />
+                <View style={styles.photoContainer}>
+                    {photoUri ? (
+                        <Image 
+                            source={{ uri: photoUri }}
+                            style={styles.vehicleImage}
+                        />
+                    ) : (
+                        <View style={[styles.vehicleImage, { backgroundColor: '#e0e0e0', justifyContent: 'center', alignItems: 'center' }]}> 
+                            <Icon name="car" size={40} color="#666" />
                         </View>
-                    </>
-                )}
-            </View>
-
-            <View style={styles.content}>
-                <View style={styles.header}>
-                    <Text style={styles.title}>{vehicle.Brand || '-'} {vehicle.Model || '-'}</Text>
-                    <Text style={styles.subtitle}>{vehicle.ModelYear || '-'}</Text>
-                </View>
-
-                <View style={styles.priceContainer}>
-                    <Text style={styles.price}>{vehicle.DailyPrice != null ? vehicle.DailyPrice : '-'} TL</Text>
-                    <Text style={styles.priceLabel}>/ Günlük</Text>
-                </View>
-
-                <View style={styles.detailsContainer}>
-                    <View style={styles.detailRow}>
-                        <View style={styles.detailItem}>
-                            <Icon name="car" size={24} color="#2196F3" />
-                            <Text style={styles.detailLabel}>Marka</Text>
-                            <Text style={styles.detailValue}>{vehicle.Brand || '-'}</Text>
-                        </View>
-                        <View style={styles.detailItem}>
-                            <Icon name="car-info" size={24} color="#2196F3" />
-                            <Text style={styles.detailLabel}>Model</Text>
-                            <Text style={styles.detailValue}>{vehicle.Model || '-'}</Text>
-                        </View>
-                    </View>
-
-                    <View style={styles.detailRow}>
-                        <View style={styles.detailItem}>
-                            <Icon name="calendar" size={24} color="#2196F3" />
-                            <Text style={styles.detailLabel}>Yıl</Text>
-                            <Text style={styles.detailValue}>{vehicle.ModelYear || '-'}</Text>
-                        </View>
-                        <View style={styles.detailItem}>
-                            <Icon name="tag" size={24} color="#2196F3" />
-                            <Text style={styles.detailLabel}>Kategori</Text>
-                            <Text style={styles.detailValue}>{vehicle.Category || '-'}</Text>
-                        </View>
-                    </View>
-
-                    <View style={styles.detailRow}>
-                        <View style={styles.detailItem}>
-                            <Icon name="palette" size={24} color="#2196F3" />
-                            <Text style={styles.detailLabel}>Renk</Text>
-                            <Text style={styles.detailValue}>{vehicle.Color || '-'}</Text>
-                        </View>
-                        <View style={styles.detailItem}>
-                            <Icon name="car-cog" size={24} color="#2196F3" />
-                            <Text style={styles.detailLabel}>Vites</Text>
-                            <Text style={styles.detailValue}>{transmissionTypeLabel}</Text>
-                        </View>
-                    </View>
-
-                    <View style={styles.detailRow}>
-                        <View style={styles.detailItem}>
-                            <Icon name="fuel" size={24} color="#2196F3" />
-                            <Text style={styles.detailLabel}>Yakıt</Text>
-                            <Text style={styles.detailValue}>{fuelTypeLabel}</Text>
-                        </View>
-                        <View style={styles.detailItem}>
-                            <Icon name="car-key" size={24} color="#2196F3" />
-                            <Text style={styles.detailLabel}>Plaka</Text>
-                            <Text style={styles.detailValue}>{formatPlate(vehicle.NumberPlate)}</Text>
-                        </View>
-                    </View>
-                    {role === 'Admin' && (
+                    )}
+                    {photoList.length > 1 && (
                         <>
-                            <View style={styles.detailRow}>
-                                <View style={styles.detailItem}>
-                                    <Icon name="check-circle" size={24} color={vehicle.IsAvailable ? "#4CAF50" : "#9E9E9E"} />
-                                    <Text style={styles.detailLabel}>Müsaitlik</Text>
-                                    <Text style={styles.detailValue}>{vehicle.IsAvailable ? 'Aktif' : 'Pasif'}</Text>
-                                </View>
-                                <View style={styles.detailItem}>
-                                    <Icon name="car-side" size={24} color={vehicle.IsRented ? "#F44336" : "#4CAF50"} />
-                                    <Text style={styles.detailLabel}>Durum</Text>
-                                    <Text style={styles.detailValue}>{vehicle.IsRented ? 'Kirada' : 'Boşta'}</Text>
-                                </View>
+                            <TouchableOpacity 
+                                style={[styles.navButton, styles.leftButton]} 
+                                onPress={handlePreviousPhoto}
+                            >
+                                <Icon name="chevron-left" size={32} color="#fff" />
+                            </TouchableOpacity>
+                            <TouchableOpacity 
+                                style={[styles.navButton, styles.rightButton]} 
+                                onPress={handleNextPhoto}
+                            >
+                                <Icon name="chevron-right" size={32} color="#fff" />
+                            </TouchableOpacity>
+                            <View style={styles.pagination}>
+                                {photoList.map((_, index) => (
+                                    <View
+                                        key={index}
+                                        style={[
+                                            styles.paginationDot,
+                                            index === currentPhotoIndex && styles.paginationDotActive
+                                        ]}
+                                    />
+                                ))}
                             </View>
                         </>
                     )}
                 </View>
-                {role === 'Admin' && (
-                    <View style={styles.historyContainer}>
-                        <Text style={styles.sectionTitle}>Kiralama Geçmişi</Text>
-                        {vehicle.RentalHistories && vehicle.RentalHistories.length > 0 ? (
-                            vehicle.RentalHistories.map((history, idx) => (
-                                <View key={history.Id || idx} style={styles.historyCard}>
-                                    <View style={styles.historyCardHeader}>
-                                        <View style={styles.avatarCircle}>
-                                            <Icon name="account" size={28} color="#3393dc" />
-                                        </View>
-                                        <View style={{ flex: 1 }}>
-                                            <Text style={styles.historyUserName}>{history.User?.Name || '-'} {history.User?.Surname || '-'}</Text>
-                                            <Text style={styles.historyUserUsername}>{history.User?.UserName || '-'}</Text>
-                                        </View>
-                                        <View style={[styles.statusBadge, history.IsActive ? styles.activeBadge : styles.completedBadge]}>
-                                            <Text style={[styles.statusBadgeText, history.IsActive ? styles.activeBadgeText : styles.completedBadgeText]}>{history.IsActive ? 'Aktif' : 'Tamamlandı'}</Text>
-                                        </View>
+                <View style={{ minHeight: 40 }} />
+                <View style={styles.content}>
+                    <View style={styles.header}>
+                        <Text style={styles.title}>{vehicle.Brand || '-'} {vehicle.Model || '-'}</Text>
+                        <Text style={styles.subtitle}>{vehicle.ModelYear || '-'}</Text>
+                    </View>
+
+                    <View style={styles.priceContainer}>
+                        <Text style={styles.price}>{vehicle.DailyPrice != null ? vehicle.DailyPrice : '-'} TL</Text>
+                        <Text style={styles.priceLabel}>/ Günlük</Text>
+                    </View>
+
+                    <View style={styles.detailsContainer}>
+                        <View style={styles.detailRow}>
+                            <View style={styles.detailItem}>
+                                <Icon name="car" size={24} color="#2196F3" />
+                                <Text style={styles.detailLabel}>Marka</Text>
+                                <Text style={styles.detailValue}>{vehicle.Brand || '-'}</Text>
+                            </View>
+                            <View style={styles.detailItem}>
+                                <Icon name="car-info" size={24} color="#2196F3" />
+                                <Text style={styles.detailLabel}>Model</Text>
+                                <Text style={styles.detailValue}>{vehicle.Model || '-'}</Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.detailRow}>
+                            <View style={styles.detailItem}>
+                                <Icon name="calendar" size={24} color="#2196F3" />
+                                <Text style={styles.detailLabel}>Yıl</Text>
+                                <Text style={styles.detailValue}>{vehicle.ModelYear || '-'}</Text>
+                            </View>
+                            <View style={styles.detailItem}>
+                                <Icon name="tag" size={24} color="#2196F3" />
+                                <Text style={styles.detailLabel}>Kategori</Text>
+                                <Text style={styles.detailValue}>{vehicle.Category || '-'}</Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.detailRow}>
+                            <View style={styles.detailItem}>
+                                <Icon name="palette" size={24} color="#2196F3" />
+                                <Text style={styles.detailLabel}>Renk</Text>
+                                <Text style={styles.detailValue}>{vehicle.Color || '-'}</Text>
+                            </View>
+                            <View style={styles.detailItem}>
+                                <Icon name="car-cog" size={24} color="#2196F3" />
+                                <Text style={styles.detailLabel}>Vites</Text>
+                                <Text style={styles.detailValue}>{transmissionTypeLabel}</Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.detailRow}>
+                            <View style={styles.detailItem}>
+                                <Icon name="fuel" size={24} color="#2196F3" />
+                                <Text style={styles.detailLabel}>Yakıt</Text>
+                                <Text style={styles.detailValue}>{fuelTypeLabel}</Text>
+                            </View>
+                            <View style={styles.detailItem}>
+                                <Icon name="car-key" size={24} color="#2196F3" />
+                                <Text style={styles.detailLabel}>Plaka</Text>
+                                <Text style={styles.detailValue}>{formatPlate(vehicle.NumberPlate)}</Text>
+                            </View>
+                        </View>
+                        {role === 'Admin' && (
+                            <>
+                                <View style={styles.detailRow}>
+                                    <View style={styles.detailItem}>
+                                        <Icon name="check-circle" size={24} color={vehicle.IsAvailable ? "#4CAF50" : "#9E9E9E"} />
+                                        <Text style={styles.detailLabel}>Müsaitlik</Text>
+                                        <Text style={styles.detailValue}>{vehicle.IsAvailable ? 'Aktif' : 'Pasif'}</Text>
                                     </View>
-                                    <View style={styles.historyCardBody}>
-                                        <Text style={styles.historyLabel}>E-posta:</Text>
-                                        <Text style={styles.historyValue}>{history.User?.Email || '-'}</Text>
-                                        <Text style={styles.historyLabel}>Kiralama Tarihi:</Text>
-                                        <Text style={styles.historyValue}>{history.RentalDate ? new Date(history.RentalDate).toLocaleDateString('tr-TR') : '-'}</Text>
-                                        <Text style={styles.historyLabel}>İade Tarihi:</Text>
-                                        <Text style={styles.historyValue}>{history.ReturnDate ? new Date(history.ReturnDate).toLocaleDateString('tr-TR') : '-'}</Text>
-                                        <Text style={styles.historyLabel}>Toplam Fiyat:</Text>
-                                        <Text style={[styles.historyValue, { color: '#222', fontWeight: 'bold' }]}>{history.TotalPrice != null ? `₺${history.TotalPrice.toLocaleString('tr-TR')}` : '-'}</Text>
+                                    <View style={styles.detailItem}>
+                                        <Icon name="car-side" size={24} color={vehicle.IsRented ? "#F44336" : "#4CAF50"} />
+                                        <Text style={styles.detailLabel}>Durum</Text>
+                                        <Text style={styles.detailValue}>{vehicle.IsRented ? 'Kirada' : 'Boşta'}</Text>
                                     </View>
                                 </View>
-                            ))
-                        ) : (
-                            <Text style={styles.historyEmpty}>Bu araca ait kiralama kaydı yok.</Text>
+                            </>
                         )}
                     </View>
-                )}
+                    {role === 'Admin' && (
+                        <View style={styles.historyContainer}>
+                            <Text style={styles.sectionTitle}>Kiralama Geçmişi</Text>
+                            {vehicle.RentalHistories && vehicle.RentalHistories.length > 0 ? (
+                                vehicle.RentalHistories.map((history, idx) => (
+                                    <View key={history.Id || idx} style={styles.historyCard}>
+                                        <View style={styles.historyCardHeader}>
+                                            <View style={styles.avatarCircle}>
+                                                <Icon name="account" size={28} color="#3393dc" />
+                                            </View>
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={styles.historyUserName}>{history.User?.Name || '-'} {history.User?.Surname || '-'}</Text>
+                                                <Text style={styles.historyUserUsername}>{history.User?.UserName || '-'}</Text>
+                                            </View>
+                                            <View style={[styles.statusBadge, history.IsActive ? styles.activeBadge : styles.completedBadge]}>
+                                                <Text style={[styles.statusBadgeText, history.IsActive ? styles.activeBadgeText : styles.completedBadgeText]}>{history.IsActive ? 'Aktif' : 'Tamamlandı'}</Text>
+                                            </View>
+                                        </View>
+                                        <View style={styles.historyCardBody}>
+                                            <Text style={styles.historyLabel}>E-posta:</Text>
+                                            <Text style={styles.historyValue}>{history.User?.Email || '-'}</Text>
+                                            <Text style={styles.historyLabel}>Kiralama Tarihi:</Text>
+                                            <Text style={styles.historyValue}>{history.RentalDate ? new Date(history.RentalDate).toLocaleDateString('tr-TR') : '-'}</Text>
+                                            <Text style={styles.historyLabel}>İade Tarihi:</Text>
+                                            <Text style={styles.historyValue}>{history.ReturnDate ? new Date(history.ReturnDate).toLocaleDateString('tr-TR') : '-'}</Text>
+                                            <Text style={styles.historyLabel}>Toplam Fiyat:</Text>
+                                            <Text style={[styles.historyValue, { color: '#222', fontWeight: 'bold' }]}>{history.TotalPrice != null ? `₺${history.TotalPrice.toLocaleString('tr-TR')}` : '-'}</Text>
+                                        </View>
+                                    </View>
+                                ))
+                            ) : (
+                                <Text style={styles.historyEmpty}>Bu araca ait kiralama kaydı yok.</Text>
+                            )}
+                        </View>
+                    )}
 
-                {role === 'Customer' && (
-                    <TouchableOpacity
-                        style={styles.rentButton}
-                        onPress={() => navigation.navigate('RentedScreen', { vehicleId: vehicle.Id })}
-                    >
-                        <Text style={styles.rentButtonText}>Kiralama İsteği Oluştur</Text>
-                    </TouchableOpacity>
-                )}
-            </View>
-        </ScrollView>
+                    {role === 'Customer' && (
+                        <TouchableOpacity
+                            style={styles.rentButton}
+                            onPress={() => navigation.navigate('RentedScreen', { vehicleId: vehicle.Id })}
+                        >
+                            <Text style={styles.rentButtonText}>Kiralama İsteği Oluştur</Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
+            </ScrollView>
+        </View>
     );
 };
 
@@ -504,7 +533,8 @@ const styles = StyleSheet.create({
     vehicleImage: {
         width: '100%',
         height: '100%',
-        resizeMode: 'cover',
+        resizeMode: 'contain',
+        // alignSelf: 'center',
     },
     navButton: {
         position: 'absolute',
@@ -544,6 +574,47 @@ const styles = StyleSheet.create({
         width: 10,
         height: 10,
         borderRadius: 5,
+    },
+    gradientHeader: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 100,
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingTop: 38,
+        paddingHorizontal: 16,
+        zIndex: 10,
+        elevation: 8,
+        borderBottomLeftRadius: 24,
+        borderBottomRightRadius: 24,
+        justifyContent: 'flex-start',
+    },
+    backButton: {
+        padding: 4,
+        marginRight: 12,
+    },
+    backIcon: {
+        color: '#fff',
+        fontSize: 34,
+        fontWeight: 'bold',
+        marginTop: -2,
+    },
+    gradientHeaderTitle: {
+        color: '#fff',
+        fontSize: 22,
+        fontWeight: 'bold',
+        letterSpacing: 1,
+        flex: 1,
+    },
+    headerLogo: {
+        width: 48,
+        height: 32,
+        resizeMode: 'contain',
+        position: 'absolute',
+        right: 18,
+        top: 38,
     },
 });
 

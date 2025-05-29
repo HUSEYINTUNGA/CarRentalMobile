@@ -7,9 +7,7 @@ import {
   Image,
   StyleSheet,
   KeyboardAvoidingView,
-  Platform,
-  Alert,
-  ScrollView
+  Platform
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuth } from '../hooks/useAuth';
@@ -25,7 +23,7 @@ const VerifyAccountScreen = () => {
 
   useEffect(() => {
     if (globalError) {
-      setMessage({ text: globalError, type: 'error' });
+      setMessage({ text: typeof globalError === 'string' ? globalError : globalError?.message || globalError?.title || JSON.stringify(globalError), type: 'error' });
       clearError();
     }
   }, [globalError]);
@@ -42,7 +40,7 @@ const VerifyAccountScreen = () => {
         navigation.navigate('Signin');
       }, 1500);
     } else if (result.error) {
-      setMessage({ text: result.error, type: 'error' });
+      setMessage({ text: typeof result.error === 'string' ? result.error : result.error?.message || result.error?.title || JSON.stringify(result.error), type: 'error' });
     }
   };
 
@@ -55,70 +53,70 @@ const VerifyAccountScreen = () => {
     if (result.success) {
       setMessage({ text: 'Kod tekrar gönderildi! Lütfen e-postanızı kontrol edin.', type: 'success' });
     } else if (result.error) {
-      setMessage({ text: result.error, type: 'error' });
+      setMessage({ text: typeof result.error === 'string' ? result.error : result.error?.message || result.error?.title || JSON.stringify(result.error), type: 'error' });
     }
   };
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 60}
     >
-      <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-        <View style={styles.card}>
-          <Image
-            source={require('../assets/verification.png')}
-            style={styles.cartoon}
-            resizeMode="contain"
-          />
+      <View style={styles.card}>
+        <Image
+          source={require('../assets/verification.png')}
+          style={styles.cartoon}
+          resizeMode="contain"
+        />
 
-          <Text style={styles.bigTitle}>Bu bataklığa düşmek için neden bu kadar ısrarcı ve kararlısın, anlamış değilim...</Text>
+        <Text style={styles.bigTitle}>Bu bataklığa düşmek için neden bu kadar ısrarcı ve kararlısın, anlamış değilim...</Text>
 
-          <Text style={styles.descText}>
-            Ama madem geldin, bari kart numaranı şey... pardon, doğrulama kodunu gir de şu yarım kalan hikayemizi tamamlayalım.
+        <Text style={styles.descText}>
+          Ama madem geldin, bari kart numaranı şey... pardon, doğrulama kodunu gir de şu yarım kalan hikayemizi tamamlayalım.
+        </Text>
+
+        <Text style={styles.hintText}>
+          Kod hala gelmediyse, spam klasörüne de bir göz at. Belki orada bekliyor, utangaç olabilir...
+        </Text>
+
+        <TextInput
+          style={styles.input}
+          placeholder="Bu kod sadece sana özel, FBI bile bilmesin."
+          placeholderTextColor="#888"
+          value={code}
+          onChangeText={setCode}
+          keyboardType="number-pad"
+          maxLength={6}
+        />
+
+        <TouchableOpacity
+          style={styles.button}
+          onPress={handleVerify}
+          disabled={!code || loadingStates.signIn}
+        >
+          <Text style={styles.buttonText}>{loadingStates.signIn ? 'Doğrulanıyor...' : 'Sisteme damat ol! 👰'}</Text>
+        </TouchableOpacity>
+
+        {message.text ? (
+          <Text style={[
+            styles.message,
+            message.type === 'success' ? styles.successMessage : styles.errorMessage
+          ]}>
+            {typeof message.text === 'string'
+              ? message.text
+              : message.text?.message || message.text?.title || JSON.stringify(message.text)}
           </Text>
+        ) : null}
 
-          <Text style={styles.hintText}>
-            Kod hala gelmediyse, spam klasörüne de bir göz at. Belki orada bekliyor, utangaç olabilir...
-          </Text>
+        <TouchableOpacity onPress={handleResend} style={styles.resendBtn}>
+          <Text style={styles.resendText}>Kodu tekrar gönder</Text>
+        </TouchableOpacity>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Bu kod sadece sana özel, FBI bile bilmesin."
-            placeholderTextColor="#888"
-            value={code}
-            onChangeText={setCode}
-            keyboardType="number-pad"
-            maxLength={6}
-          />
-
-          <TouchableOpacity
-            style={styles.button}
-            onPress={handleVerify}
-            disabled={!code || loadingStates.signIn}
-          >
-            <Text style={styles.buttonText}>{loadingStates.signIn ? 'Doğrulanıyor...' : 'Sisteme damat ol! 👰'}</Text>
-          </TouchableOpacity>
-
-          {message.text ? (
-            <Text style={[
-              styles.message,
-              message.type === 'success' ? styles.successMessage : styles.errorMessage
-            ]}>
-              {message.text}
-            </Text>
-          ) : null}
-
-          <TouchableOpacity onPress={handleResend} style={styles.resendBtn}>
-            <Text style={styles.resendText}>Kodu tekrar gönder</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={() => navigation.navigate('Signin')}>
-            <Text style={styles.backLink}>Geri kaçmak da bir stratejidir.</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+        <TouchableOpacity onPress={() => navigation.navigate('Signin')}>
+          <Text style={styles.backLink}>Geri kaçmak da bir stratejidir.</Text>
+        </TouchableOpacity>
+      </View>
     </KeyboardAvoidingView>
   );
 };
@@ -127,12 +125,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f4f6ff',
-  },
-  scrollContainer: {
-    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 20,
+    paddingHorizontal: 5,
   },
   card: {
     width: '95%',
@@ -147,24 +142,7 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     borderWidth: 2,
     borderColor: '#e0e7ff',
-    marginTop: 20,
-    marginBottom: 20,
-  },
-  infoBox: {
-    backgroundColor: '#f4f8ff',
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    marginBottom: 10,
-    width: '100%',
-    borderLeftWidth: 4,
-    borderLeftColor: '#2563eb',
-  },
-  infoBoxText: {
-    color: '#222',
-    fontWeight: 'bold',
-    fontSize: 15,
-    textAlign: 'center',
+    minHeight: 350,
   },
   cartoon: {
     width: 220,

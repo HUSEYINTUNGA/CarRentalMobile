@@ -38,11 +38,28 @@ const SignupScreen = () => {
     }
   }, [error]);
 
+  const validateEmail = (email) => {
+    const re = /^(([^<>()\[\]\\.,;:\s@\"]+(\.[^<>()\[\]\\.,;:\s@\"]+)*)|(".+"))@(([^<>()[\]\\.,;:\s@\"]+\.)+[^<>()[\]\\.,;:\s@\"]{2,})$/i;
+    return re.test(String(email).toLowerCase());
+  };
+
+  const validatePassword = (password) => {
+    const hasUpper = /[A-Z]/.test(password);
+    const hasLower = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasPunct = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password);
+    return hasUpper && hasLower && hasNumber && hasPunct;
+  };
+
   const handleSignUp = async () => {
     if (!formData.name || !formData.surname || !formData.email || 
         !formData.phoneNumber || !formData.tcNo ||
         !formData.password || !formData.confirmPassword) {
       setMessage({ text: 'Lütfen tüm alanları doldurun', type: 'error' });
+      return;
+    }
+    if (!validateEmail(formData.email)) {
+      setMessage({ text: 'Lütfen geçerli bir e-posta adresi girin', type: 'error' });
       return;
     }
     if (formData.password !== formData.confirmPassword) {
@@ -51,6 +68,10 @@ const SignupScreen = () => {
     }
     if (formData.password.length < 6) {
       setMessage({ text: 'Şifre en az 6 karakter olmalıdır', type: 'error' });
+      return;
+    }
+    if (!validatePassword(formData.password)) {
+      setMessage({ text: 'Şifre en az bir büyük harf, bir küçük harf, bir rakam ve bir noktalama işareti içermelidir', type: 'error' });
       return;
     }
     const payload = {
@@ -82,7 +103,7 @@ const SignupScreen = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 60}
     >
-      <ScrollView contentContainerStyle={[styles.scrollContainer, { minHeight: 700 }]} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[styles.scrollContainer]} keyboardShouldPersistTaps="handled">
         <View style={styles.card}>
           <Text style={styles.title}>Hazırsan, yola çıkıyoruz!</Text>
           <Text style={styles.subtitle}>Ehliyetin yoksa da gel, biz zaten hayal satıyoruz...</Text>
@@ -95,7 +116,8 @@ const SignupScreen = () => {
             placeholderTextColor="#999"
             value={formData.name}
             onChangeText={text => setFormData({ ...formData, name: text })}
-            autoCapitalize="words"
+            autoCapitalize="none"
+            autoCorrect={false}
           />
           <TextInput
             style={styles.input}
@@ -103,7 +125,8 @@ const SignupScreen = () => {
             placeholderTextColor="#999"
             value={formData.surname}
             onChangeText={text => setFormData({ ...formData, surname: text })}
-            autoCapitalize="words"
+            autoCapitalize="none"
+            autoCorrect={false}
           />
           <TextInput
             style={styles.input}
@@ -143,6 +166,7 @@ const SignupScreen = () => {
             value={formData.password}
             onChangeText={text => setFormData({ ...formData, password: text })}
             secureTextEntry
+            autoCapitalize="none"
             autoCorrect={false}
           />
           <TextInput
@@ -152,6 +176,7 @@ const SignupScreen = () => {
             value={formData.confirmPassword}
             onChangeText={text => setFormData({ ...formData, confirmPassword: text })}
             secureTextEntry
+            autoCapitalize="none"
             autoCorrect={false}
           />
           <Text style={styles.helperText}>Lütfen şifreni unutma. Unutursan, dram sayfasına düşersin.</Text>

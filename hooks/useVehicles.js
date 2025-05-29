@@ -3,17 +3,16 @@ import {
   getVehicles,
   getAllVehicles,
   getVehicleById,
-  getVehicleCategories,
   createVehicle,
   updateVehicle,
   deleteVehicle,
-  getVehicleBasicById
+  getVehicleBasicById,
+  restoreVehicle as restoreVehicleApi
 } from '../api/vehiclesApi';
 
 export const useVehicles = () => {
   const [vehicles, setVehicles] = useState([]);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
-  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -30,11 +29,11 @@ export const useVehicles = () => {
     }
   }, []);
 
-  const fetchAllVehicles = useCallback(async () => {
+  const fetchAllVehicles = useCallback(async (params) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await getAllVehicles();
+      const response = await getAllVehicles(params);
       setVehicles(response.data);
     } catch (err) {
       setError(err.response?.data?.message || 'Tüm araçlar yüklenirken hata oluştu.');
@@ -68,19 +67,6 @@ export const useVehicles = () => {
     } catch (err) {
       setError(err.response?.data?.message || 'Araç temel bilgisi alınamadı.');
       throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const fetchCategories = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await getVehicleCategories();
-      setCategories(response.data);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Kategoriler yüklenemedi.');
     } finally {
       setLoading(false);
     }
@@ -130,20 +116,33 @@ export const useVehicles = () => {
     }
   }, [fetchAllVehicles]);
 
+  const restoreVehicle = async (vehicleId) => {
+    try {
+        setLoading(true);
+        await restoreVehicleApi(vehicleId);
+        await fetchAllVehicles();
+        return true;
+    } catch (err) {
+        setError(err.message || 'Araç geri yüklenirken bir hata oluştu.');
+        return false;
+    } finally {
+        setLoading(false);
+    }
+};
+
   return {
     vehicles,
     selectedVehicle,
-    categories,
     loading,
     error,
     fetchVehicles,
     fetchAllVehicles,
     fetchVehicleById,
     fetchVehicleBasicById,
-    fetchCategories,
     addVehicle,
     editVehicle,
     removeVehicle,
-    setSelectedVehicle
+    setSelectedVehicle,
+    restoreVehicle
   };
 }; 

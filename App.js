@@ -7,7 +7,7 @@ import SigninScreen from './screens/SigninScreen';
 import SignupScreen from './screens/SignupScreen';
 import VerifyAccountScreen from './screens/VerifyAccountScreen';
 import HomeScreen from './screens/HomeScreen';
-import { StatusBar, ActivityIndicator, View, Alert } from 'react-native';
+import { StatusBar, ActivityIndicator, View} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
 import ResetPasswordScreen from './screens/ResetPasswordScreen';
@@ -31,7 +31,7 @@ import * as jwtDecode from 'jwt-decode';
 import { useAuth } from './hooks/useAuth';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { TouchableOpacity } from 'react-native';
-import { navigationRef, resetToSignin } from './RootNavigation';
+import { navigationRef} from './RootNavigation';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -118,6 +118,7 @@ const TabNavigator = (props) => {
             component={RentalRequestsScreen}
             options={{
               title: 'Kiralama İstekleri',
+              headerShown: false,
               tabBarIcon: ({ color, size }) => (
                 <Icon name="list" size={size} color={color} />
               ),
@@ -138,6 +139,7 @@ const TabNavigator = (props) => {
             component={ProfileScreen}
             options={{
               title: 'Profil',
+              headerShown: false,
               tabBarIcon: ({ color, size }) => (
                 <Icon name="person" size={size} color={color} />
               ),
@@ -188,6 +190,7 @@ const TabNavigator = (props) => {
             initialParams={{ type: 'history' }}
             options={{
               title: 'Geçmiş Kiralama İstekleriniz',
+              headerShown: false,
               tabBarIcon: ({ color, size }) => (
                 <Icon name="history" size={size} color={color} />
               ),
@@ -209,6 +212,7 @@ const TabNavigator = (props) => {
             component={ProfileScreen}
             options={{
               title: 'Profil',
+              headerShown: false,
               tabBarIcon: ({ color, size }) => (
                 <Icon name="person" size={size} color={color} />
               ),
@@ -321,12 +325,12 @@ const App = () => {
           )}
           <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: true }} />
           <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="PaymentMethods" component={PaymentMethodsScreen} options={{ title: 'Ödeme Yöntemleriniz' }} />
-          <Stack.Screen name="EditPaymentMethod" component={EditPaymentMethodScreen} options={{ title: 'Kart Düzenle' }} />
+          <Stack.Screen name="PaymentMethods" component={PaymentMethodsScreen} options={{ title: 'Ödeme Yöntemleriniz' , headerShown: false}} />
+          <Stack.Screen name="EditPaymentMethod" component={EditPaymentMethodScreen} options={{ title: 'Kart Düzenle', headerShown: false }} />
           <Stack.Screen name="ViewPaymentMethod" component={ViewPaymentMethod} options={{ title: 'Kart Detayları', presentation: 'modal' }} />
-          <Stack.Screen name="VehicleDetails" component={VehicleDetailsScreen} options={{ title: 'Araç Detayları', headerShown: true }} />
-          <Stack.Screen name="RentedScreen" component={RentedScreen} options={{ title: 'Araç Kirala', headerShown: true }} />
-          <Stack.Screen name="ManageVehicles" component={ManageVehiclesScreen} options={{ title: 'Araç Yönetimi', headerShown: true }} />
+          <Stack.Screen name="VehicleDetails" component={VehicleDetailsScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="RentedScreen" component={RentedScreen} options={{ title: 'Araç Kirala', headerShown: false }} />
+          <Stack.Screen name="ManageVehicles" component={ManageVehiclesScreen} options={{ title: 'Araç Yönetimi', headerShown: false }} />
           <Stack.Screen name="RentalRequests" component={RentalRequestsScreen} options={{ title: 'Kiralama İstekleri', headerShown: true }} />
           <Stack.Screen name="UsersList" component={UsersListScreen} options={{ title: 'Kullanıcılar', headerShown: true }} />
         </Stack.Navigator>

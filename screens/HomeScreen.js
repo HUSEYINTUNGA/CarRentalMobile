@@ -1,4 +1,4 @@
-import React, { useState, useLayoutEffect, useEffect } from 'react';
+import React, { useState, useLayoutEffect, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Image, Alert, ActivityIndicator } from 'react-native';
 import { useProfile } from '../hooks/useProfile';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -8,6 +8,7 @@ import { useVehicles } from '../hooks/useVehicles';
 import { useRentalHistories } from '../hooks/useRentalHistories';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as jwtDecode from 'jwt-decode';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const HomeScreen = () => {
   const { fetchProfile } = useProfile();
@@ -18,29 +19,63 @@ const HomeScreen = () => {
   const { fetchVehicles, vehicles, loading: vehiclesLoading } = useVehicles();
   const { fetchRentalHistoriesByUserId, fetchPendingRentalHistories, rentalHistories, pendingRentalHistories, loading: rentalLoading, pendingLoading } = useRentalHistories();
   const [userId, setUserId] = useState(null);
+  const [latestVehicle, setLatestVehicle] = useState(null);
+  const [popularVehicles, setPopularVehicles] = useState([]);
 
+  const processVehicleData = useCallback((vehicles) => {
+    if (!vehicles || vehicles.length === 0) {
+      setLatestVehicle(null);
+      setPopularVehicles([]);
+      return;
+    }
+
+    // En son eklenen araç
+    const latest = vehicles.reduce((latest, current) =>
+      new Date(current.CreatedAt) > new Date(latest.CreatedAt) ? current : latest
+    );
+    setLatestVehicle(latest);
+
+    // Popüler araçlar (fiyata göre sıralı ilk 3 araç)
+    const popular = [...vehicles]
+      .sort((a, b) => (b.DailyPrice || 0) - (a.DailyPrice || 0))
+      .slice(0, 3);
+    setPopularVehicles(popular);
+  }, []);
+
+  useEffect(() => {
+    if (vehicles) {
+      processVehicleData(vehicles);
+    }
+  }, [vehicles, processVehicleData]);
+
+  const loadData = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (token) {
+        const decodedToken = jwtDecode.jwtDecode(token);
+        setUserId(decodedToken.nameid);
+        
+        const profileData = await fetchProfile();
+        setProfileData(profileData);
+        
+        await fetchVehicles({});
+        await fetchRentalHistoriesByUserId(decodedToken.nameid);
+        await fetchPendingRentalHistories();
+      }
+    } catch (error) {
+      console.error('Veri yükleme hatası:', error);
+      Alert.alert('Hata', 'Veriler yüklenirken bir hata oluştu.');
+    }
+  };
+
+  // İlk yükleme için useEffect
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  // Her ekran odaklandığında verileri yenile
   useFocusEffect(
     React.useCallback(() => {
-      const loadData = async () => {
-        try {
-          const token = await AsyncStorage.getItem('token');
-          if (token) {
-            const decodedToken = jwtDecode.jwtDecode(token);
-            setUserId(decodedToken.nameid);
-            
-            const profileData = await fetchProfile();
-            setProfileData(profileData);
-            
-            await fetchVehicles({});
-            await fetchRentalHistoriesByUserId(decodedToken.nameid);
-            await fetchPendingRentalHistories();
-          }
-        } catch (error) {
-          console.error('Veri yükleme hatası:', error);
-          Alert.alert('Hata', 'Veriler yüklenirken bir hata oluştu.');
-        }
-      };
-      
       loadData();
     }, [])
   );
@@ -105,20 +140,10 @@ const HomeScreen = () => {
           </View>
         </Menu>
       ),
-      headerTitle: 'Ana Sayfa',
+      headerTitle: '',
+      headerTransparent: true,
     });
   }, [navigation, menuVisible, profileData]);
-
-  const latestVehicle = vehicles && vehicles.length > 0
-    ? vehicles.reduce((latest, current) =>
-        new Date(current.CreatedAt) > new Date(latest.CreatedAt) ? current : latest
-      )
-    : null;
-  const firstFiveVehicles = vehicles
-    ? [...vehicles]
-        .sort((a, b) => (b.DailyPrice || 0) - (a.DailyPrice || 0))
-        .slice(0, 3)
-    : [];
 
   if (vehiclesLoading || rentalLoading) {
     return <ActivityIndicator size="large" color="#2196F3" style={{ marginTop: 40 }} />;
@@ -158,87 +183,175 @@ const HomeScreen = () => {
         </View>
       </Modal>
       <ScrollView contentContainerStyle={styles.container}>
-        {latestVehicle && (
-          <TouchableOpacity
-            style={styles.adCard}
-            onPress={() => navigation.navigate('VehicleDetails', { vehicleId: latestVehicle.Id })}
-          >
-            <View style={styles.sectionHeaderBlue}><Text style={styles.sectionHeaderText}>Yeni aracımızı denedin mi?</Text></View>
-            <Image
-              source={latestVehicle.Photo ? { uri: `data:image/jpeg;base64,${latestVehicle.Photo}` } : undefined}
-              style={styles.adImage}
-            />
-            <Text style={styles.adCarName}>{latestVehicle.Brand} {latestVehicle.Model}</Text>
-            <View style={styles.greenPriceBadge}><Text style={styles.greenPriceBadgeText}>{latestVehicle.DailyPrice} TL / Günlük</Text></View>
-          </TouchableOpacity>
-        )}
-
-        <TouchableOpacity
-          style={styles.listCard}
-          onPress={() => navigation.navigate('VehicleListTab')}
+        <LinearGradient
+          colors={['#0066cc', '#0052a3']}
+          style={styles.header}
         >
-          <View style={styles.sectionHeaderBlue}><Text style={styles.sectionHeaderText}>Popüler Araçlar</Text></View>
-          <View style={styles.vehicleListRow}>
-            {firstFiveVehicles.map(vehicle => (
-              <View key={vehicle.Id} style={styles.vehicleItem}>
-                <Image
-                  source={vehicle.Photo ? { uri: `data:image/jpeg;base64,${vehicle.Photo}` } : undefined}
-                  style={styles.vehicleImage}
-                />
-                <Text style={styles.vehicleName}>{vehicle.Brand} {vehicle.Model}</Text>
-                <View style={styles.greenPriceBadge}><Text style={styles.greenPriceBadgeText}>{vehicle.DailyPrice} TL</Text></View>
-              </View>
+          <Text style={styles.headerTitleCentered}>Hoş Geldin, {profileData?.name}!</Text>
+          <Text style={styles.headerSubtitleCentered}>Bugün hangi aracı kiralamak istersin?</Text>
+        </LinearGradient>
+
+        <View style={styles.content}>
+          {latestVehicle && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Yeni Eklenen Araç</Text>
+              <TouchableOpacity
+                style={[styles.vehicleCardHorizontal, { borderLeftWidth: 6, borderLeftColor: '#0066cc' }]}
+                onPress={() => navigation.navigate('VehicleDetails', { vehicleId: latestVehicle.Id })}
+              >
+                <View style={styles.vehicleImageWrapper}>
+                  {latestVehicle.Photo ? (
+                    <Image
+                      source={{ uri: latestVehicle.Photo }}
+                      style={styles.vehicleImage}
+                    />
+                  ) : (
+                    <Icon name="car" size={32} color="#0066cc" />
+                  )}
+                </View>
+                <View style={styles.vehicleInfoHorizontal}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                    <Icon name="car" size={18} color="#0066cc" style={{ marginRight: 6 }} />
+                    <Text style={styles.vehicleTitle}>{latestVehicle.Brand} {latestVehicle.Model}</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                    <Icon name="tag" size={16} color="#0066cc" style={{ marginRight: 6 }} />
+                    <Text style={styles.vehicleDetailHorizontal}>Günlük: {latestVehicle.DailyPrice} TL</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Icon name="calendar" size={16} color="#0066cc" style={{ marginRight: 6 }} />
+                    <Text style={styles.vehicleDetailHorizontal}>
+                      {new Date(latestVehicle.CreatedAt).toLocaleDateString()}
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Popüler Araçlar</Text>
+            {popularVehicles.map(vehicle => (
+              <TouchableOpacity
+                key={vehicle.Id}
+                style={[styles.vehicleCardHorizontal, { borderLeftWidth: 6, borderLeftColor: '#3393dc' }]}
+                onPress={() => navigation.navigate('VehicleDetails', { vehicleId: vehicle.Id })}
+              >
+                <View style={styles.vehicleImageWrapper}>
+                  {vehicle.Photo ? (
+                    <Image
+                      source={{ uri: vehicle.Photo }}
+                      style={styles.vehicleImage}
+                    />
+                  ) : (
+                    <Icon name="car" size={32} color="#3393dc" />
+                  )}
+                </View>
+                <View style={styles.vehicleInfoHorizontal}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                    <Icon name="car" size={18} color="#3393dc" style={{ marginRight: 6 }} />
+                    <Text style={styles.vehicleTitle}>{vehicle.Brand} {vehicle.Model}</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                    <Icon name="tag" size={16} color="#3393dc" style={{ marginRight: 6 }} />
+                    <Text style={styles.vehicleDetailHorizontal}>Günlük: {vehicle.DailyPrice} TL</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Icon name="calendar" size={16} color="#3393dc" style={{ marginRight: 6 }} />
+                    <Text style={styles.vehicleDetailHorizontal}>
+                      {new Date(vehicle.CreatedAt).toLocaleDateString()}
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
             ))}
           </View>
-        </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.historyCard}
-          onPress={() => navigation.navigate('RentalHistoryTab')}
-        >
-          <View style={styles.sectionHeaderBlue}><Text style={styles.sectionHeaderText}>Kiralama Geçmişim</Text></View>
-          {rentalLoading ? <ActivityIndicator /> : (
-            rentalHistories.length === 0
-              ? <Text style={styles.emptyText}>Onaylanmış kiralamanız yok.</Text>
-              : rentalHistories.slice(0, 3).map(rental => (
-                  <View key={rental.StartDate + rental.NumberPlate} style={styles.rentalItemRow}>
-                    {rental.MainPhoto && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Kiralama Geçmişim</Text>
+            {rentalLoading ? (
+              <ActivityIndicator size="large" color="#0066cc" />
+            ) : rentalHistories.length === 0 ? (
+              <Text style={styles.emptyText}>Onaylanmış kiralamanız yok.</Text>
+            ) : (
+              rentalHistories.slice(0, 3).map(rental => (
+                <View
+                  key={rental.StartDate + rental.NumberPlate}
+                  style={[styles.vehicleCardHorizontal, { borderLeftWidth: 6, borderLeftColor: '#e53935' }]}
+                >
+                  <View style={styles.vehicleImageWrapper}>
+                    {rental.MainPhotoUrl ? (
                       <Image
-                        source={{ uri: `data:image/jpeg;base64,${rental.MainPhoto}` }}
-                        style={styles.rentalMiniImage}
+                        source={{ uri: rental.MainPhotoUrl }}
+                        style={styles.vehicleImage}
                       />
+                    ) : (
+                      <Icon name="car" size={32} color="#e53935" />
                     )}
-                    <Text style={styles.rentalCarBold}>{rental.Brand} {rental.Model}</Text>
-                    <View style={styles.priceBadge}>
-                      <Text style={styles.priceBadgeText}>{rental.TotalPrice} TL</Text>
+                  </View>
+                  <View style={styles.vehicleInfoHorizontal}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                      <Icon name="car" size={18} color="#e53935" style={{ marginRight: 6 }} />
+                      <Text style={styles.vehicleTitle}>{rental.Brand} {rental.Model}</Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                      <Icon name="calendar" size={16} color="#e53935" style={{ marginRight: 6 }} />
+                      <Text style={styles.vehicleDetailHorizontal}>
+                        {new Date(rental.StartDate).toLocaleDateString()} - {new Date(rental.EndDate).toLocaleDateString()}
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Icon name="cash" size={16} color="#e53935" style={{ marginRight: 6 }} />
+                      <Text style={styles.vehicleDetailHorizontal}>Toplam: {rental.TotalPrice} TL</Text>
                     </View>
                   </View>
-                ))
-          )}
-        </TouchableOpacity>
-
-        <View style={styles.historyCard}>
-          <TouchableOpacity onPress={() => navigation.navigate('PendingRequestsTab')}>
-            <View style={styles.sectionHeaderBlue}><Text style={styles.sectionHeaderText}>Bekleyen Kiralama İsteklerim</Text></View>
-            {pendingLoading ? <ActivityIndicator /> : (
-              pendingRentalHistories.length === 0
-                ? <Text style={styles.emptyText}>Bekleyen kiralama isteğiniz yok.</Text>
-                : pendingRentalHistories.slice(0, 3).map(rental => (
-                    <View key={rental.StartDate + rental.NumberPlate} style={styles.rentalItemRow}>
-                      {rental.MainPhoto && (
-                       <Image
-                          source={{ uri: `data:image/jpeg;base64,${rental.MainPhoto}` }}
-                          style={styles.rentalMiniImage}
-                        />
-                      )}
-                      <Text style={styles.rentalCarBold}>{rental.Brand} {rental.Model}</Text>
-                      <View style={styles.priceBadgePending}>
-                        <Text style={styles.priceBadgePendingText}>{rental.TotalPrice} TL</Text>
-                      </View>
-                    </View>
-                  ))
+                </View>
+              ))
             )}
-          </TouchableOpacity>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Bekleyen Kiralama İsteklerim</Text>
+            {pendingLoading ? (
+              <ActivityIndicator size="large" color="#0066cc" />
+            ) : pendingRentalHistories.length === 0 ? (
+              <Text style={styles.emptyText}>Bekleyen kiralama isteğiniz yok.</Text>
+            ) : (
+              pendingRentalHistories.slice(0, 3).map(rental => (
+                <View
+                  key={rental.StartDate + rental.NumberPlate}
+                  style={[styles.vehicleCardHorizontal, { borderLeftWidth: 6, borderLeftColor: '#2196F3' }]}
+                >
+                  <View style={styles.vehicleImageWrapper}>
+                    {rental.MainPhotoUrl ? (
+                      <Image
+                        source={{ uri: rental.MainPhotoUrl }}
+                        style={styles.vehicleImage}
+                      />
+                    ) : (
+                      <Icon name="car" size={32} color="#2196F3" />
+                    )}
+                  </View>
+                  <View style={styles.vehicleInfoHorizontal}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                      <Icon name="car" size={18} color="#2196F3" style={{ marginRight: 6 }} />
+                      <Text style={styles.vehicleTitle}>{rental.Brand} {rental.Model}</Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                      <Icon name="calendar" size={16} color="#2196F3" style={{ marginRight: 6 }} />
+                      <Text style={styles.vehicleDetailHorizontal}>
+                        {new Date(rental.StartDate).toLocaleDateString()} - {new Date(rental.EndDate).toLocaleDateString()}
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Icon name="cash" size={16} color="#2196F3" style={{ marginRight: 6 }} />
+                      <Text style={styles.vehicleDetailHorizontal}>Toplam: {rental.TotalPrice} TL</Text>
+                    </View>
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
         </View>
       </ScrollView>
     </>
@@ -247,10 +360,31 @@ const HomeScreen = () => {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
-    paddingTop: 20,
-    backgroundColor: '#f4f6ff',
     flexGrow: 1,
+    backgroundColor: '#f4f6ff',
+  },
+  header: {
+    padding: 20,
+    paddingTop: 40,
+    paddingBottom: 30,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+  },
+  headerTitleCentered: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    textAlign: 'center',
+  },
+  headerSubtitleCentered: {
+    fontSize: 16,
+    color: '#ffffff',
+    textAlign: 'center',
+    marginTop: 5,
+  },
+  content: {
+    padding: 15,
+    paddingTop: 20,
   },
   card: {
     backgroundColor: '#fff',
@@ -337,13 +471,14 @@ const styles = StyleSheet.create({
   },
   profileButton: {
     marginRight: 16,
+    zIndex: 1000,
   },
   profileImage: {
     width: 36,
     height: 36,
     borderRadius: 18,
     borderWidth: 2,
-    borderColor: '#1541e0',
+    borderColor: '#ffffff',
   },
   menuContent: {
     backgroundColor: '#fff',
@@ -578,6 +713,57 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 15,
+  },
+  section: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 15,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+  },
+  vehicleCardHorizontal: {
+    flexDirection: 'row',
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 10,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+  },
+  vehicleImageWrapper: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+    backgroundColor: '#f5f5f5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 15,
+    overflow: 'hidden',
+  },
+  vehicleInfoHorizontal: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  vehicleTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#000000',
+    marginBottom: 5,
+  },
+  vehicleDetailHorizontal: {
+    fontSize: 14,
+    color: '#666666',
+    marginBottom: 3,
+  },
+  vehicleImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
 });
 

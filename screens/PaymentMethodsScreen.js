@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { usePaymentMethods } from '../hooks/usePaymentMethods';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
+import { LinearGradient } from 'expo-linear-gradient';
 
 
 const PaymentMethodsScreen = () => {
@@ -128,20 +129,29 @@ const PaymentMethodsScreen = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={handleAddNew}
-        >
-          <Text style={styles.addButtonText}>Yeni Kart Ekle</Text>
+      {/* Gradient Header */}
+      <LinearGradient
+        colors={["#0066cc", "#2196F3"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.gradientHeader}
+      >
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Text style={styles.backIcon}>{'‹'}</Text>
         </TouchableOpacity>
-      </View>
+        <Text style={styles.gradientHeaderTitle}>Ödeme Yöntemleriniz</Text>
+      </LinearGradient>
+      <View style={{ height: 8 }} />
       <FlatList
         data={paymentMethods}
         renderItem={renderCard}
         keyExtractor={(item) => item.Id.toString()}
-        contentContainerStyle={styles.listContainer}
+        contentContainerStyle={[styles.listContainer, { paddingTop: 112 }]}
       />
+      {/* Floating Action Button */}
+      <TouchableOpacity style={styles.fab} onPress={handleAddNew}>
+        <Text style={styles.fabIcon}>＋</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -156,28 +166,60 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  header: {
-    padding: 16,
-    backgroundColor: colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  title: {
-    ...typography.h1,
-    marginBottom: 16,
-  },
-  addButton: {
+  gradientHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 100,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.primary,
-    padding: 12,
-    borderRadius: 8,
-    alignSelf: 'flex-start',
+    paddingTop: 38,
+    paddingHorizontal: 16,
+    zIndex: 10,
+    elevation: 8,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    justifyContent: 'flex-start',
   },
-  addButtonText: {
-    color: colors.white,
-    marginLeft: 8,
-    ...typography.button,
+  backButton: {
+    padding: 4,
+    marginRight: 12,
+  },
+  backIcon: {
+    color: '#fff',
+    fontSize: 34,
+    fontWeight: 'bold',
+    marginTop: -2,
+  },
+  gradientHeaderTitle: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: 'bold',
+    letterSpacing: 1,
+    flex: 1,
+  },
+  fab: {
+    position: 'absolute',
+    right: 24,
+    bottom: 32,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#2196F3',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 6,
+    shadowColor: '#2196F3',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+  },
+  fabIcon: {
+    color: '#fff',
+    fontSize: 36,
+    fontWeight: 'bold',
+    marginTop: -2,
   },
   listContainer: {
     padding: 16,

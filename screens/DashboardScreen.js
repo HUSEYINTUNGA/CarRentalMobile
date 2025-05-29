@@ -8,6 +8,7 @@ import {
     ActivityIndicator,
     TouchableOpacity,
     FlatList,
+    Image,
 } from 'react-native';
 import { useDashboard } from '../hooks/useDashboard';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -18,9 +19,10 @@ import { useIsFocused } from '@react-navigation/native';
 
 const formatPlate = (plate) => {
     if (!plate) return '';
-    const match = plate.match(/^(\d{2})([A-Z]+)(\d+)$/i);
+    const cleaned = plate.replace(/\s+/g, '').toUpperCase();
+    const match = cleaned.match(/^(\d{2})([A-ZÇĞİÖŞÜ]+)(\d{2,4})$/);
     if (match) {
-        return `${match[1]} ${match[2].toUpperCase()} ${match[3]}`;
+        return `${match[1]} ${match[2]} ${match[3]}`;
     }
     return plate;
 };
@@ -67,9 +69,13 @@ const StatCard = ({ title, value, icon, color}) => (
 );
 
 const VehicleCard = ({ vehicle }) => (
-    <View style={[styles.vehicleCardHorizontal, { borderLeftWidth: 6, borderLeftColor: '#0066cc' }]}>
+    <View style={[styles.vehicleCardHorizontal, { borderLeftWidth: 6, borderLeftColor: '#0066cc' }]}> 
         <View style={styles.vehicleImageWrapper}>
-            <MaterialIcons name="directions-car" size={32} color="#0066cc" />
+            {vehicle.MainPhotoUrl ? (
+                <Image source={{ uri: vehicle.MainPhotoUrl }} style={styles.vehicleImage} />
+            ) : (
+                <MaterialIcons name="directions-car" size={32} color="#0066cc" />
+            )}
         </View>
         <View style={styles.vehicleInfoHorizontal}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
@@ -132,7 +138,11 @@ const MostRentedVehicleCard = ({ vehicle, index }) => (
             <Text style={[styles.rankNumber, { color: '#fff' }]}>{index + 1}</Text>
         </View>
         <View style={styles.vehicleImageWrapperCentered}>
-            <MaterialIcons name="directions-car" size={40} color={getMedalColor(index)} />
+            {vehicle.MainPhotoUrl ? (
+                <Image source={{ uri: vehicle.MainPhotoUrl }} style={styles.vehicleImage} />
+            ) : (
+                <MaterialIcons name="directions-car" size={40} color={getMedalColor(index)} />
+            )}
         </View>
         <View style={styles.vehicleInfoHorizontal}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
@@ -381,9 +391,18 @@ const DashboardScreen = () => {
                         data={rentalStats?.UpcomingReturns || []}
                         renderItem={({ item }) => (
                             <View style={styles.vehicleCardHorizontal}>
+                                <View style={styles.vehicleImageWrapper}>
+                                    <MaterialIcons name="directions-car" size={32} color="#0066cc" />
+                                </View>
                                 <View style={styles.vehicleInfoHorizontal}>
-                                    <Text style={styles.vehicleTitle}>{item.VehicleBrand} {item.VehicleModel}</Text>
-                                    <Text style={styles.vehicleDetailHorizontal}>Plaka: {item.NumberPlate}</Text>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                                        <MaterialIcons name="directions-car" size={18} color="#0066cc" style={{ marginRight: 6 }} />
+                                        <Text style={styles.vehicleTitle}>{item.VehicleBrand} {item.VehicleModel}</Text>
+                                    </View>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                                        <MaterialIcons name="confirmation-number" size={16} color="#0066cc" style={{ marginRight: 6 }} />
+                                        <Text style={styles.vehicleDetailHorizontal}>Plaka: {formatPlate(item.NumberPlate)}</Text>
+                                    </View>
                                     <Text style={styles.vehicleDetailHorizontal}>İade Tarihi: {new Date(item.ReturnDate).toLocaleString()}</Text>
                                 </View>
                             </View>
@@ -604,6 +623,11 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#388e3c',
         marginLeft: 2,
+    },
+    vehicleImage: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
     },
 });
 

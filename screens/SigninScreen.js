@@ -13,7 +13,6 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../hooks/useAuth';
-import { navigationRef } from '../RootNavigation';
 
 export const SigninScreen = (props) => {
   const navigation = useNavigation();
@@ -59,8 +58,8 @@ export const SigninScreen = (props) => {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior="padding"
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 60}
     >
       <View style={styles.card}>
         <Image
@@ -93,6 +92,7 @@ export const SigninScreen = (props) => {
           value={password}
           onChangeText={setPassword}
           secureTextEntry
+          autoCapitalize="none"
           autoCorrect={false}
           textContentType="password"
           autoComplete="password"
@@ -142,7 +142,7 @@ export const SigninScreen = (props) => {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Hesap Doğrulanmamış</Text>
             <Text style={styles.modalText}>
-              Hesabınız henüz doğrulanmamış. Doğrulama işlemini tamamlamak için e-posta adresinize gönderilen doğrulama bağlantısını kullanabilir veya yeni bir doğrulama e-postası talep edebilirsiniz.
+              Hesabınız henüz doğrulanmamış. Doğrulama işlemini tamamlamak için e-posta adresinize gönderilen doğrulama bağlantısını kullanabilir veya yeni bir doğrulama e-postası talep edebilirsiniz. Spam kutunuzu kontrol edin.
             </Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity

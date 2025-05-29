@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Image, ActivityIndicator, Modal, FlatList, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator, Modal, FlatList, ScrollView } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useRentalHistories } from '../hooks/useRentalHistories';
@@ -7,6 +7,7 @@ import { useVehicles } from '../hooks/useVehicles';
 import { usePaymentMethods } from '../hooks/usePaymentMethods';
 import { TransmissionTypeOptions, FuelTypeOptions } from '../enums/enum';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 function formatPlate(plate) {
     if (!plate) return '-';
@@ -31,18 +32,17 @@ const RentedScreen = () => {
     const [showStart, setShowStart] = useState(false);
     const [showEnd, setShowEnd] = useState(false);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [showErrorModal, setShowErrorModal] = useState(false);
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
+    const [customApiError, setCustomApiError] = useState(null);
+    const [conflictData, setConflictData] = useState(null);
 
     useEffect(() => {
         if (vehicleId) {
             setVehicleLoading(true);
             fetchVehicleBasicById(vehicleId)
-                .then(data => {
-                    setVehicle(data);
-                })
-                .catch((error) => {
-                    setVehicle(null);
-                })
+                .then(data => setVehicle(data))
+                .catch(() => setVehicle(null))
                 .finally(() => setVehicleLoading(false));
         }
     }, [vehicleId]);
@@ -56,159 +56,241 @@ const RentedScreen = () => {
             if (vehicleId) {
                 setVehicleLoading(true);
                 fetchVehicleBasicById(vehicleId)
-                    .then(data => {
-                        setVehicle(data);
-                    })
-                    .catch((error) => {
-                        setVehicle(null);
-                    })
+                    .then(data => setVehicle(data))
+                    .catch(() => setVehicle(null))
                     .finally(() => setVehicleLoading(false));
             }
         }, [vehicleId])
     );
 
     const handleRent = async () => {
-        if (!vehicleId) {
-            Alert.alert('Hata', 'Araç bilgisi bulunamadı.');
+        if (!vehicleId || !selectedPaymentMethod || endDate <= startDate) {
+            setCustomApiError("Lütfen tüm bilgileri eksiksiz doldurun.");
+            setConflictData(null);
+            setShowErrorModal(true);
             return;
         }
-        if (!selectedPaymentMethod) {
-            Alert.alert('Hata', 'Lütfen bir ödeme yöntemi seçin.');
-            return;
-        }
-        if (endDate <= startDate) {
-            Alert.alert('Hata', 'Bitiş tarihi başlangıç tarihinden sonra olmalı.');
-            return;
-        }
+
         try {
             await createRental({
                 VehicleId: vehicleId,
                 StartDate: startDate.toISOString(),
                 EndDate: endDate.toISOString()
             });
-            Alert.alert('Başarılı', 'Kiralama talebiniz oluşturuldu.', [
-                { text: 'Tamam', onPress: () => navigation.goBack() }
-            ]);
+            navigation.goBack();
         } catch (err) {
-            Alert.alert('Hata', err?.message || 'Kiralama talebi oluşturulamadı.');
+            
+            if (err?.message && err?.data) {
+                setCustomApiError(err.message);
+                setConflictData(err.data);
+            } else {
+                setCustomApiError('Bilinmeyen hata oluştu.');
+                setConflictData(null);
+            }
+            setShowErrorModal(true);
         }
     };
 
     const transmissionTypeLabel = vehicle ? (TransmissionTypeOptions.find(opt => opt.value === vehicle.TransmissionType)?.label || '-') : '-';
     const fuelTypeLabel = vehicle ? (FuelTypeOptions.find(opt => opt.value === vehicle.FuelType)?.label || '-') : '-';
-    
     const mainPhoto = vehicle?.Photos?.find(p => p.IsMain) || vehicle?.Photos?.[0];
-    const photoUri = mainPhoto?.Photo ? `data:image/jpeg;base64,${mainPhoto.Photo}` : null;
+    const photoUri = mainPhoto?.Photo ? mainPhoto.Photo : null;
+
+    const isConflictDataValid = conflictData &&
+        typeof conflictData.suggestedStartDate === 'string' &&
+        typeof conflictData.maxAvailableEndDate === 'string';
+
+    const showAlternativeVehicle = Boolean(conflictData?.alternativeVehicle?.id);
 
     return (
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-            <View style={styles.container}>
-                {vehicleLoading ? (
-                    <ActivityIndicator size="large" color="#2196F3" style={{ marginBottom: 32 }} />
-                ) : vehicle ? (
-                    <View style={styles.vehicleCard}>
-                        <View style={styles.imageWrapper}>
-                            {photoUri ? (
-                                <Image 
-                                    source={{ uri: photoUri }} 
-                                    style={styles.vehicleImage}
-                                />
-                            ) : (
-                                <View style={[styles.vehicleImage, { backgroundColor: '#e0e0e0', justifyContent: 'center', alignItems: 'center' }]}>
-                                    <Icon name="car" size={40} color="#666" />
-                                </View>
-                            )}
+        <View style={{ flex: 1, backgroundColor: '#f8fafd' }}>
+            <LinearGradient
+                colors={["#0066cc", "#2196F3"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.gradientHeader}
+            >
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                    <Text style={styles.backIcon}>{'‹'}</Text>
+                </TouchableOpacity>
+                <Text style={styles.gradientHeaderTitle}>Araç Kirala</Text>
+            </LinearGradient>
+            <ScrollView contentContainerStyle={{ flexGrow: 1, paddingTop: 100 }}>
+                <View style={styles.container}>
+                    {vehicleLoading ? (
+                        <ActivityIndicator size="large" color="#2196F3" style={{ marginBottom: 32 }} />
+                    ) : vehicle ? (
+                        <View style={styles.vehicleCard}>
+                            <View style={styles.imageWrapper}>
+                                {photoUri ? (
+                                    <Image 
+                                        source={{ uri: photoUri }} 
+                                        style={styles.vehicleImage}
+                                    />
+                                ) : (
+                                    <View style={[styles.vehicleImage, { backgroundColor: '#e0e0e0', justifyContent: 'center', alignItems: 'center' }]}>
+                                        <Icon name="car" size={40} color="#666" />
+                                    </View>
+                                )}
+                            </View>
+                            <Text style={styles.vehicleTitle}>{vehicle.Brand || '-'} {vehicle.Model || '-'}</Text>
+                            <Text style={styles.vehicleSub}>{vehicle.ModelYear || '-'}</Text>
+                            <Text style={styles.vehiclePrice}>
+                                <Text style={{color:'#2196F3', fontWeight:'bold'}}>{vehicle.DailyPrice != null ? vehicle.DailyPrice + ' TL' : '-'}</Text>
+                                <Text style={{color:'#888', fontWeight:'normal'}}> / Günlük</Text>
+                            </Text>
+                            <View style={styles.vehicleDetailsRow}>
+                                <View style={styles.chip}><Icon name="car-cog" size={16} color="#2196F3" /><Text style={styles.chipText}>{transmissionTypeLabel}</Text></View>
+                                <View style={styles.chip}><Icon name="fuel" size={16} color="#2196F3" /><Text style={styles.chipText}>{fuelTypeLabel}</Text></View>
+                                <View style={styles.chip}><Icon name="car-key" size={16} color="#2196F3" /><Text style={styles.chipText}>{formatPlate(vehicle.NumberPlate)}</Text></View>
+                            </View>
                         </View>
-                        <Text style={styles.vehicleTitle}>{vehicle.Brand || '-'} {vehicle.Model || '-'}</Text>
-                        <Text style={styles.vehicleSub}>{vehicle.ModelYear || '-'}</Text>
-                        <Text style={styles.vehiclePrice}>
-                            <Text style={{color:'#2196F3', fontWeight:'bold'}}>{vehicle.DailyPrice != null ? vehicle.DailyPrice + ' TL' : '-'}</Text>
-                            <Text style={{color:'#888', fontWeight:'normal'}}> / Günlük</Text>
-                        </Text>
-                        <View style={styles.vehicleDetailsRow}>
-                            <View style={styles.chip}><Icon name="car-cog" size={16} color="#2196F3" /><Text style={styles.chipText}>{transmissionTypeLabel}</Text></View>
-                            <View style={styles.chip}><Icon name="fuel" size={16} color="#2196F3" /><Text style={styles.chipText}>{fuelTypeLabel}</Text></View>
-                            <View style={styles.chip}><Icon name="car-key" size={16} color="#2196F3" /><Text style={styles.chipText}>{formatPlate(vehicle.NumberPlate)}</Text></View>
-                        </View>
+                    ) : null}
+                    <Text style={styles.title}>Kiralama Tarihleri</Text>
+                    <View style={styles.dateRow}>
+                        <TouchableOpacity onPress={() => setShowStart(true)} style={styles.dateInput}>
+                            <Text style={styles.dateInputLabel}>Başlangıç:</Text>
+                            <Text style={styles.dateInputValue}>{startDate.toLocaleDateString()}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => setShowEnd(true)} style={styles.dateInput}>
+                            <Text style={styles.dateInputLabel}>Bitiş:</Text>
+                            <Text style={styles.dateInputValue}>{endDate.toLocaleDateString()}</Text>
+                        </TouchableOpacity>
                     </View>
-                ) : null}
-                <Text style={styles.title}>Kiralama Tarihleri</Text>
-                <View style={styles.dateRow}>
-                    <TouchableOpacity onPress={() => setShowStart(true)} style={styles.dateInput}>
-                        <Text style={styles.dateInputLabel}>Başlangıç:</Text>
-                        <Text style={styles.dateInputValue}>{startDate.toLocaleDateString()}</Text>
+                    {showStart && (
+                        <DateTimePicker
+                            value={startDate}
+                            mode="date"
+                            display="default"
+                            onChange={(e, date) => {
+                                setShowStart(false);
+                                if (date) setStartDate(date);
+                            }}
+                        />
+                    )}
+                    {showEnd && (
+                        <DateTimePicker
+                            value={endDate}
+                            mode="date"
+                            display="default"
+                            onChange={(e, date) => {
+                                setShowEnd(false);
+                                if (date) setEndDate(date);
+                            }}
+                        />
+                    )}
+                    <TouchableOpacity style={styles.paymentButton} onPress={() => setShowPaymentModal(true)}>
+                        <Text style={styles.paymentButtonText}>{selectedPaymentMethod ? 'Ödeme Yöntemini Değiştir' : 'Ödeme Yöntemi Seç'}</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => setShowEnd(true)} style={styles.dateInput}>
-                        <Text style={styles.dateInputLabel}>Bitiş:</Text>
-                        <Text style={styles.dateInputValue}>{endDate.toLocaleDateString()}</Text>
+                    {selectedPaymentMethod && (
+                        <View style={styles.cardView}>
+                            <Text style={styles.cardNumber}>•••• •••• •••• {selectedPaymentMethod.Last4Digits}</Text>
+                            <Text style={styles.cardName}>{selectedPaymentMethod.CardHolderName}</Text>
+                            <Text style={styles.cardInfo}>{selectedPaymentMethod.ExpirationMonth}/{selectedPaymentMethod.ExpirationYear}</Text>
+                        </View>
+                    )}
+                    <TouchableOpacity style={styles.rentButton} onPress={handleRent} disabled={loading}>
+                        <Text style={styles.rentButtonText}>{loading ? 'Gönderiliyor...' : 'Kirala'}</Text>
                     </TouchableOpacity>
+                    <Modal visible={showPaymentModal} transparent animationType="slide">
+                        <View style={styles.modalContainer}>
+                            <View style={styles.modalContent}>
+                                <Text style={styles.modalTitle}>Ödeme Yöntemi Seç</Text>
+                                {paymentLoading ? (
+                                    <ActivityIndicator size="large" color="#2196F3" />
+                                ) : (
+                                    <FlatList
+                                        data={paymentMethods}
+                                        keyExtractor={item => item.Id}
+                                        renderItem={({ item }) => (
+                                            <TouchableOpacity
+                                                style={styles.paymentItem}
+                                                onPress={() => {
+                                                    setSelectedPaymentMethod(item);
+                                                    setShowPaymentModal(false);
+                                                }}
+                                            >
+                                                <Text style={styles.paymentItemText}>{item.MethodName} •••• {item.Last4Digits}</Text>
+                                            </TouchableOpacity>
+                                        )}
+                                    />
+                                )}
+                                <TouchableOpacity onPress={() => setShowPaymentModal(false)}>
+                                    <Text style={styles.modalClose}>Kapat</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </Modal>
                 </View>
-                {showStart && (
-                    <DateTimePicker
-                        value={startDate}
-                        mode="date"
-                        display="default"
-                        onChange={(e, date) => {
-                            setShowStart(false);
-                            if (date) setStartDate(date);
-                        }}
-                    />
-                )}
-                {showEnd && (
-                    <DateTimePicker
-                        value={endDate}
-                        mode="date"
-                        display="default"
-                        onChange={(e, date) => {
-                            setShowEnd(false);
-                            if (date) setEndDate(date);
-                        }}
-                    />
-                )}
-                <TouchableOpacity style={styles.paymentButton} onPress={() => setShowPaymentModal(true)}>
-                    <Text style={styles.paymentButtonText}>{selectedPaymentMethod ? 'Ödeme Yöntemini Değiştir' : 'Ödeme Yöntemi Seç'}</Text>
-                </TouchableOpacity>
-                {selectedPaymentMethod && (
-                    <View style={styles.cardView}>
-                        <Text style={styles.cardNumber}>•••• •••• •••• {selectedPaymentMethod.Last4Digits}</Text>
-                        <Text style={styles.cardName}>{selectedPaymentMethod.CardHolderName}</Text>
-                        <Text style={styles.cardInfo}>{selectedPaymentMethod.ExpirationMonth}/{selectedPaymentMethod.ExpirationYear}</Text>
-                    </View>
-                )}
-                <TouchableOpacity style={styles.rentButton} onPress={handleRent} disabled={loading}>
-                    <Text style={styles.rentButtonText}>{loading ? 'Gönderiliyor...' : 'Kirala'}</Text>
-                </TouchableOpacity>
-                <Modal visible={showPaymentModal} transparent animationType="slide">
-                    <View style={styles.modalContainer}>
-                        <View style={styles.modalContent}>
-                            <Text style={styles.modalTitle}>Ödeme Yöntemi Seç</Text>
-                            {paymentLoading ? (
-                                <ActivityIndicator size="large" color="#2196F3" />
-                            ) : (
-                                <FlatList
-                                    data={paymentMethods}
-                                    keyExtractor={item => item.Id}
-                                    renderItem={({ item }) => (
+
+                {/* Özel Hata Modalı */}
+                <Modal
+                    visible={showErrorModal}
+                    transparent
+                    animationType="fade"
+                    onRequestClose={() => setShowErrorModal(false)}
+                >
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.errorModalContent}>
+                            <Icon name="alert-circle" size={40} color="#FF6B6B" style={styles.errorIcon} />
+                            <Text style={styles.errorTitle}>
+                                {showAlternativeVehicle ? 'Tarih Çakışması' : 'Kiralama Hatası'}
+                            </Text>
+                            <Text style={styles.errorMessage}>
+                                {customApiError}
+                            </Text>
+                            {showAlternativeVehicle && (
+                                <>
+                                    <Text style={{ fontWeight: 'bold', marginTop: 12 }}>
+                                        Müsait Tarih Aralığı: {conflictData.suggestedStartDate} - {conflictData.maxAvailableEndDate}
+                                    </Text>
+                                    <View style={{ flexDirection: 'row', width: '100%', justifyContent: 'space-between', marginTop: 16 }}>
                                         <TouchableOpacity
-                                            style={styles.paymentItem}
+                                            style={[styles.useDatesButton, { flex: 1, marginRight: 8 }]}
                                             onPress={() => {
-                                                setSelectedPaymentMethod(item);
-                                                setShowPaymentModal(false);
+                                                setStartDate(new Date(conflictData.suggestedStartDate));
+                                                setEndDate(new Date(conflictData.maxAvailableEndDate));
+                                                setShowErrorModal(false);
                                             }}
                                         >
-                                            <Text style={styles.paymentItemText}>{item.MethodName} •••• {item.Last4Digits}</Text>
+                                            <Icon name="calendar-check" size={20} color="#fff" style={styles.buttonIcon} />
+                                            <Text style={styles.buttonText}>Bu Tarihleri Kullan</Text>
                                         </TouchableOpacity>
-                                    )}
-                                />
+                                        <TouchableOpacity
+                                            style={[styles.viewVehicleButton, { flex: 1, marginLeft: 8 }]}
+                                            onPress={() => {
+                                                navigation.navigate('VehicleDetails', { vehicleId: conflictData.alternativeVehicle.id });
+                                                setShowErrorModal(false);
+                                            }}
+                                        >
+                                            <Icon name="car" size={20} color="#fff" style={styles.buttonIcon} />
+                                            <Text style={styles.buttonText}>Aracı Gör</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                    <View style={{ marginTop: 16, width: '100%' }}>
+                                        <Text style={{ fontWeight: 'bold', marginBottom: 8 }}>Alternatif Araç:</Text>
+                                        <View style={styles.alternativeVehicleCard}>
+                                            <Text style={styles.alternativeVehicleTitle}>
+                                                {conflictData.alternativeVehicle.brand} {conflictData.alternativeVehicle.model}
+                                            </Text>
+                                            <Text style={styles.alternativeVehiclePrice}>
+                                                {conflictData.alternativeVehicle.dailyPrice} TL/gün
+                                            </Text>
+                                        </View>
+                                    </View>
+                                </>
                             )}
-                            <TouchableOpacity onPress={() => setShowPaymentModal(false)}>
-                                <Text style={styles.modalClose}>Kapat</Text>
+                            <TouchableOpacity
+                                style={styles.closeButton}
+                                onPress={() => setShowErrorModal(false)}
+                            >
+                                <Text style={styles.closeButtonText}>Kapat</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
                 </Modal>
-            </View>
-        </ScrollView>
+            </ScrollView>
+        </View>
     );
 };
 
@@ -239,11 +321,12 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
         marginBottom: 12,
         backgroundColor: '#eaeaea',
+        resizeMode: 'contain',
     },
     vehicleImage: {
         width: '100%',
         height: '100%',
-        resizeMode: 'cover',
+        resizeMode: 'contain',
     },
     vehicleTitle: {
         fontSize: 24,
@@ -418,6 +501,127 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: 'bold',
         letterSpacing: 1,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    errorModalContent: {
+        backgroundColor: '#fff',
+        borderRadius: 20,
+        padding: 24,
+        width: '85%',
+        alignItems: 'center',
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+    },
+    errorIcon: {
+        marginBottom: 16,
+    },
+    errorTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#FF6B6B',
+        marginBottom: 8,
+    },
+    errorMessage: {
+        fontSize: 16,
+        color: '#666',
+        textAlign: 'center',
+        marginBottom: 24,
+    },
+    alternativeVehicleCard: {
+        backgroundColor: '#f8f9fa',
+        borderRadius: 12,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: '#e0e0e0',
+    },
+    alternativeVehicleTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 4,
+    },
+    alternativeVehiclePrice: {
+        fontSize: 16,
+        color: '#2196F3',
+        fontWeight: 'bold',
+    },
+    useDatesButton: {
+        backgroundColor: '#4CAF50',
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 12,
+        borderRadius: 8,
+        width: '100%',
+        justifyContent: 'center',
+        marginTop: 12,
+    },
+    buttonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginLeft: 8,
+    },
+    buttonIcon: {
+        marginRight: 8,
+    },
+    closeButton: {
+        marginTop: 8,
+        padding: 8,
+    },
+    closeButtonText: {
+        color: '#666',
+        fontSize: 16,
+    },
+    viewVehicleButton: {
+        backgroundColor: '#2196F3',
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 12,
+        borderRadius: 8,
+        width: '100%',
+        justifyContent: 'center',
+        marginTop: 12,
+    },
+    gradientHeader: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 100,
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingTop: 38,
+        paddingHorizontal: 16,
+        zIndex: 10,
+        elevation: 8,
+        borderBottomLeftRadius: 24,
+        borderBottomRightRadius: 24,
+        justifyContent: 'flex-start',
+    },
+    backButton: {
+        padding: 4,
+        marginRight: 12,
+    },
+    backIcon: {
+        color: '#fff',
+        fontSize: 34,
+        fontWeight: 'bold',
+        marginTop: -2,
+    },
+    gradientHeaderTitle: {
+        color: '#fff',
+        fontSize: 22,
+        fontWeight: 'bold',
+        letterSpacing: 1,
+        flex: 1,
     },
 });
 

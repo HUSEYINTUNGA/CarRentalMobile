@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, ActivityIndicator, Alert, TextInput, Modal, Animated, Dimensions, Platform, ScrollView } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useVehicles } from '../hooks/useVehicles';
 import { Picker } from '@react-native-picker/picker';
@@ -7,6 +7,16 @@ import { FuelTypeOptions, TransmissionTypeOptions } from '../enums/enum';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import IconFA from 'react-native-vector-icons/FontAwesome5';
+
+const sortOptions = [
+    { label: 'Model Yılı (Artan)', value: 'modelYearAsc' },
+    { label: 'Model Yılı (Azalan)', value: 'modelYearDesc' },
+    { label: 'Fiyat (Artan)', value: 'priceAsc' },
+    { label: 'Fiyat (Azalan)', value: 'priceDesc' },
+];
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const DRAWER_WIDTH = SCREEN_WIDTH * 0.8;
 
 const VehicleListScreen = () => {
     const navigation = useNavigation();
@@ -16,15 +26,26 @@ const VehicleListScreen = () => {
         fetchAllVehicles,
         loading,
         error,
-        removeVehicle
+        removeVehicle,
+        restoreVehicle
     } = useVehicles();
 
     const [filters, setFilters] = useState({
         fuelType: null,
-        transmissionType: null
+        transmissionType: null,
+        search: '',
+        sort: null,
+        isAvailable: null,
+        isRented: null,
+        isDeleted: null
     });
     const [role, setRole] = useState(null);
     const [expandedCardId, setExpandedCardId] = useState(null);
+
+    const [drawerVisible, setDrawerVisible] = useState(false);
+    const [drawerType, setDrawerType] = useState('filter');
+    const [tempFilters, setTempFilters] = useState(filters);
+    const drawerAnim = useRef(new Animated.Value(SCREEN_WIDTH)).current;
 
     useEffect(() => {
         const getRole = async () => {
@@ -34,30 +55,60 @@ const VehicleListScreen = () => {
         getRole();
     }, []);
 
-    useEffect(() => {
-        if (role === 'Admin') {
-            fetchAllVehicles();
-        } else if (role === 'Customer') {
-            fetchVehicles({});
-        }
-    }, [role]);
+    useFocusEffect(
+        useCallback(() => {
+            if (role === 'Admin') {
+                fetchAllVehicles();
+            } else if (role === 'Customer') {
+                fetchVehicles({});
+            }
+        }, [role])
+    );
 
     useEffect(() => {
-        if (role === 'Customer') {
+        if (role === 'Admin') {
             const params = {};
             if (filters.fuelType !== null) params.FuelType = filters.fuelType;
             if (filters.transmissionType !== null) params.TransmissionType = filters.transmissionType;
+            if (filters.search) params.Search = filters.search;
+            if (filters.sort) params.Sort = filters.sort;
+            if (filters.isAvailable !== null) params.IsAvailable = filters.isAvailable;
+            if (filters.isRented !== null) params.IsRented = filters.isRented;
+            if (filters.isDeleted !== null) params.IsDeleted = filters.isDeleted;
+            fetchAllVehicles(params);
+        } else if (role === 'Customer') {
+            const params = {};
+            if (filters.fuelType !== null) params.FuelType = filters.fuelType;
+            if (filters.transmissionType !== null) params.TransmissionType = filters.transmissionType;
+            if (filters.search) params.Search = filters.search;
+            if (filters.sort) params.Sort = filters.sort;
             fetchVehicles(params);
         }
     }, [filters, role]);
 
-    useFocusEffect(
-        React.useCallback(() => {
-            if (role === 'Admin') {
-                fetchAllVehicles();
-            }
-        }, [role, fetchAllVehicles])
-    );
+    const openDrawer = (type) => {
+        setDrawerType(type);
+        setTempFilters(filters);
+        setDrawerVisible(true);
+        Animated.timing(drawerAnim, {
+            toValue: SCREEN_WIDTH - DRAWER_WIDTH,
+            duration: 300,
+            useNativeDriver: false,
+        }).start();
+    };
+
+    const closeDrawer = () => {
+        Animated.timing(drawerAnim, {
+            toValue: SCREEN_WIDTH,
+            duration: 250,
+            useNativeDriver: false,
+        }).start(() => setDrawerVisible(false));
+    };
+
+    const handleDrawerApply = () => {
+        setFilters(tempFilters);
+        closeDrawer();
+    };
 
     const handleDelete = (vehicleId) => {
         Alert.alert(
@@ -76,6 +127,24 @@ const VehicleListScreen = () => {
         );
     };
 
+    const handleRestore = (vehicleId) => {
+        Alert.alert(
+            'Aracı Geri Yükle',
+            'Bu aracı geri yüklemek istediğinizden emin misiniz?',
+            [
+                { text: 'İptal', style: 'cancel' },
+                {
+                    text: 'Geri Yükle',
+                    onPress: async () => {
+                        try {
+                            await restoreVehicle(vehicleId);
+                        } catch (err) {}
+                    }
+                }
+            ]
+        );
+    };
+
     const renderVehicleItem = ({ item }) => (
         <TouchableOpacity
             style={styles.cardGridContainer}
@@ -85,7 +154,7 @@ const VehicleListScreen = () => {
             <View style={styles.cardGridRowFixed}>
                 <View style={styles.cardLeftColFixed}>
                     <Image
-                        source={{ uri: `data:image/jpeg;base64,${item.Photo}` }}
+                        source={{ uri: item.Photo }}
                         style={styles.cardPhotoRoundedFixed}
                     />
                 </View>
@@ -146,29 +215,43 @@ const VehicleListScreen = () => {
 
     const renderAdminVehicleItem = ({ item }) => {
         const isExpanded = expandedCardId === item.Id;
-        const actionIcons = [
+        
+        // Define action icons based on whether the vehicle is deleted
+        const actionIcons = item.IsDeleted ? [
+            { name: 'restore', color: '#9C27B0', bg: 'rgba(156,39,176,0.15)', mode: 'restore' }
+        ] : [
             { name: 'eye', color: '#2196F3', bg: 'rgba(33,150,243,0.15)', mode: 'view' },
             { name: 'pencil', color: '#FFC107', bg: 'rgba(255,193,7,0.15)', mode: 'edit' },
             { name: 'currency-try', color: '#4CAF50', bg: 'rgba(76,175,80,0.15)', mode: 'price' },
             { name: 'wrench', color: '#1976d2', bg: 'rgba(25,118,210,0.15)', mode: 'unavailable' },
             { name: 'delete', color: '#F44336', bg: 'rgba(244,67,54,0.15)', mode: 'delete' },
         ];
+
         return (
             <View style={styles.cardGridContainer}>
                 <View style={styles.cardGridRowFixed}>
                     <View style={styles.cardLeftColFixed}>
                         <Image
-                            source={{ uri: `data:image/jpeg;base64,${item.Photo}` }}
+                            source={{ uri:item.Photo }}
                             style={styles.cardPhotoRoundedFixed}
                         />
-                        <View style={styles.badgeColumnBigCenteredFixed}>
-                            <View style={[styles.statusBadgeBig, item.IsAvailable ? styles.availableBadge : styles.passiveBadge]}>
-                                <Text style={styles.statusBadgeTextBig}>{item.IsAvailable ? 'Aktif' : 'Pasif'}</Text>
+                        {item.IsDeleted && (
+                            <View style={styles.deletedBadgeTopRight}>
+                                <Text style={styles.deletedBadgeText}>Silinmiş</Text>
                             </View>
-                            {item.IsRented && (
-                                <View style={[styles.statusBadgeBig, styles.rentedBadgeModern]}>
-                                    <Text style={styles.statusBadgeTextBig}>Kirada</Text>
-                                </View>
+                        )}
+                        <View style={styles.badgeColumnBigCenteredFixed}>
+                            {!item.IsDeleted && (
+                                <>
+                                    <View style={[styles.statusBadgeBig, item.IsAvailable ? styles.availableBadge : styles.passiveBadge]}>
+                                        <Text style={styles.statusBadgeTextBig}>{item.IsAvailable ? 'Aktif' : 'Pasif'}</Text>
+                                    </View>
+                                    {item.IsRented && (
+                                        <View style={[styles.statusBadgeBig, styles.rentedBadgeModern]}>
+                                            <Text style={styles.statusBadgeTextBig}>Kirada</Text>
+                                        </View>
+                                    )}
+                                </>
                             )}
                         </View>
                     </View>
@@ -204,7 +287,9 @@ const VehicleListScreen = () => {
                         onPress={() => setExpandedCardId(isExpanded ? null : item.Id)}
                         activeOpacity={0.7}
                     >
-                        <Text style={styles.fullWidthActionBtnTextGridFixed}>İşlemler</Text>
+                        <Text style={styles.fullWidthActionBtnTextGridFixed}>
+                            {item.IsDeleted ? 'Geri Yükle' : 'İşlemler'}
+                        </Text>
                         <Icon
                             name={isExpanded ? 'chevron-up' : 'chevron-down'}
                             size={24}
@@ -224,6 +309,8 @@ const VehicleListScreen = () => {
                                             navigation.navigate('VehicleDetails', { vehicleId: item.Id });
                                         } else if (icon.mode === 'delete') {
                                             handleDelete(item.Id);
+                                        } else if (icon.mode === 'restore') {
+                                            handleRestore(item.Id);
                                         } else {
                                             let navMode = icon.mode;
                                             if (icon.mode === 'edit') navMode = 'Edit';
@@ -241,35 +328,121 @@ const VehicleListScreen = () => {
         );
     };
 
-    const renderFilterBar = () => (
-        <View style={styles.filterContainer}>
-            <View style={styles.pickerWrapper}>
-                <Picker
-                    selectedValue={filters.fuelType}
-                    style={styles.picker}
-                    onValueChange={value => setFilters(f => ({ ...f, fuelType: value }))}
-                    dropdownIconColor="#2196F3"
-                >
-                    <Picker.Item label="Yakıt Tipi (Tümü)" value={null} />
-                    {FuelTypeOptions.map((type, i) => (
-                        <Picker.Item key={i} label={type.label} value={type.value} />
-                    ))}
-                </Picker>
-            </View>
-            <View style={styles.pickerWrapper}>
-                <Picker
-                    selectedValue={filters.transmissionType}
-                    style={styles.picker}
-                    onValueChange={value => setFilters(f => ({ ...f, transmissionType: value }))}
-                    dropdownIconColor="#2196F3"
-                >
-                    <Picker.Item label="Vites Tipi (Tümü)" value={null} />
-                    {TransmissionTypeOptions.map((type, i) => (
-                        <Picker.Item key={i} label={type.label} value={type.value} />
-                    ))}
-                </Picker>
-            </View>
-        </View>
+    const renderFilterDrawer = () => (
+        <Modal
+            visible={drawerVisible}
+            animationType="slide"
+            transparent
+            onRequestClose={closeDrawer}
+        >
+            <TouchableOpacity style={styles.drawerOverlay} onPress={closeDrawer} activeOpacity={1}>
+                <Animated.View style={styles.drawerContainer}>
+                    <View style={styles.drawerHeader}>
+                        <Text style={styles.drawerTitle}>{drawerType === 'filter' ? 'Filtrele' : 'Sırala'}</Text>
+                        <TouchableOpacity onPress={closeDrawer} hitSlop={{top:10, bottom:10, left:10, right:10}}>
+                            <Icon name="close" size={26} color="#1976d2" />
+                        </TouchableOpacity>
+                    </View>
+                    <View style={styles.drawerContent}>
+                        {drawerType === 'filter' ? (
+                            <>
+                                <Text style={styles.drawerLabel}>Yakıt Tipi</Text>
+                                <View style={styles.pickerBox}>
+                                    <Picker
+                                        selectedValue={tempFilters.fuelType}
+                                        onValueChange={value => setTempFilters(f => ({ ...f, fuelType: value }))}
+                                        style={styles.picker}
+                                        mode="dropdown"
+                                    >
+                                        <Picker.Item label="Tümü" value={null} />
+                                        {FuelTypeOptions.map((type, i) => (
+                                            <Picker.Item key={i} label={type.label} value={type.value} />
+                                        ))}
+                                    </Picker>
+                                </View>
+                                <Text style={styles.drawerLabel}>Vites Tipi</Text>
+                                <View style={styles.pickerBox}>
+                                    <Picker
+                                        selectedValue={tempFilters.transmissionType}
+                                        onValueChange={value => setTempFilters(f => ({ ...f, transmissionType: value }))}
+                                        style={styles.picker}
+                                        mode="dropdown"
+                                    >
+                                        <Picker.Item label="Tümü" value={null} />
+                                        {TransmissionTypeOptions.map((type, i) => (
+                                            <Picker.Item key={i} label={type.label} value={type.value} />
+                                        ))}
+                                    </Picker>
+                                </View>
+                                {role === 'Admin' && (
+                                    <>
+                                        <Text style={styles.drawerLabel}>Müsaitlik Durumu</Text>
+                                        <View style={styles.pickerBox}>
+                                            <Picker
+                                                selectedValue={tempFilters.isAvailable}
+                                                onValueChange={value => setTempFilters(f => ({ ...f, isAvailable: value }))}
+                                                style={styles.picker}
+                                                mode="dropdown"
+                                            >
+                                                <Picker.Item label="Tümü" value={null} />
+                                                <Picker.Item label="Aktif" value={true} />
+                                                <Picker.Item label="Pasif" value={false} />
+                                            </Picker>
+                                        </View>
+                                        <Text style={styles.drawerLabel}>Kiralama Durumu</Text>
+                                        <View style={styles.pickerBox}>
+                                            <Picker
+                                                selectedValue={tempFilters.isRented}
+                                                onValueChange={value => setTempFilters(f => ({ ...f, isRented: value }))}
+                                                style={styles.picker}
+                                                mode="dropdown"
+                                            >
+                                                <Picker.Item label="Tümü" value={null} />
+                                                <Picker.Item label="Kirada" value={true} />
+                                                <Picker.Item label="Kirada Değil" value={false} />
+                                            </Picker>
+                                        </View>
+                                        <Text style={styles.drawerLabel}>Silinme Durumu</Text>
+                                        <View style={styles.pickerBox}>
+                                            <Picker
+                                                selectedValue={tempFilters.isDeleted}
+                                                onValueChange={value => setTempFilters(f => ({ ...f, isDeleted: value }))}
+                                                style={styles.picker}
+                                                mode="dropdown"
+                                            >
+                                                <Picker.Item label="Tümü" value={null} />
+                                                <Picker.Item label="Silinmiş" value={true} />
+                                                <Picker.Item label="Silinmemiş" value={false} />
+                                            </Picker>
+                                        </View>
+                                    </>
+                                )}
+                            </>
+                        ) : (
+                            <>
+                                <Text style={styles.drawerLabel}>Sıralama</Text>
+                                <View style={styles.pickerBox}>
+                                    <Picker
+                                        selectedValue={tempFilters.sort}
+                                        onValueChange={value => setTempFilters(f => ({ ...f, sort: value }))}
+                                        style={styles.picker}
+                                        mode="dropdown"
+                                    >
+                                        <Picker.Item label="Sıralama Yok" value={null} />
+                                        {sortOptions.map((opt, i) => (
+                                            <Picker.Item key={i} label={opt.label} value={opt.value} />
+                                        ))}
+                                    </Picker>
+                                </View>
+                            </>
+                        )}
+                    </View>
+                    <TouchableOpacity style={styles.applyBtn} onPress={handleDrawerApply}>
+                        <Text style={styles.applyBtnText}>Uygula</Text>
+                    </TouchableOpacity>
+                </Animated.View>
+            </TouchableOpacity>
+        </Modal>
     );
 
     return (
@@ -278,15 +451,38 @@ const VehicleListScreen = () => {
             role === 'Admin' && { paddingTop: 0}
         ]}>
             {role === 'Admin' && (
-                <TouchableOpacity
-                    style={styles.fab}
-                    onPress={() => navigation.navigate('ManageVehicles', { mode: 'Add' })}
-                    activeOpacity={0.85}
-                >
-                    <Icon name="plus" size={32} color="#fff" />
-                </TouchableOpacity>
+                <>
+                    <TouchableOpacity
+                        style={styles.fab}
+                        onPress={() => navigation.navigate('ManageVehicles', { mode: 'Add' })}
+                        activeOpacity={0.85}
+                    >
+                        <Icon name="plus" size={32} color="#fff" />
+                    </TouchableOpacity>
+                </>
             )}
-            {role === 'Customer' && renderFilterBar()}
+            
+            <View style={styles.searchContainer}>
+                <Icon name="magnify" size={24} color="#666" style={styles.searchIcon} />
+                <TextInput
+                    style={styles.searchInput}
+                    placeholder="Araç ara..."
+                    value={filters.search}
+                    onChangeText={(text) => setFilters(f => ({ ...f, search: text }))}
+                />
+            </View>
+
+            <View style={styles.filterButtonsContainer}>
+                <TouchableOpacity style={styles.drawerBtn} onPress={() => openDrawer('filter')}>
+                    <Text style={styles.drawerBtnText}>Filtrele</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.drawerBtn} onPress={() => openDrawer('sort')}>
+                    <Text style={styles.drawerBtnText}>Sırala</Text>
+                </TouchableOpacity>
+            </View>
+
+            {renderFilterDrawer()}
+
             {loading ? (
                 <ActivityIndicator size="large" color="#2196F3" style={{ marginTop: 24 }} />
             ) : error ? (
@@ -323,9 +519,26 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.10,
         shadowRadius: 4,
+    },
+    searchContainer: {
         flexDirection: 'row',
-        gap: 12,
-        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#e0e0e0',
+        paddingHorizontal: 12,
+        marginBottom: 12,
+        height: 50,
+    },
+    searchIcon: {
+        marginRight: 8,
+    },
+    searchInput: {
+        flex: 1,
+        height: '100%',
+        fontSize: 16,
+        color: '#222',
     },
     pickerWrapper: {
         flex: 1,
@@ -804,7 +1017,7 @@ const styles = StyleSheet.create({
         width: '96%',
         alignSelf: 'center',
         height: 42,
-        backgroundColor: '#4dd0e1',
+        backgroundColor: 'rgba(77, 208, 225, 0.1)',
         borderRadius: 14,
         flexDirection: 'row',
         alignItems: 'center',
@@ -836,6 +1049,118 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#1976d2',
         marginBottom: 2,
+    },
+    filterRow: {
+        flexDirection: 'row',
+        gap: 12,
+        marginBottom: 12,
+    },
+    drawerOverlay: { 
+        flex: 1, 
+        backgroundColor: 'rgba(0,0,0,0.2)', 
+        flexDirection: 'row', 
+        justifyContent: 'flex-end' 
+    },
+    drawerContainer: {
+        width: DRAWER_WIDTH,
+        backgroundColor: '#fafbfc',
+        height: '100%',
+        paddingTop: 0,
+        paddingHorizontal: 20,
+        paddingBottom: 20,
+        shadowColor: '#000',
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 8,
+        borderTopLeftRadius: 18,
+        borderBottomLeftRadius: 18,
+    },
+    drawerHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 18,
+        borderBottomWidth: 1,
+        borderColor: '#e0e0e0',
+        marginBottom: 10,
+    },
+    drawerTitle: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: '#1976d2',
+    },
+    drawerContent: {
+        flex: 1,
+    },
+    drawerLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#444',
+        marginTop: 18,
+        marginBottom: 4,
+    },
+    pickerBox: {
+        backgroundColor: '#fff',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#e0e0e0',
+        marginBottom: 12,
+        overflow: 'hidden',
+        elevation: 1,
+        height: 48,
+        justifyContent: 'center',
+    },
+    applyBtn: {
+        backgroundColor: '#1976d2',
+        borderRadius: 8,
+        paddingVertical: 14,
+        alignItems: 'center',
+        marginTop: 18,
+        width: '100%',
+        alignSelf: 'center',
+    },
+    applyBtnText: { 
+        color: '#fff', 
+        fontWeight: 'bold', 
+        fontSize: 15 
+    },
+    filterButtonsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingHorizontal: 16,
+        marginBottom: 16,
+    },
+    drawerBtn: {
+        flex: 1,
+        backgroundColor: '#e3f2fd',
+        padding: 12,
+        borderRadius: 8,
+        marginHorizontal: 4,
+        alignItems: 'center',
+    },
+    drawerBtnText: {
+        color: '#1976d2',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    deletedBadge: {
+        backgroundColor: '#9C27B0',
+        borderRadius: 20,
+    },
+    deletedBadgeTopRight: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        backgroundColor: '#9C27B0',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 12,
+        zIndex: 2,
+    },
+    deletedBadgeText: {
+        color: '#fff',
+        fontWeight: 'bold',
+        fontSize: 13,
     },
 });
 

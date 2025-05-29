@@ -2,12 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, ActivityIndicator, Modal, TextInput } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useProfile } from '../hooks/useProfile';
-import { useNavigation, CommonActions } from '@react-navigation/native';
+import { useNavigation, CommonActions, useFocusEffect } from '@react-navigation/native';
 import { deleteAccount } from '../api/customerApi';
 import { useAuth } from '../hooks/useAuth';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { resetToSignin } from '../RootNavigation';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const ProfileScreen = () => {
   const { loading, fetchProfile, updatePhoto } = useProfile();
@@ -22,15 +23,14 @@ const ProfileScreen = () => {
   const [photoLoading, setPhotoLoading] = useState(false);
   const [userRole, setUserRole] = useState(null);
 
-  useEffect(() => {
-    loadProfile();
-    AsyncStorage.getItem('userRole').then(setUserRole);
-  }, [retryCount]);
-
   const loadProfile = async () => {
     try {
-      const data = await fetchProfile();
-      setProfileData(data);
+      const [role, profileData] = await Promise.all([
+        AsyncStorage.getItem('userRole'),
+        fetchProfile()
+      ]);
+      setUserRole(role);
+      setProfileData(profileData);
     } catch (err) {
       Alert.alert(
         'Hata',
@@ -48,6 +48,18 @@ const ProfileScreen = () => {
       );
     }
   };
+
+  // İlk yükleme için useEffect
+  useEffect(() => {
+    loadProfile();
+  }, [retryCount]);
+
+  // Her ekran odaklandığında verileri yenile
+  useFocusEffect(
+    React.useCallback(() => {
+      loadProfile();
+    }, [])
+  );
 
   const handlePhotoPick = async (type) => {
     setPhotoModalVisible(false);
@@ -160,7 +172,10 @@ const ProfileScreen = () => {
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.header}>
+      <LinearGradient
+        colors={['#0066cc', '#0052a3']}
+        style={styles.header}
+      >
         <View style={styles.profileImageContainer}>
           <Image
             source={
@@ -174,8 +189,8 @@ const ProfileScreen = () => {
             <Icon name="edit" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
-        <Text style={styles.username}>{profileData?.userName || 'Kullanıcı'}</Text>
-        <Text style={styles.email}>{profileData?.email || 'email@example.com'}</Text>
+        <Text style={styles.username}>{profileData?.name} {profileData?.surname}</Text>
+        <Text style={styles.email}>{profileData?.email}</Text>
         <View style={styles.verifiedRow}>
           {profileData?.isVerified ? (
             <>
@@ -186,62 +201,70 @@ const ProfileScreen = () => {
             <Text style={styles.notVerifiedText}>Doğrulanmamış</Text>
           )}
         </View>
-      </View>
+      </LinearGradient>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Kişisel Bilgiler</Text>
-        <View style={styles.infoItem}>
-          <Icon name="person" size={24} color="#666" />
-          <View style={styles.infoContent}>
-            <Text style={styles.infoLabel}>Ad Soyad</Text>
-            <Text style={styles.infoValue}>{profileData ? `${profileData.name} ${profileData.surname}` : 'Belirtilmemiş'}</Text>
+      <View style={styles.content}>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Kişisel Bilgiler</Text>
+          <View style={styles.infoItem}>
+            <Icon name="person" size={24} color="#0066cc" />
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Ad Soyad</Text>
+              <Text style={styles.infoValue}>{profileData ? `${profileData.name} ${profileData.surname}` : 'Belirtilmemiş'}</Text>
+            </View>
+          </View>
+          <View style={styles.infoItem}>
+            <Icon name="phone" size={24} color="#0066cc" />
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Telefon</Text>
+              <Text style={styles.infoValue}>{profileData?.phoneNumber || 'Belirtilmemiş'}</Text>
+            </View>
+          </View>
+          <View style={styles.infoItem}>
+            <Icon name="badge" size={24} color="#0066cc" />
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>TC Kimlik No</Text>
+              <Text style={styles.infoValue}>{profileData?.tcNo || 'Belirtilmemiş'}</Text>
+            </View>
+          </View>
+          <View style={styles.infoItem}>
+            <Icon name="security" size={24} color="#0066cc" />
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Rol</Text>
+              <Text style={styles.infoValue}>{profileData?.role || 'Belirtilmemiş'}</Text>
+            </View>
           </View>
         </View>
-        <View style={styles.infoItem}>
-          <Icon name="phone" size={24} color="#666" />
-          <View style={styles.infoContent}>
-            <Text style={styles.infoLabel}>Telefon</Text>
-            <Text style={styles.infoValue}>{profileData?.phoneNumber || 'Belirtilmemiş'}</Text>
-          </View>
-        </View>
-        <View style={styles.infoItem}>
-          <Icon name="badge" size={24} color="#666" />
-          <View style={styles.infoContent}>
-            <Text style={styles.infoLabel}>TC Kimlik No</Text>
-            <Text style={styles.infoValue}>{profileData?.tcNo || 'Belirtilmemiş'}</Text>
-          </View>
-        </View>
-        <View style={styles.infoItem}>
-          <Icon name="security" size={24} color="#666" />
-          <View style={styles.infoContent}>
-            <Text style={styles.infoLabel}>Rol</Text>
-            <Text style={styles.infoValue}>{profileData?.role || 'Belirtilmemiş'}</Text>
-          </View>
-        </View>
-      </View>
 
-      {/* Aksiyon Satırları */}
-      <View style={styles.actionSection}>
-        {userRole !== 'Admin' && (
-          <TouchableOpacity style={styles.actionRow} onPress={() => navigation.navigate('PaymentMethods')}>
-            <Icon name="credit-card" size={22} color="#2196F3" style={{ marginRight: 12 }} />
-            <Text style={styles.actionLabel}>Ödeme Yöntemlerim</Text>
-            <Icon name="chevron-right" size={22} color="#bbb" />
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Hesap İşlemleri</Text>
+          {userRole !== 'Admin' && (
+            <TouchableOpacity style={styles.infoItem} onPress={() => navigation.navigate('PaymentMethods')}>
+              <Icon name="credit-card" size={24} color="#0066cc" />
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Ödeme Yöntemlerim</Text>
+                <Text style={styles.infoValue}>Ödeme yöntemlerinizi yönetin</Text>
+              </View>
+              <Icon name="chevron-right" size={24} color="#ccc" />
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity style={styles.infoItem} onPress={() => navigation.navigate('EditProfile', { profileData })}>
+            <Icon name="edit" size={24} color="#0066cc" />
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Profili Düzenle</Text>
+              <Text style={styles.infoValue}>Kişisel bilgilerinizi güncelleyin</Text>
+            </View>
+            <Icon name="chevron-right" size={24} color="#ccc" />
           </TouchableOpacity>
-        )}
-        {userRole !== 'Admin' && <View style={styles.divider} />}
-        <TouchableOpacity style={styles.actionRow} onPress={() => navigation.navigate('EditProfile', { profileData })}>
-          <Icon name="edit" size={22} color="#2196F3" style={{ marginRight: 12 }} />
-          <Text style={styles.actionLabel}>Profili Düzenle</Text>
-          <Icon name="chevron-right" size={22} color="#bbb" />
-        </TouchableOpacity>
-        <View style={styles.divider} />
-        <TouchableOpacity style={[styles.actionRow, styles.deleteRow]} onPress={() => setDeleteModalVisible(true)}>
-          <View style={styles.deleteContent}>
-            <Icon name="delete" size={22} color="#F44336" style={{ marginRight: 8 }} />
-            <Text style={styles.deleteLabel}>Hesabı Sil</Text>
-          </View>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.infoItem} onPress={() => setDeleteModalVisible(true)}>
+            <Icon name="delete" size={24} color="#F44336" />
+            <View style={styles.infoContent}>
+              <Text style={[styles.infoLabel, { color: '#F44336' }]}>Hesabı Sil</Text>
+              <Text style={[styles.infoValue, { color: '#F44336' }]}>Hesabınızı kalıcı olarak silin</Text>
+            </View>
+            <Icon name="chevron-right" size={24} color="#ccc" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Profil fotoğrafı modalı */}
@@ -309,7 +332,7 @@ const ProfileScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f6fa',
+    backgroundColor: '#f4f6ff',
   },
   loadingContainer: {
     flex: 1,
@@ -317,11 +340,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   header: {
+    paddingTop: 60,
+    paddingBottom: 30,
     alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
   },
   profileImageContainer: {
     position: 'relative',
@@ -331,31 +354,37 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: '#e0e0e0',
+    borderWidth: 3,
+    borderColor: '#fff',
   },
   editImageButton: {
     position: 'absolute',
     right: 0,
     bottom: 0,
-    backgroundColor: '#2196F3',
+    backgroundColor: '#0066cc',
     padding: 8,
     borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#fff',
   },
   username: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#fff',
     marginBottom: 5,
   },
   email: {
     fontSize: 16,
-    color: '#666',
+    color: 'rgba(255, 255, 255, 0.9)',
   },
   verifiedRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 6,
-    marginBottom: 2,
+    marginTop: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 20,
   },
   verifiedText: {
     color: '#4CAF50',
@@ -367,12 +396,19 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 14,
   },
+  content: {
+    padding: 15,
+  },
   section: {
     backgroundColor: '#fff',
-    marginTop: 20,
-    padding: 15,
-    borderRadius: 10,
-    marginHorizontal: 15,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    elevation: 2,
+    shadowColor: '#0066cc',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   sectionTitle: {
     fontSize: 18,
@@ -385,45 +421,44 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#f0f0f0',
   },
   infoContent: {
     marginLeft: 15,
     flex: 1,
   },
   infoLabel: {
-    fontSize: 14,
-    color: '#666',
-  },
-  infoValue: {
     fontSize: 16,
     color: '#333',
+    fontWeight: '500',
+  },
+  infoValue: {
+    fontSize: 14,
+    color: '#666',
     marginTop: 2,
   },
   actionSection: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    marginHorizontal: 15,
-    marginTop: 24,
-    overflow: 'hidden',
+    gap: 12,
   },
-  actionRow: {
+  actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 15,
-    backgroundColor: '#fff',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    backgroundColor: '#0066cc',
   },
-  actionLabel: {
-    flex: 1,
+  actionButtonText: {
+    color: '#fff',
     fontSize: 16,
-    color: '#222',
-    marginLeft: 2,
+    fontWeight: 'bold',
   },
-  divider: {
-    height: 1,
-    backgroundColor: '#eee',
-    marginLeft: 55,
+  editButton: {
+    backgroundColor: '#2196F3',
+  },
+  deleteButton: {
+    backgroundColor: '#F44336',
   },
   modalOverlay: {
     flex: 1,
@@ -510,22 +545,6 @@ const styles = StyleSheet.create({
     color: '#2196F3',
     fontWeight: 'bold',
     fontSize: 15,
-  },
-  deleteRow: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  deleteContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-  },
-  deleteLabel: {
-    fontSize: 16,
-    color: '#F44336',
-    textAlign: 'center',
-    fontWeight: 'bold',
   },
 });
 

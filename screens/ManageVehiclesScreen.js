@@ -19,6 +19,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { deleteVehiclePhoto, addVehiclePhoto } from '../api/vehiclePhotosApi';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const fieldIcons = {
     Brand: 'car',
@@ -449,13 +450,25 @@ const ManageVehiclesScreen = () => {
     }
 
     return (
-        <View style={styles.container}>
-            <ScrollView style={styles.scrollView} ref={scrollViewRef}>
+        <View style={{ flex: 1, backgroundColor: '#f8fafd' }}>
+            {/* Gradient Header */}
+            <LinearGradient
+                colors={["#0066cc", "#2196F3"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.gradientHeader}
+            >
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                    <Text style={styles.backIcon}>{'‹'}</Text>
+                </TouchableOpacity>
+                <Text style={styles.gradientHeaderTitle}>Araç Yönetimi</Text>
+            </LinearGradient>
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: 100 }}>
                 {(isAddMode || isEditMode) && (
                     <View style={styles.photoContainer}>
                         {formData.VehiclePhotos?.map((photo) => (
                             <View key={photo.PhotoId} style={styles.photoItem}>
-                                <Image source={{ uri: `data:image/jpeg;base64,${photo.Photo}` }} style={styles.photo} />
+                                <Image source={{ uri: photo.Photo }} style={styles.photo} />
                                 <TouchableOpacity
                                     style={styles.deletePhotoButton}
                                     onPress={() => handleDeletePhoto(photo.PhotoId)}
@@ -512,6 +525,39 @@ const ManageVehiclesScreen = () => {
 };
 
 const styles = StyleSheet.create({
+    gradientHeader: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 100,
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingTop: 38,
+        paddingHorizontal: 16,
+        zIndex: 10,
+        elevation: 8,
+        borderBottomLeftRadius: 24,
+        borderBottomRightRadius: 24,
+        justifyContent: 'flex-start',
+    },
+    backButton: {
+        padding: 4,
+        marginRight: 12,
+    },
+    backIcon: {
+        color: '#fff',
+        fontSize: 34,
+        fontWeight: 'bold',
+        marginTop: -2,
+    },
+    gradientHeaderTitle: {
+        color: '#fff',
+        fontSize: 22,
+        fontWeight: 'bold',
+        letterSpacing: 1,
+        flex: 1,
+    },
     container: {
         flex: 1,
         backgroundColor: '#f5f5f5',

@@ -16,6 +16,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import { useProfile } from '../hooks/useProfile';
 import { colors } from '../theme/colors';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const EditProfileScreen = () => {
   const navigation = useNavigation();
@@ -68,16 +69,22 @@ const EditProfileScreen = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
+        {/* Gradient Header */}
+        <LinearGradient
+          colors={["#0066cc", "#2196F3"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientHeader}
+        >
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <Icon name="arrow-back" size={24} color="#333" />
+            <Text style={styles.backIcon}>{'‹'}</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Profili Düzenle</Text>
-        </View>
-
+          <Text style={styles.gradientHeaderTitle}>Profili Düzenle</Text>
+        </LinearGradient>
+        <View style={{ height: 8 }} />
         <View style={styles.formContainer}>
           <View style={styles.profileImageContainer}>
             <Image
@@ -159,22 +166,38 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  header: {
+  gradientHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 100,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    paddingTop: 38,
+    paddingHorizontal: 16,
+    zIndex: 10,
+    elevation: 8,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    justifyContent: 'flex-start',
   },
   backButton: {
-    padding: 8,
+    padding: 4,
+    marginRight: 12,
   },
-  headerTitle: {
-    fontSize: 20,
+  backIcon: {
+    color: '#fff',
+    fontSize: 34,
     fontWeight: 'bold',
-    color: '#333',
-    marginLeft: 16,
+    marginTop: -2,
+  },
+  gradientHeaderTitle: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: 'bold',
+    letterSpacing: 1,
+    flex: 1,
   },
   formContainer: {
     padding: 20,

@@ -1,12 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useLayoutEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
-import { useRoute, useFocusEffect } from '@react-navigation/native';
+import { useRoute, useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useRentalHistories } from '../hooks/useRentalHistories';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const RentalHistoriesScreen = () => {
     const route = useRoute();
+    const navigation = useNavigation();
     const {
         rentalHistories,
         pendingRentalHistories,
@@ -18,6 +20,13 @@ const RentalHistoriesScreen = () => {
     } = useRentalHistories();
     const { type = 'history' } = route.params || {};
     const [userId, setUserId] = useState(null);
+
+    useLayoutEffect(() => {
+        navigation.setOptions({
+            headerTitle: '',
+            headerTransparent: true,
+        });
+    }, [navigation]);
 
     useEffect(() => {
         const loadUserId = async () => {
@@ -69,9 +78,9 @@ const RentalHistoriesScreen = () => {
         };
         return (
             <View style={styles.rentalCard}>
-                {item.MainPhoto ? (
+                {item.MainPhotoUrl ? (
                     <Image 
-                        source={{ uri: `data:image/jpeg;base64,${item.MainPhoto}` }} 
+                        source={{ uri: item.MainPhotoUrl }} 
                         style={styles.rentalImage}
                     />
                 ) : null}
@@ -105,8 +114,10 @@ const RentalHistoriesScreen = () => {
 
     useFocusEffect(
         React.useCallback(() => {
-            // fetchRentalHistoriesByUserId && fetchRentalHistoriesByUserId();
-        }, [])
+            if (userId) {
+                loadRentalHistory();
+            }
+        }, [userId, type])
     );
 
     if ((type === 'pending' ? pendingLoading : loading)) {
@@ -119,6 +130,20 @@ const RentalHistoriesScreen = () => {
 
     return (
         <View style={styles.container}>
+            <LinearGradient
+                colors={['#0066cc', '#0052a3']}
+                style={styles.header}
+            >
+                <Text style={styles.headerTitle}>
+                    {type === 'pending' ? 'Bekleyen İsteklerim' : 'Kiralama Geçmişim'}
+                </Text>
+                <Text style={styles.headerSubtitle}>
+                    {type === 'pending' 
+                        ? 'Bekleyen kiralama isteklerinizi görüntüleyin'
+                        : 'Tüm kiralama geçmişinizi görüntüleyin'}
+                </Text>
+            </LinearGradient>
+
             <FlatList
                 data={type === 'pending' ? pendingRentalHistories : rentalHistories}
                 renderItem={renderRentalItem}
@@ -141,6 +166,23 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#f5f5f5',
     },
+    header: {
+        paddingTop: 60,
+        paddingBottom: 20,
+        paddingHorizontal: 20,
+        borderBottomLeftRadius: 20,
+        borderBottomRightRadius: 20,
+    },
+    headerTitle: {
+        fontSize: 28,
+        fontWeight: 'bold',
+        color: '#fff',
+        marginBottom: 8,
+    },
+    headerSubtitle: {
+        fontSize: 16,
+        color: 'rgba(255, 255, 255, 0.8)',
+    },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
@@ -155,11 +197,11 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         marginBottom: 16,
         overflow: 'hidden',
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 1.41,
+        elevation: 6,
+        shadowColor: '#0066cc',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
     },
     rentalImage: {
         width: '100%',

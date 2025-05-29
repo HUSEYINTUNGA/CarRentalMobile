@@ -12,6 +12,7 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { createPaymentMethod, updatePaymentMethod, getPaymentMethodById } from '../api/paymentMethodsApi';
 import { colors } from '../theme/colors';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const styles = StyleSheet.create({
   container: {
@@ -71,6 +72,50 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  gradientHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 100,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: 38,
+    paddingHorizontal: 16,
+    zIndex: 10,
+    elevation: 8,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    justifyContent: 'flex-start',
+  },
+  backButton: {
+    padding: 4,
+    marginRight: 12,
+  },
+  backIcon: {
+    color: '#fff',
+    fontSize: 34,
+    fontWeight: 'bold',
+    marginTop: -2,
+  },
+  gradientHeaderTitle: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: 'bold',
+    letterSpacing: 1,
+    flex: 1,
+  },
+  logoFab: {
+    position: 'absolute',
+    right: 24,
+    bottom: 32,
+    width: 48,
+    height: 36,
+    zIndex: 20,
+    elevation: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 
@@ -169,7 +214,7 @@ export default function EditPaymentMethod() {
         CardNumber: formData.cardNumber,
         CardHolderName: formData.cardholderName,
         ExpirationMonth: parseInt(formData.expiryMonth),
-        ExpirationYear: parseInt(formData.expiryYear+2000),
+        ExpirationYear: parseInt(formData.expiryYear)+2000,
         CVV: formData.cvv,
       };
       if (mode === 'create') {
@@ -219,11 +264,19 @@ export default function EditPaymentMethod() {
 
   return (
     <ScrollView style={styles.container}>
+      <LinearGradient
+        colors={["#0066cc", "#2196F3"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.gradientHeader}
+      >
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Text style={styles.backIcon}>{'‹'}</Text>
+        </TouchableOpacity>
+        <Text style={styles.gradientHeaderTitle}>{mode === 'create' ? 'Yeni Kart Ekle' : 'Kartı Düzenle'}</Text>
+      </LinearGradient>
+      <View style={{ height: 100 }} />
       <View style={styles.form}>
-        <Text style={styles.title}>
-          {mode === 'create' ? 'Yeni Kart Ekle' : 'Kartı Düzenle'}
-        </Text>
-
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Kart Adı</Text>
           <TextInput
