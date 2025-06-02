@@ -84,7 +84,7 @@ const PaymentMethodsScreen = () => {
         <Text style={styles.cardNumber}>**** **** **** {item.Last4Digits}</Text>
         <Text style={styles.cardHolder}>{item.CardHolderName}</Text>
         <Text style={styles.expiryDate}>
-          {item.ExpirationMonth}/{item.ExpirationYear}
+          {item.ExpirationMonth}/{item.ExpirationYear % 100}
         </Text>
       </View>
       <View style={styles.cardActions}>

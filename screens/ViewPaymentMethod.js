@@ -109,7 +109,7 @@ const ViewPaymentMethod = () => {
         <Text style={styles.cardNumber}>{card.CardNumber}</Text>
         <Text style={styles.cardHolder}>{card.CardholderName}</Text>
         <Text style={styles.expiryDate}>
-          {card.ExpirationMonth}/{card.ExpirationYear}
+          {card.ExpirationMonth}/{card.ExpirationYear % 100}
         </Text>
       </View>
     </Animated.View>

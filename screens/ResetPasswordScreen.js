@@ -8,7 +8,6 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   ScrollView
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';

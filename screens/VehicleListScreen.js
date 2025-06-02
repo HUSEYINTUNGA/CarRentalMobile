@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, ActivityIndicator, Alert, TextInput, Modal, Animated, Dimensions, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, ActivityIndicator, Alert, TextInput, Modal, Animated, Dimensions} from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useVehicles } from '../hooks/useVehicles';
 import { Picker } from '@react-native-picker/picker';

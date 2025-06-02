@@ -9,7 +9,7 @@ import {
   Alert,
   StyleSheet,
 } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { createPaymentMethod, updatePaymentMethod, getPaymentMethodById } from '../api/paymentMethodsApi';
 import { colors } from '../theme/colors';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -137,11 +137,23 @@ export default function EditPaymentMethod() {
   const [initialLoading, setInitialLoading] = useState(mode === 'update');
   const [errors, setErrors] = useState({});
 
-  useEffect(() => {
-    if (mode === 'update' && cardId) {
-      fetchCardDetails();
-    }
-  }, [mode, cardId]);
+  useFocusEffect(
+    React.useCallback(() => {
+      if (mode === 'update' && cardId) {
+        fetchCardDetails();
+      } else {
+        setFormData({
+          methodName: '',
+          cardNumber: '',
+          expiryMonth: '',
+          expiryYear: '',
+          cvv: '',
+          cardholderName: '',
+        });
+        setErrors({});
+      }
+    }, [mode, cardId])
+  );
 
   const fetchCardDetails = async () => {
     try {
@@ -335,9 +347,9 @@ export default function EditPaymentMethod() {
             <Text style={styles.label}>Son Kullanma Yılı</Text>
             <TextInput
               style={[styles.input, errors.expiryYear && styles.inputError]}
-              value={formData.expiryYear}
+              value={formData.expiryYear ? String(formData.expiryYear).slice(-2) : ''}
               onChangeText={(text) => {
-                const year = text.replace(/\D/g, '').slice(0, 2);
+                const year = text.replace(/\D/g, '').slice(-2);
                 setFormData({ ...formData, expiryYear: year });
               }}
               placeholder="YY"

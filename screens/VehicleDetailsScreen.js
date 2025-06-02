@@ -43,14 +43,36 @@ const VehicleDetailsScreen = () => {
             if (vehicleId) {
                 if (role === 'Admin') {
                     fetchVehicleById(vehicleId)
-                        .then(setVehicle)
+                        .then(data => {
+                            // Admin verisi için VehiclePhotos'u Photos olarak normalize et
+                            const normalizedData = {
+                                ...data,
+                                Photos: data.VehiclePhotos?.map(photo => ({
+                                    Photo: photo.Photo || photo.photo,
+                                    IsMain: photo.IsMain
+                                })) || []
+                            };
+                            setVehicle(normalizedData);
+                        })
                         .catch((error) => {
                             console.error('Error fetching vehicle details:', error);
                             setVehicle(null);
                         });
                 } else {
                     fetchVehicleBasicById(vehicleId)
-                        .then(setVehicle)
+                        .then(data => {
+                            // Customer verisi için Photos'u VehiclePhotos olarak normalize et
+                            const normalizedData = {
+                                ...data,
+                                VehiclePhotos: data.Photos?.map(photo => ({
+                                    Photo: photo.Photo || photo.photo,
+                                    IsMain: photo.IsMain
+                                })) || [],
+                                IsAvailable: true, // Customer için varsayılan değerler
+                                IsRented: false
+                            };
+                            setVehicle(normalizedData);
+                        })
                         .catch((error) => {
                             console.error('Error fetching basic vehicle details:', error);
                             setVehicle(null);
@@ -116,7 +138,7 @@ const VehicleDetailsScreen = () => {
     }
     
     const currentPhoto = photoList[currentPhotoIndex] || null;
-    const photoUri = currentPhoto?.Photo ? currentPhoto.Photo : undefined;
+    const photoUri = currentPhoto?.Photo || currentPhoto?.photo || undefined;
 
     return (
         <View style={{ flex: 1, backgroundColor: '#f8fafd' }}>
@@ -250,44 +272,56 @@ const VehicleDetailsScreen = () => {
                                         <Text style={styles.detailValue}>{vehicle.IsRented ? 'Kirada' : 'Boşta'}</Text>
                                     </View>
                                 </View>
+                                {vehicle.RentalHistories && vehicle.RentalHistories.length > 0 && (
+                                    <View style={styles.rentalHistoryContainer}>
+                                        <Text style={styles.rentalHistoryTitle}>Kiralama Geçmişi</Text>
+                                        {vehicle.RentalHistories.map((rental, index) => (
+                                            <View key={rental.Id} style={styles.rentalHistoryItem}>
+                                                <View style={styles.rentalHistoryHeader}>
+                                                    <Icon 
+                                                        name={rental.IsActive ? "clock-check" : "clock-check-outline"} 
+                                                        size={24} 
+                                                        color={rental.IsActive ? "#4CAF50" : "#9E9E9E"} 
+                                                    />
+                                                    <Text style={styles.rentalHistoryStatus}>
+                                                        {rental.IsActive ? 'Aktif Kiralama' : 'Tamamlanmış Kiralama'}
+                                                    </Text>
+                                                </View>
+                                                <View style={styles.rentalHistoryDetails}>
+                                                    <View style={styles.rentalHistoryRow}>
+                                                        <Text style={styles.rentalHistoryLabel}>Kiralama Tarihi:</Text>
+                                                        <Text style={styles.rentalHistoryValue}>
+                                                            {new Date(rental.RentalDate).toLocaleDateString('tr-TR')}
+                                                        </Text>
+                                                    </View>
+                                                    <View style={styles.rentalHistoryRow}>
+                                                        <Text style={styles.rentalHistoryLabel}>İade Tarihi:</Text>
+                                                        <Text style={styles.rentalHistoryValue}>
+                                                            {new Date(rental.ReturnDate).toLocaleDateString('tr-TR')}
+                                                        </Text>
+                                                    </View>
+                                                    <View style={styles.rentalHistoryRow}>
+                                                        <Text style={styles.rentalHistoryLabel}>Toplam Tutar:</Text>
+                                                        <Text style={styles.rentalHistoryValue}>{rental.TotalPrice} TL</Text>
+                                                    </View>
+                                                    <View style={styles.rentalHistoryRow}>
+                                                        <Text style={styles.rentalHistoryLabel}>Müşteri:</Text>
+                                                        <Text style={styles.rentalHistoryValue}>
+                                                            {rental.User.Name} {rental.User.Surname}
+                                                        </Text>
+                                                    </View>
+                                                    <View style={styles.rentalHistoryRow}>
+                                                        <Text style={styles.rentalHistoryLabel}>E-posta:</Text>
+                                                        <Text style={styles.rentalHistoryValue}>{rental.User.Email}</Text>
+                                                    </View>
+                                                </View>
+                                            </View>
+                                        ))}
+                                    </View>
+                                )}
                             </>
                         )}
                     </View>
-                    {role === 'Admin' && (
-                        <View style={styles.historyContainer}>
-                            <Text style={styles.sectionTitle}>Kiralama Geçmişi</Text>
-                            {vehicle.RentalHistories && vehicle.RentalHistories.length > 0 ? (
-                                vehicle.RentalHistories.map((history, idx) => (
-                                    <View key={history.Id || idx} style={styles.historyCard}>
-                                        <View style={styles.historyCardHeader}>
-                                            <View style={styles.avatarCircle}>
-                                                <Icon name="account" size={28} color="#3393dc" />
-                                            </View>
-                                            <View style={{ flex: 1 }}>
-                                                <Text style={styles.historyUserName}>{history.User?.Name || '-'} {history.User?.Surname || '-'}</Text>
-                                                <Text style={styles.historyUserUsername}>{history.User?.UserName || '-'}</Text>
-                                            </View>
-                                            <View style={[styles.statusBadge, history.IsActive ? styles.activeBadge : styles.completedBadge]}>
-                                                <Text style={[styles.statusBadgeText, history.IsActive ? styles.activeBadgeText : styles.completedBadgeText]}>{history.IsActive ? 'Aktif' : 'Tamamlandı'}</Text>
-                                            </View>
-                                        </View>
-                                        <View style={styles.historyCardBody}>
-                                            <Text style={styles.historyLabel}>E-posta:</Text>
-                                            <Text style={styles.historyValue}>{history.User?.Email || '-'}</Text>
-                                            <Text style={styles.historyLabel}>Kiralama Tarihi:</Text>
-                                            <Text style={styles.historyValue}>{history.RentalDate ? new Date(history.RentalDate).toLocaleDateString('tr-TR') : '-'}</Text>
-                                            <Text style={styles.historyLabel}>İade Tarihi:</Text>
-                                            <Text style={styles.historyValue}>{history.ReturnDate ? new Date(history.ReturnDate).toLocaleDateString('tr-TR') : '-'}</Text>
-                                            <Text style={styles.historyLabel}>Toplam Fiyat:</Text>
-                                            <Text style={[styles.historyValue, { color: '#222', fontWeight: 'bold' }]}>{history.TotalPrice != null ? `₺${history.TotalPrice.toLocaleString('tr-TR')}` : '-'}</Text>
-                                        </View>
-                                    </View>
-                                ))
-                            ) : (
-                                <Text style={styles.historyEmpty}>Bu araca ait kiralama kaydı yok.</Text>
-                            )}
-                        </View>
-                    )}
 
                     {role === 'Customer' && (
                         <TouchableOpacity
@@ -615,6 +649,60 @@ const styles = StyleSheet.create({
         position: 'absolute',
         right: 18,
         top: 38,
+    },
+    rentalHistoryContainer: {
+        marginTop: 20,
+        padding: 15,
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    rentalHistoryTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 15,
+    },
+    rentalHistoryItem: {
+        marginBottom: 15,
+        padding: 12,
+        backgroundColor: '#f8f9fa',
+        borderRadius: 8,
+    },
+    rentalHistoryHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    rentalHistoryStatus: {
+        marginLeft: 8,
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#333',
+    },
+    rentalHistoryDetails: {
+        marginLeft: 32,
+    },
+    rentalHistoryRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 6,
+    },
+    rentalHistoryLabel: {
+        fontSize: 14,
+        color: '#666',
+        flex: 1,
+    },
+    rentalHistoryValue: {
+        fontSize: 14,
+        color: '#333',
+        fontWeight: '500',
+        flex: 2,
+        textAlign: 'right',
     },
 });
 

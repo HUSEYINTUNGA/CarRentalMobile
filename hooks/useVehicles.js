@@ -21,9 +21,14 @@ export const useVehicles = () => {
       setLoading(true);
       setError(null);
       const response = await getVehicles(params);
-      setVehicles(response.data);
+      if (response.data && response.data.Data) {
+        setVehicles(response.data.Data);
+      } else {
+        setVehicles([]);
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Araçlar yüklenirken hata oluştu.');
+      setVehicles([]);
     } finally {
       setLoading(false);
     }
@@ -34,9 +39,14 @@ export const useVehicles = () => {
       setLoading(true);
       setError(null);
       const response = await getAllVehicles(params);
-      setVehicles(response.data);
+      if (response.data && response.data.Data) {
+        setVehicles(response.data.Data);
+      } else {
+        setVehicles([]);
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Tüm araçlar yüklenirken hata oluştu.');
+      setVehicles([]);
     } finally {
       setLoading(false);
     }
@@ -47,8 +57,12 @@ export const useVehicles = () => {
       setLoading(true);
       setError(null);
       const response = await getVehicleById(id);
-      setSelectedVehicle(response.data);
-      return response.data;
+      if (response?.data?.Data) {
+        setSelectedVehicle(response.data.Data);
+        return response.data.Data;
+      } else {
+        throw new Error('Araç bilgisi alınamadı.');
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Araç bilgisi alınamadı.');
       throw err;
@@ -62,8 +76,12 @@ export const useVehicles = () => {
       setLoading(true);
       setError(null);
       const response = await getVehicleBasicById(id);
-      setSelectedVehicle(response.data);
-      return response.data;
+      if (response?.data?.Data) {
+        setSelectedVehicle(response.data.Data);
+        return response.data.Data;
+      } else {
+        throw new Error('Araç temel bilgisi alınamadı.');
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Araç temel bilgisi alınamadı.');
       throw err;
