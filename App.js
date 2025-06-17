@@ -32,6 +32,8 @@ import { useAuth } from './hooks/useAuth';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { TouchableOpacity } from 'react-native';
 import { navigationRef} from './RootNavigation';
+import ChangePasswordScreen from './screens/ChangePasswordScreen';
+import { ThemeProvider, useTheme } from './theme/ThemeProvider';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -49,6 +51,7 @@ const TabNavigator = (props) => {
   const navigation = useNavigation();
   const route = useRoute();
   const role = route?.params?.role;
+  const { colors } = useTheme();
 
   const handleLogout = async () => {
     await logout();
@@ -67,12 +70,12 @@ const TabNavigator = (props) => {
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: '#2196F3',
-        tabBarInactiveTintColor: '#666',
+        tabBarActiveTintColor: colors.tabBarActive,
+        tabBarInactiveTintColor: colors.tabBarInactive,
         tabBarStyle: {
-          backgroundColor: '#fff',
+          backgroundColor: colors.tabBarBackground,
           borderTopWidth: 1,
-          borderTopColor: '#eee',
+          borderTopColor: colors.tabBarBorder,
           paddingBottom: 5,
           paddingTop: 5,
           height: 60,
@@ -108,6 +111,7 @@ const TabNavigator = (props) => {
             component={VehicleListScreen}
             options={{
               title: 'Araçlar',
+              headerShown: false,
               tabBarIcon: ({ color, size }) => (
                 <Icon name="directions-car" size={size} color={color} />
               ),
@@ -129,6 +133,7 @@ const TabNavigator = (props) => {
             component={UsersListScreen}
             options={{
               title: 'Kullanıcılar',
+              headerShown: false,
               tabBarIcon: ({ color, size }) => (
                 <Icon name="group" size={size} color={color} />
               ),
@@ -179,6 +184,7 @@ const TabNavigator = (props) => {
             component={VehicleListScreen}
             options={{
               title: 'Araçlar',
+              headerShown: false,
               tabBarIcon: ({ color, size }) => (
                 <Icon name="directions-car" size={size} color={color} />
               ),
@@ -294,47 +300,52 @@ const App = () => {
 
   return (
     <PaperProvider>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-      <NavigationContainer ref={navigationRef}>
-        <Stack.Navigator
-          initialRouteName={isLoggedIn ? (role === 'Admin' ? 'MainApp' : 'Home') : 'Signin'}
-          screenOptions={{
-            animation: 'fade',
-            contentStyle: { backgroundColor: '#fff' }
-          }}
-        >
-          {isLoggedIn ? (
-            <Stack.Screen
-              name="MainApp"
-              options={{ headerShown: false }}
-              initialParams={{ role }}
-            >
-              {props => <TabNavigator {...props} setIsLoggedIn={setIsLoggedIn} setRole={setRole} />}
-            </Stack.Screen>
-          ) : (
-            <>
-              <Stack.Screen name="Signin" options={{ headerShown: false }}>
-                {props => <SigninScreen {...props} setIsLoggedIn={setIsLoggedIn} setRole={setRole} />}
+      <ThemeProvider>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+        <NavigationContainer ref={navigationRef}>
+          <Stack.Navigator
+            initialRouteName={isLoggedIn ? (role === 'Admin' ? 'MainApp' : 'Home') : 'Signin'}
+            screenOptions={{
+              animation: 'fade',
+              contentStyle: { backgroundColor: '#fff' }
+            }}
+          >
+            {isLoggedIn ? (
+              <Stack.Screen
+                name="MainApp"
+                options={{ headerShown: false }}
+                initialParams={{ role }}
+              >
+                {props => (
+                  <TabNavigator {...props} setIsLoggedIn={setIsLoggedIn} setRole={setRole} />
+                )}
               </Stack.Screen>
-              <Stack.Screen name="Signup" component={SignupScreen} options={{ headerShown: false }} />
-              <Stack.Screen name="VerifyAccount" component={VerifyAccountScreen} options={{ headerShown: false }} />
-              <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ headerShown: false }} />
-              <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ headerShown: false }} />
-              <Stack.Screen name="ResendVerification" component={ResendVerificationScreen} options={{ headerShown: false }} />
-            </>
-          )}
-          <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: true }} />
-          <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="PaymentMethods" component={PaymentMethodsScreen} options={{ title: 'Ödeme Yöntemleriniz' , headerShown: false}} />
-          <Stack.Screen name="EditPaymentMethod" component={EditPaymentMethodScreen} options={{ title: 'Kart Düzenle', headerShown: false }} />
-          <Stack.Screen name="ViewPaymentMethod" component={ViewPaymentMethod} options={{ title: 'Kart Detayları', presentation: 'modal' }} />
-          <Stack.Screen name="VehicleDetails" component={VehicleDetailsScreen} options={{ headerShown: false }} />
-          <Stack.Screen name="RentedScreen" component={RentedScreen} options={{ title: 'Araç Kirala', headerShown: false }} />
-          <Stack.Screen name="ManageVehicles" component={ManageVehiclesScreen} options={{ title: 'Araç Yönetimi', headerShown: false }} />
-          <Stack.Screen name="RentalRequests" component={RentalRequestsScreen} options={{ title: 'Kiralama İstekleri', headerShown: true }} />
-          <Stack.Screen name="UsersList" component={UsersListScreen} options={{ title: 'Kullanıcılar', headerShown: true }} />
-        </Stack.Navigator>
-      </NavigationContainer>
+            ) : (
+              <>
+                <Stack.Screen name="Signin" options={{ headerShown: false }}>
+                  {props => <SigninScreen {...props} setIsLoggedIn={setIsLoggedIn} setRole={setRole} />}
+                </Stack.Screen>
+                <Stack.Screen name="Signup" component={SignupScreen} options={{ headerShown: false }} />
+                <Stack.Screen name="VerifyAccount" component={VerifyAccountScreen} options={{ headerShown: false }} />
+                <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ headerShown: false }} />
+                <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ headerShown: false }} />
+                <Stack.Screen name="ResendVerification" component={ResendVerificationScreen} options={{ headerShown: false }} />
+              </>
+            )}
+            <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: true }} />
+            <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="PaymentMethods" options={{ title: 'Ödeme Yöntemleriniz', headerShown: false }} component={PaymentMethodsScreen} />
+            <Stack.Screen name="EditPaymentMethod" options={{ title: 'Kart Düzenle', headerShown: false }} component={EditPaymentMethodScreen} />
+            <Stack.Screen name="ViewPaymentMethod" options={{ title: 'Kart Detayları', presentation: 'modal' }} component={ViewPaymentMethod} />
+            <Stack.Screen name="VehicleDetails" options={{ headerShown: false }} component={VehicleDetailsScreen} />
+            <Stack.Screen name="RentedScreen" options={{ title: 'Araç Kirala', headerShown: false }} component={RentedScreen} />
+            <Stack.Screen name="ManageVehicles" options={{ title: 'Araç Yönetimi', headerShown: false }} component={ManageVehiclesScreen} />
+            <Stack.Screen name="RentalRequests" options={{ title: 'Kiralama İstekleri', headerShown: true }} component={RentalRequestsScreen} />
+            <Stack.Screen name="UsersList" options={{ title: 'Kullanıcılar', headerShown: true }} component={UsersListScreen} />
+            <Stack.Screen name="ChangePassword" options={{ headerShown: true, title: 'Şifre Değiştir' }} component={ChangePasswordScreen} />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </ThemeProvider>
     </PaperProvider>
   );
 };

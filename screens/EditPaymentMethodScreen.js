@@ -11,13 +11,12 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { createPaymentMethod, updatePaymentMethod, getPaymentMethodById } from '../api/paymentMethodsApi';
-import { colors } from '../theme/colors';
+import { useTheme } from '../theme/ThemeProvider';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   form: {
     padding: 16,
@@ -25,7 +24,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: colors.primary,
     marginBottom: 18,
     textAlign: 'center',
   },
@@ -34,23 +32,18 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 15,
-    color: colors.text,
     marginBottom: 4,
   },
   input: {
     borderWidth: 1,
-    borderColor: colors.border,
     borderRadius: 8,
     padding: 10,
     fontSize: 15,
-    backgroundColor: colors.white,
-    color: colors.text,
   },
   inputError: {
-    borderColor: colors.error,
+    // borderColor will be set inline
   },
   errorText: {
-    color: colors.error,
     fontSize: 13,
     marginTop: 2,
   },
@@ -59,7 +52,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   button: {
-    backgroundColor: colors.primary,
     padding: 14,
     borderRadius: 8,
     alignItems: 'center',
@@ -69,7 +61,6 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: colors.white,
     fontWeight: 'bold',
     fontSize: 16,
   },
@@ -94,13 +85,11 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   backIcon: {
-    color: '#fff',
     fontSize: 34,
     fontWeight: 'bold',
     marginTop: -2,
   },
   gradientHeaderTitle: {
-    color: '#fff',
     fontSize: 22,
     fontWeight: 'bold',
     letterSpacing: 1,
@@ -116,6 +105,17 @@ const styles = StyleSheet.create({
     elevation: 10,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  updateBtn: {
+    padding: 14,
+    borderRadius: 16,
+    alignItems: 'center',
+    marginTop: 24,
+    width: 320,
+    elevation: 4,
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
   },
 });
 
@@ -136,6 +136,8 @@ export default function EditPaymentMethod() {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(mode === 'update');
   const [errors, setErrors] = useState({});
+
+  const { colors, isDark } = useTheme();
 
   useFocusEffect(
     React.useCallback(() => {
@@ -268,57 +270,67 @@ export default function EditPaymentMethod() {
 
   if (initialLoading) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.background }] }>
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }] }>
       <LinearGradient
-        colors={["#0066cc", "#2196F3"]}
+        colors={[colors.headerGradientStart, colors.headerGradientEnd]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.gradientHeader}
       >
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backIcon}>{'‹'}</Text>
+          <Text style={[styles.backIcon, { color: '#fff' }]}>{'‹'}</Text>
         </TouchableOpacity>
-        <Text style={styles.gradientHeaderTitle}>{mode === 'create' ? 'Yeni Kart Ekle' : 'Kartı Düzenle'}</Text>
+        <Text style={[styles.gradientHeaderTitle, { color: '#fff' }]}>{mode === 'create' ? 'Yeni Kart Ekle' : 'Kartı Düzenle'}</Text>
       </LinearGradient>
       <View style={{ height: 100 }} />
       <View style={styles.form}>
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Kart Adı</Text>
+          <Text style={[styles.label, { color: colors.text }]}>Kart Adı</Text>
           <TextInput
-            style={[styles.input, errors.methodName && styles.inputError]}
+            style={[
+              styles.input,
+              { borderColor: colors.border, backgroundColor: colors.card, color: colors.text },
+              errors.methodName && { borderColor: colors.error }
+            ]}
             value={formData.methodName}
             onChangeText={(text) => setFormData({ ...formData, methodName: text })}
             placeholder="Örneğin: Maaş Kartım"
+            placeholderTextColor={colors.textSecondary}
             editable={true}
           />
           {errors.methodName && (
-            <Text style={styles.errorText}>{errors.methodName === 'Card number is required' ? 'Kart adı zorunludur' : errors.methodName}</Text>
+            <Text style={[styles.errorText, { color: colors.error }]}>{errors.methodName === 'Card number is required' ? 'Kart adı zorunludur' : errors.methodName}</Text>
           )}
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Kart Numarası</Text>
+          <Text style={[styles.label, { color: colors.text }]}>Kart Numarası</Text>
           <TextInput
-            style={[styles.input, errors.cardNumber && styles.inputError]}
+            style={[
+              styles.input,
+              { borderColor: colors.border, backgroundColor: colors.card, color: colors.text },
+              errors.cardNumber && { borderColor: colors.error }
+            ]}
             value={formData.cardNumber}
             onChangeText={(text) => {
               const formatted = text.replace(/\s/g, '').match(/.{1,4}/g)?.join(' ') || '';
               setFormData({ ...formData, cardNumber: formatted });
             }}
             placeholder="1234 5678 9012 3456"
+            placeholderTextColor={colors.textSecondary}
             keyboardType="numeric"
             maxLength={19}
             editable={true}
           />
           {errors.cardNumber && (
-            <Text style={styles.errorText}>{
+            <Text style={[styles.errorText, { color: colors.error }]}> {
               errors.cardNumber === 'Card number is required' ? 'Kart numarası zorunludur' :
               errors.cardNumber === 'Invalid card number' ? 'Geçersiz kart numarası' :
               errors.cardNumber
@@ -326,86 +338,80 @@ export default function EditPaymentMethod() {
           )}
         </View>
 
-        <View style={styles.row}>
-          <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-            <Text style={styles.label}>Son Kullanma Ayı</Text>
-            <TextInput
-              style={[styles.input, errors.expiryMonth && styles.inputError]}
-              value={formData.expiryMonth}
-              onChangeText={(text) => {
-                const month = text.replace(/\D/g, '').slice(0, 2);
-                setFormData({ ...formData, expiryMonth: month });
-              }}
-              placeholder="AA"
-              keyboardType="numeric"
-              maxLength={2}
-              editable={true}
-            />
-          </View>
-
-          <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
-            <Text style={styles.label}>Son Kullanma Yılı</Text>
-            <TextInput
-              style={[styles.input, errors.expiryYear && styles.inputError]}
-              value={formData.expiryYear ? String(formData.expiryYear).slice(-2) : ''}
-              onChangeText={(text) => {
-                const year = text.replace(/\D/g, '').slice(-2);
-                setFormData({ ...formData, expiryYear: year });
-              }}
-              placeholder="YY"
-              keyboardType="numeric"
-              maxLength={2}
-              editable={true}
-            />
-          </View>
-
-          <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
-            <Text style={styles.label}>CVV</Text>
-            <TextInput
-              style={[styles.input, errors.cvv && styles.inputError]}
-              value={formData.cvv}
-              onChangeText={(text) => {
-                const cvv = text.replace(/\D/g, '').slice(0, 4);
-                setFormData({ ...formData, cvv });
-              }}
-              placeholder="123"
-              keyboardType="numeric"
-              maxLength={4}
-              editable={true}
-            />
-            {errors.cvv && (
-              <Text style={styles.errorText}>{
-                errors.cvv === 'CVV is required' ? 'CVV zorunludur' :
-                errors.cvv === 'Invalid CVV' ? 'Geçersiz CVV' :
-                errors.cvv
-              }</Text>
-            )}
-          </View>
+        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
+          <TextInput
+            style={[styles.input, { flex: 1, backgroundColor: colors.card, color: colors.text, borderColor: colors.border, borderWidth: 1 }]}
+            placeholder={mode === 'update' ? '' : 'S.K. Ay'}
+            placeholderTextColor={isDark ? '#fff' : colors.textSecondary}
+            value={formData.expiryMonth}
+            onChangeText={(text) => {
+              const month = text.replace(/\D/g, '').slice(0, 2);
+              setFormData({ ...formData, expiryMonth: month });
+            }}
+            keyboardType="numeric"
+            maxLength={2}
+            editable={true}
+          />
+          <TextInput
+            style={[styles.input, { flex: 1, backgroundColor: colors.card, color: colors.text, borderColor: colors.border, borderWidth: 1 }]}
+            placeholder={mode === 'update' ? '' : 'S.K. Yıl'}
+            placeholderTextColor={isDark ? '#fff' : colors.textSecondary}
+            value={formData.expiryYear ? String(formData.expiryYear).slice(-2) : ''}
+            onChangeText={(text) => {
+              const year = text.replace(/\D/g, '').slice(-2);
+              setFormData({ ...formData, expiryYear: year });
+            }}
+            keyboardType="numeric"
+            maxLength={2}
+            editable={true}
+          />
+          <TextInput
+            style={[styles.input, { flex: 1, backgroundColor: colors.card, color: colors.text, borderColor: colors.border, borderWidth: 1 }]}
+            placeholder={mode === 'update' ? '' : 'CVV'}
+            placeholderTextColor={isDark ? '#fff' : colors.textSecondary}
+            value={formData.cvv}
+            onChangeText={(text) => {
+              const cvv = text.replace(/\D/g, '').slice(0, 4);
+              setFormData({ ...formData, cvv });
+            }}
+            keyboardType="numeric"
+            maxLength={4}
+            editable={true}
+          />
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Kart Sahibi Adı</Text>
+          <Text style={[styles.label, { color: colors.text }]}>Kart Sahibi Adı</Text>
           <TextInput
-            style={[styles.input, errors.cardholderName && styles.inputError]}
+            style={[
+              styles.input,
+              { borderColor: colors.border, backgroundColor: colors.card, color: colors.text },
+              errors.cardholderName && { borderColor: colors.error }
+            ]}
             value={formData.cardholderName}
             onChangeText={(text) => setFormData({ ...formData, cardholderName: text })}
             placeholder="Ad Soyad"
+            placeholderTextColor={colors.textSecondary}
             editable={true}
           />
           {errors.cardholderName && (
-            <Text style={styles.errorText}>{errors.cardholderName === 'Cardholder name is required' ? 'Kart sahibi adı zorunludur' : errors.cardholderName}</Text>
+            <Text style={[styles.errorText, { color: colors.error }]}>{errors.cardholderName === 'Cardholder name is required' ? 'Kart sahibi adı zorunludur' : errors.cardholderName}</Text>
           )}
         </View>
 
         <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
+          style={[
+            styles.updateBtn,
+            { backgroundColor: colors.primary },
+            loading && styles.buttonDisabled
+          ]}
           onPress={handleSubmit}
           disabled={loading}
         >
           {loading ? (
             <ActivityIndicator color={colors.white} />
           ) : (
-            <Text style={styles.buttonText}>
+            <Text style={[styles.buttonText, { color: colors.white }]}>
               {mode === 'create' ? 'Kartı Ekle' : 'Kartı Güncelle'}
             </Text>
           )}

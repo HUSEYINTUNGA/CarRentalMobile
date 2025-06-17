@@ -20,6 +20,7 @@ import { deleteVehiclePhoto, addVehiclePhoto } from '../api/vehiclePhotosApi';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../theme/ThemeProvider';
 
 const fieldIcons = {
     Brand: 'car',
@@ -40,6 +41,7 @@ const ManageVehiclesScreen = () => {
     const route = useRoute();
     const { mode, vehicleId } = route.params || {};
     const { fetchVehicleById, editVehicle, addVehicle, loading } = useVehicles();
+    const { colors } = useTheme();
 
     const isAddMode = mode === 'Add';
     const isEditMode = mode === 'Edit';
@@ -297,12 +299,12 @@ const ManageVehiclesScreen = () => {
             case 'boolean':
                 const refProp = (field === 'IsAvailable' && isUnavailableMode) ? { ref: isAvailableRef } : {};
                 return (
-                    <View style={styles.fieldContainer} {...refProp}>
+                    <View style={[styles.fieldContainer, { backgroundColor: colors.card, shadowColor: colors.shadow }] } {...refProp}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                             {iconName && (
-                                <MaterialCommunityIcons name={iconName} size={22} color="#2196F3" style={{ marginRight: 8 }} />
+                                <MaterialCommunityIcons name={iconName} size={22} color={colors.primary} style={{ marginRight: 8 }} />
                             )}
-                            <Text style={styles.label}>{label}</Text>
+                            <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
                         </View>
                         <View style={styles.switchContainer}>
                             <Switch
@@ -311,32 +313,32 @@ const ManageVehiclesScreen = () => {
                                     setFormData(prev => ({ ...prev, [field]: newValue }));
                                     setHasChanges(true);
                                 } : undefined}
-                                trackColor={{ false: '#e0e0e0', true: '#4CAF50' }}
-                                thumbColor={value ? '#fff' : '#f4f3f4'}
+                                trackColor={{ false: colors.border, true: colors.success }}
+                                thumbColor={value ? colors.card : colors.backgroundCard}
                                 disabled={!editable}
                             />
-                            <Text style={[styles.switchLabel, { color: value ? '#4CAF50' : '#9e9e9e' }]}>
+                            <Text style={[styles.switchLabel, { color: value ? colors.success : colors.textSecondary }]}>
                                 {value ? 'Aktif' : 'Pasif'}
                             </Text>
                         </View>
-                        {error && <Text style={styles.errorText}>{error}</Text>}
+                        {error && <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>}
                     </View>
                 );
             case 'enum':
                 const options = field === 'FuelType' ? FuelTypeOptions : TransmissionTypeOptions;
                 return (
-                    <View style={styles.fieldContainer}>
+                    <View style={[styles.fieldContainer, { backgroundColor: colors.card, shadowColor: colors.shadow }] }>
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                             {iconName && (
-                                <MaterialCommunityIcons name={iconName} size={22} color="#2196F3" style={{ marginRight: 8 }} />
+                                <MaterialCommunityIcons name={iconName} size={22} color={colors.primary} style={{ marginRight: 8 }} />
                             )}
-                            <Text style={styles.label}>{label}</Text>
+                            <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
                         </View>
-                        <View style={styles.pickerContainer}>
+                        <View style={[styles.pickerContainer, { borderColor: colors.border, backgroundColor: colors.backgroundCard }] }>
                             <Picker
                                 selectedValue={value}
                                 onValueChange={editable ? (value) => handleInputChange(field, value) : undefined}
-                                style={styles.picker}
+                                style={[styles.picker, { color: colors.text }]}
                                 enabled={editable}
                             >
                                 <Picker.Item label={`Seçiniz`} value={''} />
@@ -345,41 +347,50 @@ const ManageVehiclesScreen = () => {
                                 ))}
                             </Picker>
                         </View>
-                        {error && <Text style={styles.errorText}>{error}</Text>}
+                        {error && <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>}
                     </View>
                 );
             case 'year':
                 return (
-                    <View style={styles.fieldContainer}>
+                    <View style={[styles.fieldContainer, { backgroundColor: colors.card, shadowColor: colors.shadow }] }>
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                             {iconName && (
-                                <MaterialCommunityIcons name={iconName} size={22} color="#2196F3" style={{ marginRight: 8 }} />
+                                <MaterialCommunityIcons name={iconName} size={22} color={colors.primary} style={{ marginRight: 8 }} />
                             )}
-                            <Text style={styles.label}>{label}</Text>
+                            <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
                         </View>
                         <TextInput
-                            style={[styles.input, error && styles.inputError]}
+                            style={[
+                                styles.input,
+                                { borderColor: colors.border, backgroundColor: colors.backgroundCard, color: colors.text },
+                                error && { borderColor: colors.error }
+                            ]}
                             value={value?.toString()}
                             onChangeText={editable ? (text) => handleInputChange(field, text.replace(/[^0-9]/g, '')) : undefined}
                             keyboardType="numeric"
                             placeholder={`${label} giriniz`}
+                            placeholderTextColor={colors.textSecondary}
                             maxLength={4}
                             editable={editable}
                         />
-                        {error && <Text style={styles.errorText}>{error}</Text>}
+                        {error && <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>}
                     </View>
                 );
             case 'plate':
                 return (
-                    <View style={styles.fieldContainer}>
+                    <View style={[styles.fieldContainer, { backgroundColor: colors.card, shadowColor: colors.shadow }] }>
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                             {iconName && (
-                                <MaterialCommunityIcons name={iconName} size={22} color="#2196F3" style={{ marginRight: 8 }} />
+                                <MaterialCommunityIcons name={iconName} size={22} color={colors.primary} style={{ marginRight: 8 }} />
                             )}
-                            <Text style={styles.label}>{label}</Text>
+                            <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
                         </View>
                         <TextInput
-                            style={[styles.input, error && styles.inputError]}
+                            style={[
+                                styles.input,
+                                { borderColor: colors.border, backgroundColor: colors.backgroundCard, color: colors.text },
+                                error && { borderColor: colors.error }
+                            ]}
                             value={value}
                             onChangeText={editable ? (text) => {
                                 if (/^[0-9]{0,2}[A-Z]{0,3}[0-9]{0,4}$/.test(text.toUpperCase())) {
@@ -388,54 +399,64 @@ const ManageVehiclesScreen = () => {
                             } : undefined}
                             placeholder="34ABC123"
                             autoCapitalize="characters"
+                            placeholderTextColor={colors.textSecondary}
                             editable={editable}
                         />
-                        {error && <Text style={styles.errorText}>{error}</Text>}
+                        {error && <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>}
                     </View>
                 );
             case 'number':
                 return (
-                    <View style={styles.fieldContainer}>
+                    <View style={[styles.fieldContainer, { backgroundColor: colors.card, shadowColor: colors.shadow }] }>
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                             {iconName && (
-                                <MaterialCommunityIcons name={iconName} size={22} color="#2196F3" style={{ marginRight: 8 }} />
+                                <MaterialCommunityIcons name={iconName} size={22} color={colors.primary} style={{ marginRight: 8 }} />
                             )}
-                            <Text style={styles.label}>{label}</Text>
+                            <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
                         </View>
                         <TextInput
-                            style={[styles.input, error && styles.inputError]}
+                            style={[
+                                styles.input,
+                                { borderColor: colors.border, backgroundColor: colors.backgroundCard, color: colors.text },
+                                error && { borderColor: colors.error }
+                            ]}
                             value={value !== undefined && value !== null ? value.toString() : ''}
                             onChangeText={editable ? (text) => handleInputChange(field, text.replace(/[^0-9.]/g, '')) : undefined}
                             keyboardType="numeric"
                             placeholder={`${label} giriniz`}
+                            placeholderTextColor={colors.textSecondary}
                             editable={editable}
                             {...inputProps}
                             ref={field === 'DailyPrice' && isPriceMode ? dailyPriceRef : undefined}
                         />
-                        {error && <Text style={styles.errorText}>{error}</Text>}
+                        {error && <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>}
                     </View>
                 );
             default:
                 return (
-                    <View style={styles.fieldContainer}>
+                    <View style={[styles.fieldContainer, { backgroundColor: colors.card, shadowColor: colors.shadow }] }>
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                             {iconName && (
-                                <MaterialCommunityIcons name={iconName} size={22} color="#2196F3" style={{ marginRight: 8 }} />
+                                <MaterialCommunityIcons name={iconName} size={22} color={colors.primary} style={{ marginRight: 8 }} />
                             )}
-                            <Text style={styles.label}>{label}</Text>
+                            <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
                         </View>
                         <TextInput
-                            style={[styles.input, error && styles.inputError]}
+                            style={[
+                                styles.input,
+                                { borderColor: colors.border, backgroundColor: colors.backgroundCard, color: colors.text },
+                                error && { borderColor: colors.error }
+                            ]}
                             value={value}
                             onChangeText={editable ? (text) => {
                                 setFormData(prev => ({ ...prev, [field]: text }));
                                 setHasChanges(true);
                             } : undefined}
                             placeholder={`${label} giriniz`}
-                            placeholderTextColor="#999"
+                            placeholderTextColor={colors.textSecondary}
                             editable={editable}
                         />
-                        {error && <Text style={styles.errorText}>{error}</Text>}
+                        {error && <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>}
                     </View>
                 );
         }
@@ -443,25 +464,25 @@ const ManageVehiclesScreen = () => {
 
     if (loading || (!isAddMode && !vehicle)) {
         return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#2196F3" />
+            <View style={[styles.loadingContainer, { backgroundColor: colors.background }] }>
+                <ActivityIndicator size="large" color={colors.primary} />
             </View>
         );
     }
 
     return (
-        <View style={{ flex: 1, backgroundColor: '#f8fafd' }}>
+        <View style={{ flex: 1, backgroundColor: colors.background }}>
             {/* Gradient Header */}
             <LinearGradient
-                colors={["#0066cc", "#2196F3"]}
+                colors={[colors.headerGradientStart, colors.headerGradientEnd]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.gradientHeader}
             >
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Text style={styles.backIcon}>{'‹'}</Text>
+                    <Text style={[styles.backIcon, { color: '#fff' }]}>{'‹'}</Text>
                 </TouchableOpacity>
-                <Text style={styles.gradientHeaderTitle}>Araç Yönetimi</Text>
+                <Text style={[styles.gradientHeaderTitle, { color: '#fff' }]}>Araç Yönetimi</Text>
             </LinearGradient>
             <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: 100 }}>
                 {(isAddMode || isEditMode) && (
@@ -473,7 +494,7 @@ const ManageVehiclesScreen = () => {
                                     style={styles.deletePhotoButton}
                                     onPress={() => handleDeletePhoto(photo.PhotoId)}
                                 >
-                                    <Icon name="close-circle" size={24} color="#F44336" />
+                                    <Icon name="close-circle" size={24} color={colors.error} />
                                 </TouchableOpacity>
                             </View>
                         ))}
@@ -484,12 +505,12 @@ const ManageVehiclesScreen = () => {
                                     style={styles.deletePhotoButton}
                                     onPress={() => handleRemoveSelectedPhoto(index)}
                                 >
-                                    <Icon name="close-circle" size={24} color="#F44336" />
+                                    <Icon name="close-circle" size={24} color={colors.error} />
                                 </TouchableOpacity>
                             </View>
                         ))}
-                        <TouchableOpacity style={styles.addPhotoButton} onPress={handleAddPhoto}>
-                            <MaterialCommunityIcons name="camera-plus" size={32} color="#2196F3" />
+                        <TouchableOpacity style={[styles.addPhotoButton, { backgroundColor: colors.infoBoxBg }]} onPress={handleAddPhoto}>
+                            <MaterialCommunityIcons name="camera-plus" size={32} color={colors.primary} />
                         </TouchableOpacity>
                     </View>
                 )}
@@ -505,19 +526,19 @@ const ManageVehiclesScreen = () => {
                 {renderField('IsAvailable', 'Müsaitlik Durumu', 'boolean')}
                 {isEditMode && renderField('IsRented', 'Kirada', 'boolean')}
             </ScrollView>
-            <View style={styles.footer}>
+            <View style={[styles.footer, { backgroundColor: colors.card, borderTopColor: colors.border }] }>
                 <TouchableOpacity
-                    style={[styles.button, styles.cancelButton]}
+                    style={[styles.button, styles.cancelButton, { backgroundColor: colors.error }]}
                     onPress={() => navigation.goBack()}
                 >
-                    <Text style={styles.buttonText}>İptal</Text>
+                    <Text style={[styles.buttonText, { color: colors.white }]}>İptal</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={[styles.button, styles.saveButton, (!hasChanges || isSubmitting) && styles.disabledButton]}
+                    style={[styles.button, styles.saveButton, { backgroundColor: colors.primary }, (!hasChanges || isSubmitting) && styles.disabledButton]}
                     onPress={handleSubmit}
                     disabled={!hasChanges || isSubmitting}
                 >
-                    <Text style={styles.buttonText}>Kaydet</Text>
+                    <Text style={[styles.buttonText, { color: colors.white }]}>Kaydet</Text>
                 </TouchableOpacity>
             </View>
         </View>
@@ -546,13 +567,11 @@ const styles = StyleSheet.create({
         marginRight: 12,
     },
     backIcon: {
-        color: '#fff',
         fontSize: 34,
         fontWeight: 'bold',
         marginTop: -2,
     },
     gradientHeaderTitle: {
-        color: '#fff',
         fontSize: 22,
         fontWeight: 'bold',
         letterSpacing: 1,
@@ -560,7 +579,6 @@ const styles = StyleSheet.create({
     },
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
     },
     scrollView: {
         flex: 1,
@@ -573,10 +591,8 @@ const styles = StyleSheet.create({
     },
     fieldContainer: {
         marginBottom: 16,
-        backgroundColor: '#fff',
         padding: 12,
         borderRadius: 8,
-        shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.2,
         shadowRadius: 2,
@@ -584,19 +600,16 @@ const styles = StyleSheet.create({
     },
     label: {
         fontSize: 14,
-        color: '#666',
         marginBottom: 8,
     },
     input: {
         borderWidth: 1,
-        borderColor: '#ddd',
         borderRadius: 4,
         padding: 8,
         fontSize: 16,
     },
     pickerContainer: {
         borderWidth: 1,
-        borderColor: '#ddd',
         borderRadius: 4,
         overflow: 'hidden',
     },
@@ -605,14 +618,11 @@ const styles = StyleSheet.create({
     },
     disabledText: {
         fontSize: 16,
-        color: '#999',
     },
     footer: {
         flexDirection: 'row',
         padding: 16,
-        backgroundColor: '#fff',
         borderTopWidth: 1,
-        borderTopColor: '#ddd',
     },
     button: {
         flex: 1,
@@ -621,17 +631,12 @@ const styles = StyleSheet.create({
         marginHorizontal: 8,
         alignItems: 'center',
     },
-    cancelButton: {
-        backgroundColor: '#f44336',
-    },
-    saveButton: {
-        backgroundColor: '#2196F3',
-    },
+    cancelButton: {},
+    saveButton: {},
     disabledButton: {
-        backgroundColor: '#ccc',
+        opacity: 0.6,
     },
     buttonText: {
-        color: '#fff',
         fontSize: 16,
         fontWeight: 'bold',
     },
@@ -675,18 +680,14 @@ const styles = StyleSheet.create({
         height: 100,
         margin: 4,
         borderRadius: 8,
-        backgroundColor: '#e3f2fd',
         justifyContent: 'center',
         alignItems: 'center',
     },
     errorText: {
-        color: 'red',
         fontSize: 12,
         marginTop: 4,
     },
-    inputError: {
-        borderColor: 'red',
-    },
+    inputError: {},
 });
 
 export default ManageVehiclesScreen; 

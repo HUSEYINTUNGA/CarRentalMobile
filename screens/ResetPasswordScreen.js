@@ -60,12 +60,6 @@ const ResetPasswordScreen = () => {
     >
       <ScrollView contentContainerStyle={[styles.scrollContainer, { minHeight: 700 }]} keyboardShouldPersistTaps="handled">
         <View style={styles.card}>
-          <Image
-            source={require('../assets/boskagit.png')}
-            style={styles.topCartoon}
-            resizeMode="contain"
-          />
-
           <Text style={styles.title}>Şifreyi Sıfırla</Text>
           <Text style={styles.subtitle}>Sistemin damadı olmaya bir adım kaldı! Kodunu ve yeni şifreni gir, borçlar silinsin.</Text>
 

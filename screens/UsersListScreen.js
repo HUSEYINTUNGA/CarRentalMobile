@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ActivityIndicator, Modal, Animated, Dimensions, Switch, ScrollView } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
 import { MaterialIcons } from '@expo/vector-icons';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useUsers } from '../hooks/useProfile';
 import { useRentalHistories } from '../hooks/useRentalHistories';
 import { useAuth } from '../hooks/useAuth';
-import { Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTheme } from '../theme/ThemeProvider';
+import CustomDropdown from '../components/CustomDropdown';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const roleOptions = [
   { label: 'Tümü', value: '' },
@@ -50,6 +51,8 @@ const UsersListScreen = () => {
   const [pendingRoleValue, setPendingRoleValue] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
+
+  const { colors } = useTheme();
 
   useEffect(() => {
     const params = {};
@@ -128,27 +131,36 @@ const UsersListScreen = () => {
     setRoleSwitchLoading(false);
   };
 
+  const formatPlate = (plate) => {
+    if (!plate) return '';
+    const match = plate.match(/^([0-9]{2})([A-ZÇĞİÖŞÜ]{1,3})([0-9]{2,4})$/i);
+    if (match) {
+      return `${match[1]} ${match[2].toUpperCase()} ${match[3]}`;
+    }
+    return plate.toUpperCase();
+  };
+
   const renderUserCard = ({ item }) => (
     <TouchableOpacity activeOpacity={0.8} onPress={() => handleUserCardPress(item)}>
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: colors.card, shadowColor: colors.shadow }] }>
         <View style={styles.cardRow}>
-          <MaterialIcons name="person" size={28} color="#3393dc" style={{ marginRight: 10 }} />
+          <MaterialIcons name="person" size={28} color={colors.info} style={{ marginRight: 10 }} />
           <View>
-            <Text style={styles.cardTitle}>{item.Name} {item.Surname} ({item.UserName})</Text>
-            <Text style={styles.cardInfo}>{item.Email}</Text>
-            <Text style={styles.cardInfo}>Rol: {item.Role}</Text>
-            <Text style={styles.cardInfo}>Kiralama: {item.RentalCount}</Text>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>{item.Name} {item.Surname} ({item.UserName})</Text>
+            <Text style={[styles.cardInfo, { color: colors.textSecondary }]}>{item.Email}</Text>
+            <Text style={[styles.cardInfo, { color: colors.textSecondary }]}>Rol: {item.Role}</Text>
+            <Text style={[styles.cardInfo, { color: colors.textSecondary }]}>Kiralama: {item.RentalCount}</Text>
           </View>
         </View>
         {item.IsVerified ? (
           <View style={styles.verifiedRow}>
-            <MaterialIcons name="check-circle" size={18} color="#43a047" style={{ marginRight: 4 }} />
-            <Text style={styles.verifiedText}>Doğrulanmış</Text>
+            <MaterialIcons name="check-circle" size={18} color={colors.success} style={{ marginRight: 4 }} />
+            <Text style={[styles.verifiedText, { color: colors.success }]}>Doğrulanmış</Text>
           </View>
         ) : (
           <View style={styles.verifiedRow}>
-            <MaterialIcons name="cancel" size={18} color="#d32f2f" style={{ marginRight: 4 }} />
-            <Text style={styles.unverifiedText}>Doğrulanmamış</Text>
+            <MaterialIcons name="cancel" size={18} color={colors.error} style={{ marginRight: 4 }} />
+            <Text style={[styles.unverifiedText, { color: colors.error }]}>Doğrulanmamış</Text>
           </View>
         )}
       </View>
@@ -156,24 +168,73 @@ const UsersListScreen = () => {
   );
 
   return (
-    <View style={styles.container}>
-      <View style={styles.searchContainer}>
-        <Icon name="magnify" size={24} color="#666" style={styles.searchIcon} />
+    <View style={[styles.container, { backgroundColor: colors.background }] }>
+      {/* Sticky Header */}
+      <LinearGradient
+        colors={[colors.headerGradientStart, colors.headerGradientEnd]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.gradientHeader}
+      >
+        <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+          <Icon name="account-group" size={28} color="#fff" style={{ marginRight: 10 }} />
+          <Text style={{ fontSize: 24, fontWeight: 'bold', textAlign: 'center', color: '#fff' }}>Kullanıcılar</Text>
+        </View>
+      </LinearGradient>
+      <View style={{ height: 100 }} />
+      {/* Search Bar */}
+      <View style={[styles.searchContainer, { backgroundColor: colors.card, borderColor: colors.border, marginTop: 16 }] }>
+        <Icon name="magnify" size={24} color={colors.textSecondary} style={styles.searchIcon} />
         <TextInput
-          style={styles.searchInput}
+          style={[styles.searchInput, { color: colors.text }]}
           placeholder="Ara (isim, kullanıcı adı, email...)"
+          placeholderTextColor={colors.textSecondary}
           value={search}
           onChangeText={setSearch}
         />
       </View>
+      {/* Filter/Sort Buttons */}
       <View style={styles.filterButtonsContainer}>
-        <TouchableOpacity style={styles.drawerBtn} onPress={() => openDrawer('filter')}>
-          <Text style={styles.drawerBtnText}>Filtrele</Text>
+        <TouchableOpacity
+          style={{
+            flex: 1,
+            padding: 12,
+            borderRadius: 8,
+            marginHorizontal: 4,
+            alignItems: 'center',
+            backgroundColor: colors.primary,
+            borderWidth: 1,
+            borderColor: colors.primary,
+            shadowColor: colors.shadow,
+            shadowOpacity: 0.08,
+            shadowRadius: 4,
+            elevation: 2,
+          }}
+          onPress={() => openDrawer('filter')}
+        >
+          <Text style={{ color: colors.white, fontWeight: 'bold', fontSize: 16 }}>Filtrele</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.drawerBtn} onPress={() => openDrawer('sort')}>
-          <Text style={styles.drawerBtnText}>Sırala</Text>
+        <TouchableOpacity
+          style={{
+            flex: 1,
+            padding: 12,
+            borderRadius: 8,
+            marginHorizontal: 4,
+            alignItems: 'center',
+            backgroundColor: colors.card,
+            borderWidth: 1,
+            borderColor: colors.primary,
+            shadowColor: colors.shadow,
+            shadowOpacity: 0.08,
+            shadowRadius: 4,
+            elevation: 2,
+          }}
+          onPress={() => openDrawer('sort')}
+        >
+          <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 16 }}>Sırala</Text>
         </TouchableOpacity>
       </View>
+      {/* Drawer */}
       <Modal
         visible={drawerVisible}
         animationType="slide"
@@ -181,42 +242,58 @@ const UsersListScreen = () => {
         onRequestClose={closeDrawer}
       >
         <TouchableOpacity style={styles.drawerOverlay} onPress={closeDrawer} activeOpacity={1}>
-          <Animated.View style={styles.drawerContainer}>
+          <Animated.View style={[styles.drawerContainer, { backgroundColor: colors.card, shadowColor: colors.shadow, borderColor: colors.border, borderWidth: 1, borderTopLeftRadius: 18, borderBottomLeftRadius: 18, elevation: 8 }] }>
             <View style={styles.drawerHeader}>
-              <Text style={styles.drawerTitle}>{drawerType === 'filter' ? 'Filtrele' : 'Sırala'}</Text>
+              <Text style={{ fontSize: 22, fontWeight: 'bold', color: colors.primary, letterSpacing: 0.5 }}>{drawerType === 'filter' ? 'Filtrele' : 'Sırala'}</Text>
               <TouchableOpacity onPress={closeDrawer} hitSlop={{top:10, bottom:10, left:10, right:10}}>
-                <MaterialIcons name="close" size={26} color="#1976d2" />
+                <MaterialIcons name="close" size={26} color={colors.primary} />
               </TouchableOpacity>
             </View>
             <View style={styles.drawerContent}>
               {drawerType === 'filter' ? (
                 <>
-                  <Text style={styles.drawerLabel}>Rol</Text>
-                  <View style={styles.pickerBox}>
-                    <Picker selectedValue={tempRole} onValueChange={setTempRole} style={styles.picker} mode="dropdown">
-                      {roleOptions.map(opt => <Picker.Item key={opt.value} label={opt.label} value={opt.value} />)}
-                    </Picker>
-                  </View>
-                  <Text style={styles.drawerLabel}>Doğrulama</Text>
-                  <View style={styles.pickerBox}>
-                    <Picker selectedValue={tempIsVerified} onValueChange={setTempIsVerified} style={styles.picker} mode="dropdown">
-                      {verifyOptions.map(opt => <Picker.Item key={String(opt.value)} label={opt.label} value={opt.value} />)}
-                    </Picker>
-                  </View>
+                  <CustomDropdown
+                    label="Rol"
+                    value={tempRole}
+                    options={roleOptions}
+                    onValueChange={setTempRole}
+                    placeholder="Tümü"
+                    itemTextColor={colors.primary}
+                  />
+                  <CustomDropdown
+                    label="Doğrulama"
+                    value={tempIsVerified}
+                    options={verifyOptions}
+                    onValueChange={setTempIsVerified}
+                    placeholder="Tümü"
+                    itemTextColor={colors.primary}
+                  />
                 </>
               ) : (
-                <>
-                  <Text style={styles.drawerLabel}>Sırala</Text>
-                  <View style={styles.pickerBox}>
-                    <Picker selectedValue={tempSort} onValueChange={setTempSort} style={styles.picker} mode="dropdown">
-                      {sortOptions.map(opt => <Picker.Item key={opt.value} label={opt.label} value={opt.value} />)}
-                    </Picker>
-                  </View>
-                </>
+                <CustomDropdown
+                  label="Sıralama"
+                  value={tempSort}
+                  options={sortOptions}
+                  onValueChange={setTempSort}
+                  placeholder="Sıralama Yok"
+                  itemTextColor={colors.primary}
+                />
               )}
             </View>
-            <TouchableOpacity style={styles.applyBtn} onPress={handleDrawerApply}>
-              <Text style={styles.applyBtnText}>Uygula</Text>
+            <TouchableOpacity style={{
+              borderRadius: 8,
+              paddingVertical: 14,
+              alignItems: 'center',
+              marginTop: 18,
+              width: '100%',
+              alignSelf: 'center',
+              backgroundColor: colors.primary,
+              shadowColor: colors.shadow,
+              shadowOpacity: 0.12,
+              shadowRadius: 4,
+              elevation: 2,
+            }} onPress={handleDrawerApply}>
+              <Text style={{ fontWeight: 'bold', fontSize: 15, color: colors.white }}>Uygula</Text>
             </TouchableOpacity>
           </Animated.View>
         </TouchableOpacity>
@@ -228,48 +305,67 @@ const UsersListScreen = () => {
         onRequestClose={() => setDetailModalVisible(false)}
       >
         <View style={styles.detailModalOverlay}>
-          <View style={styles.detailModalContent}>
+          <View style={[styles.detailModalContent, { backgroundColor: colors.card, shadowColor: colors.shadow }] }>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-              <Text style={styles.detailModalTitle}>Kullanıcı Detayı</Text>
+              <Text style={[styles.detailModalTitle, { color: colors.primary }]}>Kullanıcı Detayı</Text>
               <TouchableOpacity onPress={() => setDetailModalVisible(false)}>
-                <MaterialIcons name="close" size={26} color="#1976d2" />
+                <MaterialIcons name="close" size={26} color={colors.primary} />
               </TouchableOpacity>
             </View>
-            {selectedUser && (
+            {selectedUser &&
               <>
-                <Text style={styles.detailLabel}>Ad Soyad</Text>
-                <Text style={styles.detailValue}>{selectedUser.Name} {selectedUser.Surname}</Text>
-                <Text style={styles.detailLabel}>Kullanıcı Adı</Text>
-                <Text style={styles.detailValue}>{selectedUser.UserName}</Text>
-                <Text style={styles.detailLabel}>E-posta</Text>
-                <Text style={styles.detailValue}>{selectedUser.Email}</Text>
-                <Text style={styles.detailLabel}>Rol</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                  <Text style={[styles.detailValue, { marginRight: 10 }]}>{roleSwitchValue ? 'Admin' : 'Customer'}</Text>
-                  <Switch
-                    value={roleSwitchValue}
-                    onValueChange={handleRoleSwitch}
-                    disabled={roleSwitchLoading}
-                    thumbColor={roleSwitchValue ? '#1976d2' : '#ccc'}
-                    trackColor={{ true: '#90caf9', false: '#e0e0e0' }}
-                  />
+                {/* Modern info table */}
+                <View style={{ borderRadius: 14, backgroundColor: colors.altCard, marginBottom: 16, overflow: 'hidden' }}>
+                  {/* Ad Soyad */}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 6, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                    <Icon name="account" size={22} color={colors.primary} style={{ marginRight: 10 }} />
+                    <Text style={{ flex: 1, color: colors.textSecondary, fontSize: 15 }}>Ad Soyad</Text>
+                    <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16 }}>{selectedUser.Name} {selectedUser.Surname}</Text>
+                  </View>
+                  {/* Kullanıcı Adı */}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 6, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                    <Icon name="account-circle" size={22} color={colors.primary} style={{ marginRight: 10 }} />
+                    <Text style={{ flex: 1, color: colors.textSecondary, fontSize: 15 }}>Kullanıcı Adı</Text>
+                    <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16 }}>{selectedUser.UserName}</Text>
+                  </View>
+                  {/* E-posta */}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 6, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                    <Icon name="email" size={22} color={colors.primary} style={{ marginRight: 10 }} />
+                    <Text style={{ flex: 1, color: colors.textSecondary, fontSize: 15 }}>E-posta</Text>
+                    <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16 }}>{selectedUser.Email}</Text>
+                  </View>
+                  {/* Rol + Switch */}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 6, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                    <Icon name="account-key" size={22} color={colors.primary} style={{ marginRight: 10 }} />
+                    <Text style={{ flex: 1, color: colors.textSecondary, fontSize: 15 }}>Rol</Text>
+                    <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16, marginRight: 10 }}>{roleSwitchValue ? 'Admin' : 'Customer'}</Text>
+                    <Switch
+                      value={roleSwitchValue}
+                      onValueChange={handleRoleSwitch}
+                      disabled={roleSwitchLoading}
+                      thumbColor={roleSwitchValue ? colors.primary : colors.border}
+                      trackColor={{ true: colors.primaryLight, false: colors.border }}
+                    />
+                  </View>
+                  {/* Doğrulama */}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 6, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                    <Icon name={selectedUser.IsVerified ? 'check-circle' : 'close-circle'} size={22} color={selectedUser.IsVerified ? colors.success : colors.error} style={{ marginRight: 10 }} />
+                    <Text style={{ flex: 1, color: colors.textSecondary, fontSize: 15 }}>Doğrulama</Text>
+                    <Text style={{ color: selectedUser.IsVerified ? colors.success : colors.error, fontWeight: 'bold', fontSize: 16 }}>{selectedUser.IsVerified ? 'Doğrulanmış' : 'Doğrulanmamış'}</Text>
+                  </View>
+                  {/* Kiralama Sayısı */}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 6 }}>
+                    <Icon name="car" size={22} color={colors.primary} style={{ marginRight: 10 }} />
+                    <Text style={{ flex: 1, color: colors.textSecondary, fontSize: 15 }}>Kiralama Sayısı</Text>
+                    <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16 }}>{selectedUser.RentalCount}</Text>
+                  </View>
                 </View>
-                <Text style={styles.detailLabel}>Doğrulama</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                  {selectedUser.IsVerified ? (
-                    <>
-                      <MaterialIcons name="check-circle" size={18} color="#43a047" style={{ marginRight: 4 }} />
-                      <Text style={styles.verifiedText}>Doğrulanmış</Text>
-                    </>
-                  ) : (
-                    <Text style={[styles.detailValue, { color: '#e53935' }]}>Doğrulanmamış</Text>
-                  )}
-                </View>
-                <Text style={styles.detailLabel}>Kiralama Geçmişi</Text>
+                {/* Kiralama Geçmişi başlığı */}
+                <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Kiralama Geçmişi</Text>
                 {rentalLoading ? (
-                  <ActivityIndicator size="small" color="#1976d2" style={{ marginTop: 10 }} />
+                  <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: 10 }} />
                 ) : rentalHistories.length === 0 ? (
-                  <Text style={{ color: '#888', fontStyle: 'italic', marginBottom: 10 }}>Kiralama geçmişi yok.</Text>
+                  <Text style={{ color: colors.textSecondary, fontStyle: 'italic', marginBottom: 10 }}>Kiralama geçmişi yok.</Text>
                 ) : (
                   <View style={styles.rentalHistoryScrollWrapper}>
                     <ScrollView
@@ -278,18 +374,18 @@ const UsersListScreen = () => {
                       contentContainerStyle={{ paddingRight: 0, marginRight: 0 }}
                     >
                       {rentalHistories.map(rental => (
-                        <View key={rental.Id} style={styles.rentalHistoryItem}>
-                          <Text style={styles.rentalHistoryCar}>{rental.Brand} {rental.Model}</Text>
-                          <Text style={styles.rentalHistoryPlate}>{rental.NumberPlate}</Text>
-                          <Text style={styles.rentalHistoryDate}>{new Date(rental.StartDate).toLocaleDateString()} - {new Date(rental.EndDate).toLocaleDateString()}</Text>
-                          <Text style={styles.rentalHistoryPrice}>{rental.TotalPrice} TL</Text>
+                        <View key={rental.Id} style={[styles.rentalHistoryItem, { backgroundColor: colors.altCard }] }>
+                          <Text style={[styles.rentalHistoryCar, { color: colors.primary }]}>{rental.Brand} {rental.Model}</Text>
+                          <Text style={[styles.rentalHistoryPlate, { color: colors.textSecondary }]}>Plaka: {formatPlate(rental.NumberPlate)}</Text>
+                          <Text style={[styles.rentalHistoryDate, { color: colors.textSecondary }]}>{new Date(rental.StartDate).toLocaleDateString()} - {new Date(rental.EndDate).toLocaleDateString()}</Text>
+                          <Text style={[styles.rentalHistoryPrice, { color: colors.success }]}>{rental.TotalPrice} TL</Text>
                         </View>
                       ))}
                     </ScrollView>
                   </View>
                 )}
               </>
-            )}
+            }
           </View>
         </View>
       </Modal>
@@ -300,31 +396,32 @@ const UsersListScreen = () => {
         onRequestClose={() => setPasswordModalVisible(false)}
       >
         <View style={styles.passwordModalOverlay}>
-          <View style={styles.passwordModalContent}>
-            <Text style={styles.passwordModalTitle}>Rol Değişikliği İçin Şifrenizi Girin</Text>
+          <View style={[styles.passwordModalContent, { backgroundColor: colors.card, shadowColor: colors.shadow }] }>
+            <Text style={[styles.passwordModalTitle, { color: colors.primary }]}>Rol Değişikliği İçin Şifrenizi Girin</Text>
             <TextInput
-              style={styles.passwordInput}
+              style={[styles.passwordInput, { borderColor: colors.border, backgroundColor: colors.inputBg, color: colors.text }]}
               placeholder="Şifreniz"
+              placeholderTextColor={colors.textSecondary}
               value={adminPassword}
               onChangeText={setAdminPassword}
               secureTextEntry
               editable={!roleSwitchLoading}
             />
-            {passwordError ? <Text style={styles.passwordError}>{passwordError}</Text> : null}
+            {passwordError ? <Text style={[styles.passwordError, { color: colors.error }]}>{passwordError}</Text> : null}
             <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 16 }}>
               <TouchableOpacity
-                style={[styles.passwordBtn, { backgroundColor: '#e0e0e0', marginRight: 10 }]}
+                style={[styles.passwordBtn, { backgroundColor: colors.altCard, marginRight: 10 }]}
                 onPress={() => { setPasswordModalVisible(false); setRoleSwitchValue(!pendingRoleValue); }}
                 disabled={roleSwitchLoading}
               >
-                <Text style={{ color: '#333', fontWeight: 'bold' }}>İptal</Text>
+                <Text style={{ color: colors.text, fontWeight: 'bold' }}>İptal</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.passwordBtn, { backgroundColor: '#1976d2' }]}
+                style={[styles.passwordBtn, { backgroundColor: colors.primary }]}
                 onPress={handlePasswordConfirm}
                 disabled={roleSwitchLoading || !adminPassword}
               >
-                <Text style={{ color: '#fff', fontWeight: 'bold' }}>{roleSwitchLoading ? 'Onaylanıyor...' : 'Onayla'}</Text>
+                <Text style={{ color: colors.white, fontWeight: 'bold' }}>{roleSwitchLoading ? 'Onaylanıyor...' : 'Onayla'}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -332,14 +429,14 @@ const UsersListScreen = () => {
       </Modal>
       {/* Kullanıcı listesi */}
       {loading ? (
-        <ActivityIndicator size="large" color="#3393dc" style={{ marginTop: 40 }} />
+        <ActivityIndicator size="large" color={colors.info} style={{ marginTop: 40 }} />
       ) : (
         <FlatList
           data={users}
           renderItem={renderUserCard}
           keyExtractor={item => item.Id}
           contentContainerStyle={{ paddingBottom: 30 }}
-          ListEmptyComponent={<Text style={{ textAlign: 'center', marginTop: 40, color: '#888' }}>Kullanıcı bulunamadı.</Text>}
+          ListEmptyComponent={<Text style={{ textAlign: 'center', marginTop: 40, color: colors.textSecondary }}>Kullanıcı bulunamadı.</Text>}
         />
       )}
     </View>
@@ -349,19 +446,31 @@ const UsersListScreen = () => {
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
-    backgroundColor: '#f5f5f5',
     paddingTop: 0,
     paddingHorizontal: 0,
     paddingBottom: 16
   },
-  header: { fontSize: 22, fontWeight: 'bold', color: '#222', marginBottom: 12, textAlign: 'center' },
+  gradientHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    height: 100,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    paddingBottom: 18,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    elevation: 8,
+  },
+  header: { fontSize: 22, fontWeight: 'bold', marginBottom: 12, textAlign: 'center' },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
     paddingHorizontal: 12,
     marginBottom: 12,
     height: 50,
@@ -375,30 +484,25 @@ const styles = StyleSheet.create({
     flex: 1,
     height: '100%',
     fontSize: 16,
-    color: '#222',
   },
   drawerBtn: { 
     flex: 1,
-    backgroundColor: '#e3f2fd',
     padding: 12,
     borderRadius: 8,
     marginHorizontal: 4,
     alignItems: 'center',
   },
   drawerBtnText: { 
-    color: '#1976d2',
     fontSize: 16,
     fontWeight: 'bold',
   },
   drawerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', flexDirection: 'row', justifyContent: 'flex-end' },
   drawerContainer: {
     width: Dimensions.get('window').width * 0.8,
-    backgroundColor: '#fafbfc',
     height: '100%',
     paddingTop: 0,
     paddingHorizontal: 20,
     paddingBottom: 20,
-    shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 8,
@@ -411,13 +515,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 18,
     borderBottomWidth: 1,
-    borderColor: '#e0e0e0',
     marginBottom: 10,
   },
   drawerTitle: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#1976d2',
   },
   drawerContent: {
     flex: 1,
@@ -425,15 +527,12 @@ const styles = StyleSheet.create({
   drawerLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#444',
     marginTop: 18,
     marginBottom: 4,
   },
   pickerBox: {
-    backgroundColor: '#fff',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
     marginBottom: 12,
     overflow: 'hidden',
     elevation: 1,
@@ -452,22 +551,19 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   card: { 
-    backgroundColor: '#fff', 
     borderRadius: 12, 
     padding: 12, 
     marginBottom: 12, 
     marginHorizontal: 8,
-    shadowColor: '#000', 
     shadowOpacity: 0.08, 
     shadowRadius: 6, 
     shadowOffset: { width: 0, height: 2 }, 
     elevation: 2 
   },
   cardRow: { flexDirection: 'row', alignItems: 'center' },
-  cardTitle: { fontSize: 16, fontWeight: 'bold', color: '#222' },
-  cardInfo: { fontSize: 13, color: '#444' },
+  cardTitle: { fontSize: 16, fontWeight: 'bold' },
+  cardInfo: { fontSize: 13 },
   applyBtn: {
-    backgroundColor: '#1976d2',
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: 'center',
@@ -475,9 +571,9 @@ const styles = StyleSheet.create({
     width: '100%',
     alignSelf: 'center',
   },
-  applyBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
+  applyBtnText: { fontWeight: 'bold', fontSize: 15 },
   verifiedRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8, marginLeft: 38 },
-  verifiedText: { color: '#43a047', fontWeight: 'bold', fontSize: 13 },
+  verifiedText: { fontWeight: 'bold', fontSize: 13 },
   detailModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.2)',
@@ -486,10 +582,8 @@ const styles = StyleSheet.create({
   },
   detailModalContent: {
     width: '90%',
-    backgroundColor: '#fff',
     borderRadius: 16,
     padding: 20,
-    shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 8,
@@ -498,23 +592,19 @@ const styles = StyleSheet.create({
   detailModalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1976d2',
     marginBottom: 8,
   },
   detailLabel: {
     fontSize: 13,
-    color: '#888',
     marginTop: 10,
     marginBottom: 2,
     fontWeight: 'bold',
   },
   detailValue: {
     fontSize: 15,
-    color: '#222',
     marginBottom: 2,
   },
   rentalHistoryItem: {
-    backgroundColor: '#f5f5f5',
     borderRadius: 8,
     padding: 8,
     marginBottom: 7,
@@ -527,19 +617,15 @@ const styles = StyleSheet.create({
   },
   rentalHistoryCar: {
     fontWeight: 'bold',
-    color: '#1976d2',
     fontSize: 14,
   },
   rentalHistoryPlate: {
-    color: '#555',
     fontSize: 13,
   },
   rentalHistoryDate: {
-    color: '#888',
     fontSize: 12,
   },
   rentalHistoryPrice: {
-    color: '#43a047',
     fontWeight: 'bold',
     fontSize: 13,
   },
@@ -551,10 +637,8 @@ const styles = StyleSheet.create({
   },
   passwordModalContent: {
     width: '85%',
-    backgroundColor: '#fff',
     borderRadius: 14,
     padding: 20,
-    shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 8,
@@ -562,17 +646,14 @@ const styles = StyleSheet.create({
   passwordModalTitle: {
     fontSize: 17,
     fontWeight: 'bold',
-    color: '#1976d2',
     marginBottom: 12,
   },
   passwordInput: {
     borderWidth: 1,
-    borderColor: '#e0e0e0',
     borderRadius: 8,
     padding: 10,
     fontSize: 15,
     marginBottom: 6,
-    backgroundColor: '#fafbfc',
   },
   passwordBtn: {
     borderRadius: 8,
@@ -582,13 +663,11 @@ const styles = StyleSheet.create({
     minWidth: 80,
   },
   passwordError: {
-    color: '#e53935',
     fontSize: 13,
     marginTop: 2,
     marginBottom: 2,
   },
   unverifiedText: {
-    color: '#d32f2f',
     fontWeight: 'bold',
     fontSize: 14,
   },

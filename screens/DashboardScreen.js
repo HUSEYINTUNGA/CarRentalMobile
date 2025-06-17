@@ -15,7 +15,23 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useIsFocused } from '@react-navigation/native';
+import { useTheme } from '../theme/ThemeProvider';
 
+const medalColors = {
+    gold: '#FFD700',
+    silver: '#C0C0C0',
+    bronze: '#CD7F32',
+    blue: '#0066cc',
+};
+
+const getMedalColor = (index) => {
+    if (index === 0) return medalColors.gold;
+    if (index === 1) return medalColors.silver;
+    if (index === 2) return medalColors.bronze;
+    return medalColors.blue;
+};
+
+const getMedalBgColor = (index) => getMedalColor(index);
 
 const formatPlate = (plate) => {
     if (!plate) return '';
@@ -38,23 +54,9 @@ const statCardColors = [
     '#b3ffff',
 ];
 
-const getMedalColor = (index) => {
-    if (index === 0) return '#FFD700';
-    if (index === 1) return '#C0C0C0';
-    if (index === 2) return '#CD7F32';
-    return '#0066cc';
-};
-
-const getMedalBgColor = (index) => {
-    if (index === 0) return '#FFD700';
-    if (index === 1) return '#C0C0C0';
-    if (index === 2) return '#CD7F32';
-    return '#3393dc';
-};
-
-const StatCard = ({ title, value, icon, color}) => (
-    <View style={[styles.statCard, { borderLeftColor: color, shadowColor: color }]}> 
-        <View style={styles.statIconContainer}>
+const StatCard = ({ title, value, icon, color, colors }) => (
+    <View style={[styles.statCard, { borderLeftColor: color, shadowColor: color, backgroundColor: colors.card }]}> 
+        <View style={[styles.statIconContainer, { backgroundColor: colors.backgroundCard }]}> 
             {icon === 'garage' ? (
                 <MaterialCommunityIcons name="garage" size={24} color={color} />
             ) : (
@@ -62,33 +64,33 @@ const StatCard = ({ title, value, icon, color}) => (
             )}
         </View>
         <View style={styles.statContent}>
-            <Text style={styles.statValue}>{value}</Text>
-            <Text style={styles.statTitle}>{title}</Text>
+            <Text style={[styles.statValue, { color: colors.text }]}>{value}</Text>
+            <Text style={[styles.statTitle, { color: colors.textSecondary }]}>{title}</Text>
         </View>
     </View>
 );
 
-const VehicleCard = ({ vehicle }) => (
-    <View style={[styles.vehicleCardHorizontal, { borderLeftWidth: 6, borderLeftColor: '#0066cc' }]}> 
-        <View style={styles.vehicleImageWrapper}>
+const VehicleCard = ({ vehicle, colors }) => (
+    <View style={[styles.vehicleCardHorizontal, { borderLeftWidth: 6, borderLeftColor: colors.primary, backgroundColor: colors.card, shadowColor: colors.shadow }]}> 
+        <View style={[styles.vehicleImageWrapper, { backgroundColor: colors.backgroundCard }]}> 
             {vehicle.MainPhotoUrl ? (
                 <Image source={{ uri: vehicle.MainPhotoUrl }} style={styles.vehicleImage} />
             ) : (
-                <MaterialIcons name="directions-car" size={32} color="#0066cc" />
+                <MaterialIcons name="directions-car" size={32} color={colors.primary} />
             )}
         </View>
         <View style={styles.vehicleInfoHorizontal}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-                <MaterialIcons name="directions-car" size={18} color="#0066cc" style={{ marginRight: 6 }} />
-                <Text style={styles.vehicleTitle}>{vehicle.Brand} {vehicle.Model}</Text>
+                <MaterialIcons name="directions-car" size={18} color={colors.primary} style={{ marginRight: 6 }} />
+                <Text style={[styles.vehicleTitle, { color: colors.text }]}>{vehicle.Brand} {vehicle.Model}</Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-                <MaterialIcons name="confirmation-number" size={16} color="#0066cc" style={{ marginRight: 6 }} />
-                <Text style={styles.vehicleDetailHorizontal}>{formatPlate(vehicle.NumberPlate)}</Text>
+                <MaterialIcons name="confirmation-number" size={16} color={colors.primary} style={{ marginRight: 6 }} />
+                <Text style={[styles.vehicleDetailHorizontal, { color: colors.textSecondary }]}>{formatPlate(vehicle.NumberPlate)}</Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <MaterialIcons name="event" size={16} color="#0066cc" style={{ marginRight: 6 }} />
-                <Text style={styles.vehicleDetailHorizontal}>
+                <MaterialIcons name="event" size={16} color={colors.primary} style={{ marginRight: 6 }} />
+                <Text style={[styles.vehicleDetailHorizontal, { color: colors.textSecondary }]}>
                     {new Date(vehicle.CreatedAt).toLocaleDateString()} {new Date(vehicle.CreatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </Text>
             </View>
@@ -96,44 +98,53 @@ const VehicleCard = ({ vehicle }) => (
     </View>
 );
 
-const UserInfoCard = ({ user }) => (
-    <View style={[styles.vehicleCardHorizontal, { borderLeftWidth: 6, borderLeftColor: '#3393dc' }]}> 
-        <View style={styles.vehicleImageWrapper}>
-            <MaterialIcons name="person" size={32} color="#3393dc" />
+const UserInfoCard = ({ user, colors }) => (
+    <View style={[styles.vehicleCardHorizontal, { borderLeftWidth: 6, borderLeftColor: colors.info, backgroundColor: colors.card, shadowColor: colors.shadow }]}> 
+        <View style={[styles.vehicleImageWrapper, { backgroundColor: colors.backgroundCard }]}> 
+            <MaterialIcons name="person" size={32} color={colors.info} />
         </View>
         <View style={styles.vehicleInfoHorizontal}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-                <MaterialIcons name="person" size={18} color="#3393dc" style={{ marginRight: 6 }} />
-                <Text style={styles.vehicleTitle}>{user.UserName}</Text>
+                <MaterialIcons name="person" size={18} color={colors.info} style={{ marginRight: 6 }} />
+                <Text style={[styles.vehicleTitle, { color: colors.text }]}>{user.UserName}</Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-                <MaterialIcons name="email" size={16} color="#3393dc" style={{ marginRight: 6 }} />
-                <Text style={styles.vehicleDetailHorizontal}>{user.Email}</Text>
+                <MaterialIcons name="email" size={16} color={colors.info} style={{ marginRight: 6 }} />
+                <Text style={[styles.vehicleDetailHorizontal, { color: colors.textSecondary }]}>{user.Email}</Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-                <MaterialIcons name={user.Role === 'Admin' ? 'admin-panel-settings' : 'person-outline'} size={16} color="#3393dc" style={{ marginRight: 6 }} />
-                <Text style={styles.vehicleDetailHorizontal}>{user.Role}</Text>
+                <MaterialIcons name={user.Role === 'Admin' ? 'admin-panel-settings' : 'person-outline'} size={16} color={colors.info} style={{ marginRight: 6 }} />
+                <Text style={[styles.vehicleDetailHorizontal, { color: colors.textSecondary }]}>{user.Role}</Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-                <MaterialIcons name="event" size={16} color="#3393dc" style={{ marginRight: 6 }} />
-                <Text style={styles.vehicleDetailHorizontal}>
+                <MaterialIcons name="event" size={16} color={colors.info} style={{ marginRight: 6 }} />
+                <Text style={[styles.vehicleDetailHorizontal, { color: colors.textSecondary }]}>
                     {new Date(user.CreatedAt).toLocaleDateString()} {new Date(user.CreatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 {user.IsVerified ? (
-                    <MaterialIcons name="check-circle" size={16} color="#43a047" style={{ marginRight: 6 }} />
+                    <MaterialIcons name="check-circle" size={16} color={colors.success} style={{ marginRight: 6 }} />
                 ) : (
-                    <MaterialIcons name="cancel" size={16} color="#e53935" style={{ marginRight: 6 }} />
+                    <MaterialIcons name="cancel" size={16} color={colors.error} style={{ marginRight: 6 }} />
                 )}
-                <Text style={[styles.vehicleDetailHorizontal, { color: user.IsVerified ? '#43a047' : '#e53935' }]}>{user.IsVerified ? 'Doğrulandı' : 'Doğrulanmadı'}</Text>
+                <Text style={[styles.vehicleDetailHorizontal, { color: user.IsVerified ? colors.success : colors.error }]}>{user.IsVerified ? 'Doğrulandı' : 'Doğrulanmadı'}</Text>
             </View>
         </View>
     </View>
 );
 
-const MostRentedVehicleCard = ({ vehicle, index }) => (
-    <View style={[styles.vehicleCardHorizontal, { borderLeftWidth: 6, borderLeftColor: getMedalColor(index), position: 'relative' }]}> 
+const MostRentedVehicleCard = ({ vehicle, index, isDark, colors }) => (
+    <View style={[
+        styles.vehicleCardHorizontal,
+        {
+            borderLeftWidth: 6,
+            borderLeftColor: getMedalColor(index),
+            position: 'relative',
+            backgroundColor: isDark ? '#23272F' : colors.card,
+            shadowColor: colors.shadow
+        }
+    ]}>
         <View style={[styles.rankNumberWrapper, { backgroundColor: getMedalBgColor(index) }]}> 
             <Text style={[styles.rankNumber, { color: '#fff' }]}>{index + 1}</Text>
         </View>
@@ -147,21 +158,21 @@ const MostRentedVehicleCard = ({ vehicle, index }) => (
         <View style={styles.vehicleInfoHorizontal}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
                 <MaterialIcons name="directions-car" size={18} color={getMedalColor(index)} style={{ marginRight: 6 }} />
-                <Text style={styles.vehicleTitle}>{vehicle.Brand} {vehicle.Model}</Text>
+                <Text style={[styles.vehicleTitle, { color: colors.text }]}>{vehicle.Brand} {vehicle.Model}</Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
                 <MaterialIcons name="confirmation-number" size={16} color={getMedalColor(index)} style={{ marginRight: 6 }} />
-                <Text style={styles.vehicleDetailHorizontal}>{formatPlate(vehicle.NumberPlate)}</Text>
+                <Text style={[styles.vehicleDetailHorizontal, { color: colors.textSecondary }]}>{formatPlate(vehicle.NumberPlate)}</Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
                 <MaterialIcons name="event" size={16} color={getMedalColor(index)} style={{ marginRight: 6 }} />
-                <Text style={styles.vehicleDetailHorizontal}>
+                <Text style={[styles.vehicleDetailHorizontal, { color: colors.textSecondary }]}>
                     {vehicle.CreatedAt ? `${new Date(vehicle.CreatedAt).toLocaleDateString()} ${new Date(vehicle.CreatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}
                 </Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <MaterialIcons name="star" size={16} color={getMedalColor(index)} style={{ marginRight: 6 }} />
-                <Text style={styles.vehicleDetailHorizontal}>Kiralanma Sayısı: {vehicle.RentalCount}</Text>
+                <Text style={[styles.vehicleDetailHorizontal, { color: colors.textSecondary }]}>Kiralama Sayısı: {vehicle.RentalCount}</Text>
             </View>
         </View>
         <View style={styles.totalAmountBoxLeft}>
@@ -171,8 +182,17 @@ const MostRentedVehicleCard = ({ vehicle, index }) => (
     </View>
 );
 
-const MostActiveUserCard = ({ user, index }) => (
-    <View style={[styles.vehicleCardHorizontal, { borderLeftWidth: 6, borderLeftColor: getMedalColor(index), position: 'relative' }]}> 
+const MostActiveUserCard = ({ user, index, isDark, colors }) => (
+    <View style={[
+        styles.vehicleCardHorizontal,
+        {
+            borderLeftWidth: 6,
+            borderLeftColor: getMedalColor(index),
+            position: 'relative',
+            backgroundColor: isDark ? '#23272F' : colors.card,
+            shadowColor: colors.shadow
+        }
+    ]}>
         <View style={[styles.rankNumberWrapper, { backgroundColor: getMedalBgColor(index) }]}> 
             <Text style={[styles.rankNumber, { color: '#fff' }]}>{index + 1}</Text>
         </View>
@@ -182,25 +202,25 @@ const MostActiveUserCard = ({ user, index }) => (
         <View style={styles.vehicleInfoHorizontal}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
                 <MaterialIcons name="person" size={18} color={getMedalColor(index)} style={{ marginRight: 6 }} />
-                <Text style={styles.vehicleTitle}>{user.UserName}</Text>
+                <Text style={[styles.vehicleTitle, { color: colors.text }]}>{user.UserName}</Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
                 <MaterialIcons name="email" size={16} color={getMedalColor(index)} style={{ marginRight: 6 }} />
-                <Text style={styles.vehicleDetailHorizontal}>{user.Email}</Text>
+                <Text style={[styles.vehicleDetailHorizontal, { color: colors.textSecondary }]}>{user.Email}</Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
                 <MaterialIcons name={user.Role === 'Admin' ? 'admin-panel-settings' : 'person-outline'} size={16} color={getMedalColor(index)} style={{ marginRight: 6 }} />
-                <Text style={styles.vehicleDetailHorizontal}>{user.Role}</Text>
+                <Text style={[styles.vehicleDetailHorizontal, { color: colors.textSecondary }]}>{user.Role}</Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
                 <MaterialIcons name="event" size={16} color={getMedalColor(index)} style={{ marginRight: 6 }} />
-                <Text style={styles.vehicleDetailHorizontal}>
+                <Text style={[styles.vehicleDetailHorizontal, { color: colors.textSecondary }]}>
                     {new Date(user.CreatedAt).toLocaleDateString()} {new Date(user.CreatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <MaterialIcons name="star" size={16} color={getMedalColor(index)} style={{ marginRight: 6 }} />
-                <Text style={styles.vehicleDetailHorizontal}>Kiralama Sayısı: {user.RentalCount}</Text>
+                <Text style={[styles.vehicleDetailHorizontal, { color: colors.textSecondary }]}>Kiralama Sayısı: {user.RentalCount}</Text>
             </View>
         </View>
         <View style={styles.totalAmountBoxLeft}>
@@ -210,17 +230,17 @@ const MostActiveUserCard = ({ user, index }) => (
     </View>
 );
 
-const MonthlyStatCard = ({ item, index }) => (
-    <View style={[styles.vehicleCardHorizontal, { borderLeftWidth: 6, borderLeftColor: statCardColors[index % statCardColors.length] }]}> 
+const MonthlyStatCard = ({ item, index, colors }) => (
+    <View style={[styles.vehicleCardHorizontal, { borderLeftWidth: 6, borderLeftColor: colors.primary, backgroundColor: colors.card, shadowColor: colors.shadow }]}> 
         <View style={styles.vehicleInfoHorizontal}>
-            <Text style={styles.vehicleTitle}>{item.Year}/{item.Month}</Text>
+            <Text style={[styles.vehicleTitle, { color: colors.text }]}>{item.Year}/{item.Month}</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 3 }}>
-                <MaterialIcons name="attach-money" size={18} color={statCardColors[index % statCardColors.length]} style={{ marginRight: 6 }} />
-                <Text style={styles.vehicleDetailHorizontal}>Toplam Gelir: <Text style={{ fontWeight: 'bold', color: '#222' }}>₺{item.TotalIncome.toLocaleString()}</Text></Text>
+                <MaterialIcons name="attach-money" size={18} color={colors.primary} style={{ marginRight: 6 }} />
+                <Text style={[styles.vehicleDetailHorizontal, { color: colors.textSecondary }]}>Toplam Gelir: <Text style={{ fontWeight: 'bold', color: colors.text }}>{'₺' + item.TotalIncome.toLocaleString()}</Text></Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <MaterialIcons name="directions-car" size={16} color={statCardColors[index % statCardColors.length]} style={{ marginRight: 6 }} />
-                <Text style={styles.vehicleDetailHorizontal}>Kiralama Sayısı: <Text style={{ fontWeight: 'bold', color: '#222' }}>{item.RentalCount}</Text></Text>
+                <MaterialIcons name="directions-car" size={16} color={colors.primary} style={{ marginRight: 6 }} />
+                <Text style={[styles.vehicleDetailHorizontal, { color: colors.textSecondary }]}>Kiralama Sayısı: <Text style={{ fontWeight: 'bold', color: colors.text }}>{item.RentalCount}</Text></Text>
             </View>
         </View>
     </View>
@@ -236,6 +256,7 @@ const DashboardScreen = () => {
         hasError
     } = useDashboard();
     const isFocused = useIsFocused();
+    const { colors, isDark } = useTheme();
 
     useEffect(() => {
         if (isFocused) {
@@ -245,18 +266,18 @@ const DashboardScreen = () => {
 
     if (isLoading) {
         return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#0066cc" />
+            <View style={[styles.loadingContainer, { backgroundColor: colors.background }] }>
+                <ActivityIndicator size="large" color={colors.primary} />
             </View>
         );
     }
 
     if (hasError) {
         return (
-            <View style={styles.errorContainer}>
-                <MaterialIcons name="error-outline" size={48} color="#ff4444" />
-                <Text style={styles.errorText}>Veriler yüklenirken bir hata oluştu</Text>
-                <TouchableOpacity style={styles.retryButton} onPress={fetchAllStats}>
+            <View style={[styles.errorContainer, { backgroundColor: colors.background }] }>
+                <MaterialIcons name="error-outline" size={48} color={colors.error} />
+                <Text style={[styles.errorText, { color: colors.error }]}>Veriler yüklenirken bir hata oluştu</Text>
+                <TouchableOpacity style={[styles.retryButton, { backgroundColor: colors.primary }]} onPress={fetchAllStats}>
                     <Text style={styles.retryButtonText}>Tekrar Dene</Text>
                 </TouchableOpacity>
             </View>
@@ -265,19 +286,21 @@ const DashboardScreen = () => {
 
     return (
         <ScrollView
-            style={styles.container}
+            style={[styles.container, { backgroundColor: colors.background }]}
             refreshControl={
                 <RefreshControl refreshing={isLoading} onRefresh={fetchAllStats} />
             }
         >
-            <LinearGradient
-                colors={['#0066cc', '#0052a3']}
-                style={styles.header}
-            >
-                <Text style={styles.headerTitleCentered}>Dashboard</Text>
-                <Text style={styles.headerSubtitleCentered}>Araç Kiralama Yönetimi</Text>
-            </LinearGradient>
-
+            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1 }}>
+                <LinearGradient
+                    colors={[colors.headerGradientStart, colors.headerGradientEnd]}
+                    style={styles.header}
+                >
+                    <Text style={[styles.headerTitleCentered, { color: '#fff' }]}>Dashboard</Text>
+                    <Text style={[styles.headerSubtitleCentered, { color: '#fff' }]}>Araç Kiralama Yönetimi</Text>
+                </LinearGradient>
+            </View>
+            <View style={{ height: 100 }} />
             <View style={styles.content}>
                 <View style={styles.statsContainer}>
                     <StatCard
@@ -285,125 +308,133 @@ const DashboardScreen = () => {
                         value={vehicleStats?.TotalVehicleCount || 0}
                         icon="directions-car"
                         color={statCardColors[0]}
+                        colors={colors}
                     />
                     <StatCard
                         title="Kiralanmış Araç"
                         value={vehicleStats?.RentedVehicleCount || 0}
                         icon="car-rental"
                         color={statCardColors[1]}
+                        colors={colors}
                     />
                     <StatCard
                         title="Kirada Olmayan Araç"
                         value={vehicleStats?.NotRentedVehicleCount || 0}
                         icon="garage"
                         color={statCardColors[2]}
+                        colors={colors}
                     />
                     <StatCard
                         title="Müsait Araç"
                         value={vehicleStats?.AvailableVehicleCount || 0}
                         icon="event-available"
                         color={statCardColors[3]}
+                        colors={colors}
                     />
                     <StatCard
                         title="Müsait Olmayan Araç"
                         value={vehicleStats?.UnavailableVehicleCount || 0}
                         icon="car-repair"
                         color={statCardColors[4]}
+                        colors={colors}
                     />
                     <StatCard
                         title="Toplam Kullanıcı"
                         value={userStats?.TotalUserCount || 0}
                         icon="people"
                         color={statCardColors[5]}
+                        colors={colors}
                     />
                     <StatCard
                         title="Admin Sayısı"
                         value={userStats?.AdminCount || 0}
                         icon="admin-panel-settings"
                         color={statCardColors[6]}
+                        colors={colors}
                     />
                     <StatCard
                         title="Bekleyen Kiralama Talebi"
                         value={rentalStats?.PendingRentalRequestsCount || 0}
                         icon="hourglass-empty"
                         color={statCardColors[7]}
+                        colors={colors}
                     />
                 </View>
 
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Son Eklenen Araçlar</Text>
+                <View style={[styles.section, { backgroundColor: colors.card, shadowColor: colors.shadow }] }>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>Son Eklenen Araçlar</Text>
                     <FlatList
                         data={vehicleStats?.LastAddedVehicles || []}
-                        renderItem={({ item }) => <VehicleCard vehicle={item} />}
+                        renderItem={({ item }) => <VehicleCard vehicle={item} colors={colors} />}
                         keyExtractor={item => item.NumberPlate}
                         scrollEnabled={false}
                         ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
                     />
                 </View>
 
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Son Eklenen Kullanıcılar</Text>
+                <View style={[styles.section, { backgroundColor: colors.card, shadowColor: colors.shadow }] }>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>Son Eklenen Kullanıcılar</Text>
                     <FlatList
                         data={userStats?.LastAddedUsers || []}
-                        renderItem={({ item }) => <UserInfoCard user={item} />}
+                        renderItem={({ item }) => <UserInfoCard user={item} colors={colors} />}
                         keyExtractor={item => item.UserName}
                         scrollEnabled={false}
                         ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
                     />
                 </View>
 
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>En Aktif Kullanıcılar</Text>
+                <View style={[styles.section, { backgroundColor: colors.card, shadowColor: colors.shadow }] }>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>En Aktif Kullanıcılar</Text>
                     <FlatList
                         data={userStats?.MostActiveUsers || []}
-                        renderItem={({ item, index }) => <MostActiveUserCard user={item} index={index} />}
+                        renderItem={({ item, index }) => <MostActiveUserCard user={item} index={index} isDark={isDark} colors={colors} />}
                         keyExtractor={item => item.UserName}
                         scrollEnabled={false}
                         ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
                     />
                 </View>
 
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>En Çok Kiralanan Araçlar</Text>
+                <View style={[styles.section, { backgroundColor: colors.card, shadowColor: colors.shadow }] }>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>En Çok Kiralanan Araçlar</Text>
                     <FlatList
                         data={vehicleStats?.MostRentedVehicles || []}
-                        renderItem={({ item, index }) => <MostRentedVehicleCard vehicle={item} index={index} />}
+                        renderItem={({ item, index }) => <MostRentedVehicleCard vehicle={item} index={index} isDark={isDark} colors={colors} />}
                         keyExtractor={item => item.NumberPlate}
                         scrollEnabled={false}
                         ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
                     />
                 </View>
 
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Aylık İstatistikler</Text>
+                <View style={[styles.section, { backgroundColor: colors.card, shadowColor: colors.shadow }] }>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>Aylık İstatistikler</Text>
                     <FlatList
                         data={rentalStats?.MonthlyStats || []}
-                        renderItem={({ item, index }) => <MonthlyStatCard item={item} index={index} />}
+                        renderItem={({ item, index }) => <MonthlyStatCard item={item} index={index} colors={colors} />}
                         keyExtractor={item => `${item.Year}-${item.Month}`}
                         scrollEnabled={false}
                         ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
                     />
                 </View>
 
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Bugün İade Edilecek Araçlar</Text>
+                <View style={[styles.section, { backgroundColor: colors.card, shadowColor: colors.shadow }] }>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>Bugün İade Edilecek Araçlar</Text>
                     <FlatList
                         data={rentalStats?.UpcomingReturns || []}
                         renderItem={({ item }) => (
-                            <View style={styles.vehicleCardHorizontal}>
-                                <View style={styles.vehicleImageWrapper}>
-                                    <MaterialIcons name="directions-car" size={32} color="#0066cc" />
+                            <View style={[styles.vehicleCardHorizontal, { backgroundColor: colors.card, shadowColor: colors.shadow }] }>
+                                <View style={[styles.vehicleImageWrapper, { backgroundColor: colors.backgroundCard }] }>
+                                    <MaterialIcons name="directions-car" size={32} color={colors.primary} />
                                 </View>
                                 <View style={styles.vehicleInfoHorizontal}>
                                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-                                        <MaterialIcons name="directions-car" size={18} color="#0066cc" style={{ marginRight: 6 }} />
-                                        <Text style={styles.vehicleTitle}>{item.VehicleBrand} {item.VehicleModel}</Text>
+                                        <MaterialIcons name="directions-car" size={18} color={colors.primary} style={{ marginRight: 6 }} />
+                                        <Text style={[styles.vehicleTitle, { color: colors.text }]}>{item.VehicleBrand} {item.VehicleModel}</Text>
                                     </View>
                                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-                                        <MaterialIcons name="confirmation-number" size={16} color="#0066cc" style={{ marginRight: 6 }} />
-                                        <Text style={styles.vehicleDetailHorizontal}>Plaka: {formatPlate(item.NumberPlate)}</Text>
+                                        <MaterialIcons name="confirmation-number" size={16} color={colors.primary} style={{ marginRight: 6 }} />
+                                        <Text style={[styles.vehicleDetailHorizontal, { color: colors.textSecondary }]}>Plaka: {formatPlate(item.NumberPlate)}</Text>
                                     </View>
-                                    <Text style={styles.vehicleDetailHorizontal}>İade Tarihi: {new Date(item.ReturnDate).toLocaleString()}</Text>
+                                    <Text style={[styles.vehicleDetailHorizontal, { color: colors.textSecondary }]}>İade Tarihi: {new Date(item.ReturnDate).toLocaleString()}</Text>
                                 </View>
                             </View>
                         )}
@@ -446,7 +477,7 @@ const styles = StyleSheet.create({
         paddingTop: 20,
     },
     statsContainer: {
-        marginTop: -30,
+        marginTop: 15,
         marginBottom: 10,
         flexDirection: 'row',
         flexWrap: 'wrap',

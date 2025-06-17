@@ -3,30 +3,37 @@ import {
   View,
   Text,
   StyleSheet,
-  Modal,
   TouchableOpacity,
   Dimensions,
   Animated,
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../theme/colors';
-import { typography } from '../theme/typography';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { getPaymentMethodById } from '../api/paymentMethodsApi';
+import { useTheme } from '../theme/ThemeProvider';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
 
-const ViewPaymentMethod = () => {
+const typography = {
+  h2: { fontSize: 22, fontWeight: 'bold' },
+  h3: { fontSize: 18, fontWeight: 'bold' },
+  body1: { fontSize: 16 },
+  body2: { fontSize: 14 },
+};
+
+const ViewPaymentMethod = ({ cardId, onClose }) => {
   const route = useRoute();
   const navigation = useNavigation();
-  const cardId = route.params?.cardId;
 
   const [card, setCard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isFlipped, setIsFlipped] = useState(false);
   const [flipAnimation] = useState(new Animated.Value(0));
+
+  const { colors } = useTheme();
 
   useEffect(() => {
     if (!cardId) {
@@ -50,21 +57,20 @@ const ViewPaymentMethod = () => {
 
   if (loading) {
     return (
-      <Modal visible={true} transparent animationType="fade" onRequestClose={() => navigation.goBack()}>
-        <View style={styles.modalContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      </Modal>
+      <View style={panelStyles.panelContainer}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
     );
   }
 
   if (error || !card) {
     return (
-      <Modal visible={true} transparent animationType="fade" onRequestClose={() => navigation.goBack()}>
-        <View style={styles.modalContainer}>
-          <Text>{error || 'Kart bilgisi bulunamadı.'}</Text>
-        </View>
-      </Modal>
+      <View style={panelStyles.panelContainer}>
+        <Text style={{ color: colors.error }}>{error || 'Kart bilgisi bulunamadı.'}</Text>
+        <TouchableOpacity onPress={onClose} style={panelStyles.closeButton}>
+          <Ionicons name="close" size={24} color={colors.text} />
+        </TouchableOpacity>
+      </View>
     );
   }
 
@@ -101,14 +107,28 @@ const ViewPaymentMethod = () => {
   };
 
   const renderFrontCard = () => (
-    <Animated.View style={[styles.card, styles.cardFront, frontAnimatedStyle]}>
+    <Animated.View style={[
+      styles.card,
+      {
+        backgroundColor: colors.primary,
+        backfaceVisibility: 'hidden',
+        transform: [
+          {
+            rotateY: flipAnimation.interpolate({
+              inputRange: [0, 180],
+              outputRange: ['0deg', '180deg'],
+            }),
+          },
+        ],
+      },
+    ]}>
       <View style={styles.cardHeader}>
-        <Text style={styles.cardName}>{card.MethodName}</Text>
+        <Text style={{ ...typography.h3, color: colors.white }}>{card.MethodName}</Text>
       </View>
       <View style={styles.cardBody}>
-        <Text style={styles.cardNumber}>{card.CardNumber}</Text>
-        <Text style={styles.cardHolder}>{card.CardholderName}</Text>
-        <Text style={styles.expiryDate}>
+        <Text style={{ ...typography.h2, color: colors.white, letterSpacing: 2 }}>{card.CardNumber}</Text>
+        <Text style={{ ...typography.body1, color: colors.white }}>{card.CardholderName}</Text>
+        <Text style={{ ...typography.body1, color: colors.white }}>
           {card.ExpirationMonth}/{card.ExpirationYear % 100}
         </Text>
       </View>
@@ -116,75 +136,52 @@ const ViewPaymentMethod = () => {
   );
 
   const renderBackCard = () => (
-    <Animated.View style={[styles.card, styles.cardBack, backAnimatedStyle]}>
-      <View style={styles.magneticStripe} />
-      <View style={styles.signatureStrip}>
-        <Text style={styles.cvvLabel}>CVV</Text>
-        <Text style={styles.cvvValue}>{card.CVV}</Text>
+    <Animated.View style={[
+      styles.card,
+      {
+        backgroundColor: colors.primary,
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        backfaceVisibility: 'hidden',
+        transform: [
+          {
+            rotateY: flipAnimation.interpolate({
+              inputRange: [0, 180],
+              outputRange: ['180deg', '360deg'],
+            }),
+          },
+        ],
+      },
+    ]}>
+      <View style={[styles.magneticStripe, { backgroundColor: colors.black }]} />
+      <View style={[styles.signatureStrip, { backgroundColor: colors.white }] }>
+        <Text style={{ ...typography.body2, color: colors.white }}>CVV</Text>
+        <Text style={{ ...typography.h3, color: colors.white }}>{card.CVV}</Text>
       </View>
     </Animated.View>
   );
 
   return (
-    <Modal
-      visible={true}
-      transparent
-      animationType="fade"
-      onRequestClose={() => navigation.goBack()}
-    >
-      <View style={styles.modalContainer}>
-        <View style={styles.modalContent}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Kart Detayları</Text>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color={colors.text} />
-            </TouchableOpacity>
-          </View>
-
-          <TouchableOpacity onPress={flipCard} style={styles.cardContainer}>
-            {renderFrontCard()}
-            {renderBackCard()}
-          </TouchableOpacity>
-
-          <Text style={styles.flipText}>Kartı çevirmek için dokunun</Text>
-        </View>
+    <View style={panelStyles.panelContainer}>
+      <View style={panelStyles.header}>
+        <Text style={{ ...typography.h2, color: colors.text }}>Kart Detayları</Text>
+        <TouchableOpacity onPress={onClose} style={panelStyles.closeButton}>
+          <Ionicons name="close" size={24} color={colors.text} />
+        </TouchableOpacity>
       </View>
-    </Modal>
+      <TouchableOpacity onPress={flipCard} style={panelStyles.cardContainer}>
+        {renderFrontCard()}
+        {renderBackCard()}
+      </TouchableOpacity>
+      <Text style={{ ...typography.body2, color: colors.textSecondary, marginTop: 10 }}>Kartı çevirmek için dokunun</Text>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  modalContainer: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: 20,
-    width: width - 40,
-    alignItems: 'center',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    width: '100%',
-    marginBottom: 20,
-  },
-  title: {
-    ...typography.h2,
-  },
-  closeButton: {
-    padding: 4,
-  },
-  cardContainer: {
-    width: '100%',
-    height: 200,
-    marginBottom: 20,
-  },
   card: {
     width: '100%',
     height: '100%',
@@ -193,62 +190,56 @@ const styles = StyleSheet.create({
     position: 'absolute',
     backfaceVisibility: 'hidden',
   },
-  cardFront: {
-    backgroundColor: colors.primary,
-  },
-  cardBack: {
-    backgroundColor: colors.primary,
-    transform: [{ rotateY: '180deg' }],
-  },
   cardHeader: {
     marginBottom: 20,
-  },
-  cardName: {
-    ...typography.h3,
-    color: colors.white,
   },
   cardBody: {
     flex: 1,
     justifyContent: 'space-between',
   },
-  cardNumber: {
-    ...typography.h2,
-    color: colors.white,
-    letterSpacing: 2,
-  },
-  cardHolder: {
-    ...typography.body1,
-    color: colors.white,
-  },
-  expiryDate: {
-    ...typography.body1,
-    color: colors.white,
-  },
   magneticStripe: {
     height: 40,
-    backgroundColor: colors.black,
     marginTop: 20,
   },
   signatureStrip: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.white,
     marginTop: 20,
     borderRadius: 8,
   },
-  cvvLabel: {
-    ...typography.body2,
-    color: colors.textSecondary,
+});
+
+const panelStyles = StyleSheet.create({
+  panelContainer: {
+    width: width - 40,
+    alignSelf: 'center',
+    backgroundColor: '#23262F', // fallback, will be overridden by colors.card
+    borderRadius: 16,
+    padding: 20,
+    marginTop: 24,
+    marginBottom: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+    zIndex: 100,
   },
-  cvvValue: {
-    ...typography.h3,
-    color: colors.text,
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 20,
   },
-  flipText: {
-    ...typography.body2,
-    color: colors.textSecondary,
-    marginTop: 10,
+  closeButton: {
+    padding: 4,
+  },
+  cardContainer: {
+    width: '100%',
+    height: 200,
+    marginBottom: 20,
   },
 });
 

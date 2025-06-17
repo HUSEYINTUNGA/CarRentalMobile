@@ -4,8 +4,10 @@ import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/nativ
 import { useVehicles } from '../hooks/useVehicles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import IconFA from 'react-native-vector-icons/FontAwesome5';
 import { TransmissionTypeOptions, FuelTypeOptions } from '../enums/enum';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../theme/ThemeProvider';
 
 function formatPlate(plate) {
     if (!plate) return '-';
@@ -25,6 +27,7 @@ const VehicleDetailsScreen = () => {
     const [localError, setLocalError] = useState(null);
     const [role, setRole] = useState(null);
     const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+    const { colors, isDark } = useTheme();
 
     useEffect(() => {
         const fetchRole = async () => {
@@ -44,7 +47,6 @@ const VehicleDetailsScreen = () => {
                 if (role === 'Admin') {
                     fetchVehicleById(vehicleId)
                         .then(data => {
-                            // Admin verisi için VehiclePhotos'u Photos olarak normalize et
                             const normalizedData = {
                                 ...data,
                                 Photos: data.VehiclePhotos?.map(photo => ({
@@ -61,14 +63,13 @@ const VehicleDetailsScreen = () => {
                 } else {
                     fetchVehicleBasicById(vehicleId)
                         .then(data => {
-                            // Customer verisi için Photos'u VehiclePhotos olarak normalize et
                             const normalizedData = {
                                 ...data,
                                 VehiclePhotos: data.Photos?.map(photo => ({
                                     Photo: photo.Photo || photo.photo,
                                     IsMain: photo.IsMain
                                 })) || [],
-                                IsAvailable: true, // Customer için varsayılan değerler
+                                IsAvailable: true, 
                                 IsRented: false
                             };
                             setVehicle(normalizedData);
@@ -98,22 +99,22 @@ const VehicleDetailsScreen = () => {
 
     if (loading) {
         return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#2196F3" />
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+                <ActivityIndicator size="large" color={colors.primary} />
             </View>
         );
     }
 
     if (error || localError) {
         return (
-            <View style={styles.errorContainer}>
-                <Icon name="alert-circle" size={48} color="#F44336" />
-                <Text style={styles.errorText}>{error || localError}</Text>
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: colors.background }}>
+                <Icon name="alert-circle" size={48} color={colors.error} />
+                <Text style={{ fontSize: 16, textAlign: 'center', marginTop: 12, marginBottom: 20, color: colors.error }}>{error || localError}</Text>
                 <TouchableOpacity 
-                    style={styles.retryButton}
+                    style={{ paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8, backgroundColor: colors.primary }}
                     onPress={() => navigation.goBack()}
                 >
-                    <Text style={styles.retryButtonText}>Geri Dön</Text>
+                    <Text style={{ fontSize: 16, fontWeight: 'bold', color: colors.white }}>Geri Dön</Text>
                 </TouchableOpacity>
             </View>
         );
@@ -141,17 +142,17 @@ const VehicleDetailsScreen = () => {
     const photoUri = currentPhoto?.Photo || currentPhoto?.photo || undefined;
 
     return (
-        <View style={{ flex: 1, backgroundColor: '#f8fafd' }}>
+        <View style={{ flex: 1, backgroundColor: colors.background }}>
             <LinearGradient
-                colors={['#0066cc', '#0052a3']}
+                colors={[colors.headerGradientStart, colors.headerGradientEnd]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.gradientHeader}
             >
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Text style={styles.backIcon}>{'‹'}</Text>
+                    <Text style={[styles.backIcon, { color: '#fff' }]}>{'‹'}</Text>
                 </TouchableOpacity>
-                <Text style={styles.gradientHeaderTitle}>Araç Detayları</Text>
+                <Text style={[styles.gradientHeaderTitle, { color: '#fff' }]}>Araç Detayları</Text>
             </LinearGradient>
             <ScrollView style={styles.container} contentContainerStyle={{ paddingTop: 100 }}>
                 <View style={{ height: 8 }} />
@@ -162,8 +163,8 @@ const VehicleDetailsScreen = () => {
                             style={styles.vehicleImage}
                         />
                     ) : (
-                        <View style={[styles.vehicleImage, { backgroundColor: '#e0e0e0', justifyContent: 'center', alignItems: 'center' }]}> 
-                            <Icon name="car" size={40} color="#666" />
+                        <View style={[styles.vehicleImage, { backgroundColor: colors.imageBg, justifyContent: 'center', alignItems: 'center' }]}> 
+                            <Icon name="car" size={40} color={colors.textSecondary} />
                         </View>
                     )}
                     {photoList.length > 1 && (
@@ -186,7 +187,7 @@ const VehicleDetailsScreen = () => {
                                         key={index}
                                         style={[
                                             styles.paginationDot,
-                                            index === currentPhotoIndex && styles.paginationDotActive
+                                            index === currentPhotoIndex && { backgroundColor: colors.white, width: 10, height: 10, borderRadius: 5 }
                                         ]}
                                     />
                                 ))}
@@ -196,139 +197,87 @@ const VehicleDetailsScreen = () => {
                 </View>
                 <View style={{ minHeight: 40 }} />
                 <View style={styles.content}>
-                    <View style={styles.header}>
-                        <Text style={styles.title}>{vehicle.Brand || '-'} {vehicle.Model || '-'}</Text>
-                        <Text style={styles.subtitle}>{vehicle.ModelYear || '-'}</Text>
-                    </View>
-
-                    <View style={styles.priceContainer}>
-                        <Text style={styles.price}>{vehicle.DailyPrice != null ? vehicle.DailyPrice : '-'} TL</Text>
-                        <Text style={styles.priceLabel}>/ Günlük</Text>
-                    </View>
-
-                    <View style={styles.detailsContainer}>
-                        <View style={styles.detailRow}>
-                            <View style={styles.detailItem}>
-                                <Icon name="car" size={24} color="#2196F3" />
-                                <Text style={styles.detailLabel}>Marka</Text>
-                                <Text style={styles.detailValue}>{vehicle.Brand || '-'}</Text>
-                            </View>
-                            <View style={styles.detailItem}>
-                                <Icon name="car-info" size={24} color="#2196F3" />
-                                <Text style={styles.detailLabel}>Model</Text>
-                                <Text style={styles.detailValue}>{vehicle.Model || '-'}</Text>
-                            </View>
-                        </View>
-
-                        <View style={styles.detailRow}>
-                            <View style={styles.detailItem}>
-                                <Icon name="calendar" size={24} color="#2196F3" />
-                                <Text style={styles.detailLabel}>Yıl</Text>
-                                <Text style={styles.detailValue}>{vehicle.ModelYear || '-'}</Text>
-                            </View>
-                            <View style={styles.detailItem}>
-                                <Icon name="tag" size={24} color="#2196F3" />
-                                <Text style={styles.detailLabel}>Kategori</Text>
-                                <Text style={styles.detailValue}>{vehicle.Category || '-'}</Text>
-                            </View>
-                        </View>
-
-                        <View style={styles.detailRow}>
-                            <View style={styles.detailItem}>
-                                <Icon name="palette" size={24} color="#2196F3" />
-                                <Text style={styles.detailLabel}>Renk</Text>
-                                <Text style={styles.detailValue}>{vehicle.Color || '-'}</Text>
-                            </View>
-                            <View style={styles.detailItem}>
-                                <Icon name="car-cog" size={24} color="#2196F3" />
-                                <Text style={styles.detailLabel}>Vites</Text>
-                                <Text style={styles.detailValue}>{transmissionTypeLabel}</Text>
-                            </View>
-                        </View>
-
-                        <View style={styles.detailRow}>
-                            <View style={styles.detailItem}>
-                                <Icon name="fuel" size={24} color="#2196F3" />
-                                <Text style={styles.detailLabel}>Yakıt</Text>
-                                <Text style={styles.detailValue}>{fuelTypeLabel}</Text>
-                            </View>
-                            <View style={styles.detailItem}>
-                                <Icon name="car-key" size={24} color="#2196F3" />
-                                <Text style={styles.detailLabel}>Plaka</Text>
-                                <Text style={styles.detailValue}>{formatPlate(vehicle.NumberPlate)}</Text>
-                            </View>
-                        </View>
-                        {role === 'Admin' && (
-                            <>
-                                <View style={styles.detailRow}>
-                                    <View style={styles.detailItem}>
-                                        <Icon name="check-circle" size={24} color={vehicle.IsAvailable ? "#4CAF50" : "#9E9E9E"} />
-                                        <Text style={styles.detailLabel}>Müsaitlik</Text>
-                                        <Text style={styles.detailValue}>{vehicle.IsAvailable ? 'Aktif' : 'Pasif'}</Text>
+                    {(() => {
+                        const infoData = [
+                            { icon: 'car', label: 'Marka', value: vehicle.Brand || '-' },
+                            { icon: 'car-info', label: 'Model', value: vehicle.Model || '-' },
+                            { icon: 'calendar', label: 'Yıl', value: vehicle.ModelYear || '-' },
+                            { icon: 'tag', label: 'Kategori', value: vehicle.Category || '-' },
+                            { icon: 'palette', label: 'Renk', value: vehicle.Color || '-' },
+                            { icon: 'car-cog', label: 'Vites', value: transmissionTypeLabel },
+                            { icon: 'fuel', label: 'Yakıt', value: fuelTypeLabel },
+                            { icon: 'id-card-fa', label: 'Plaka', value: formatPlate(vehicle.NumberPlate) },
+                            { icon: 'cash', label: 'Fiyat', value: (vehicle.DailyPrice != null ? vehicle.DailyPrice + ' TL' : '-'), iconColor: colors.success, valueColor: colors.success },
+                        ];
+                        if (role === 'Admin') {
+                            infoData.push(
+                                { icon: 'check-circle', label: 'Müsaitlik', value: vehicle.IsAvailable ? 'Aktif' : 'Pasif', iconColor: vehicle.IsAvailable ? colors.success : colors.textSecondary, valueColor: vehicle.IsAvailable ? colors.success : colors.textSecondary },
+                                { icon: 'car-side', label: 'Durum', value: vehicle.IsRented ? 'Kirada' : 'Boşta', iconColor: vehicle.IsRented ? colors.error : colors.success, valueColor: vehicle.IsRented ? colors.error : colors.success }
+                            );
+                        }
+                        return (
+                            <View style={[styles.infoCard, { backgroundColor: colors.card }] }>
+                                {infoData.map((item, idx) => (
+                                    <View key={item.label} style={[
+                                        styles.infoRowModern,
+                                        idx !== infoData.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }
+                                    ]}>
+                                        {item.icon === 'id-card-fa' ? (
+                                            <IconFA name="id-card" size={20} color={colors.primary} style={{ marginRight: 10 }} />
+                                        ) : (
+                                            <Icon name={item.icon} size={22} color={item.iconColor || colors.primary} style={{ marginRight: 10 }} />
+                                        )}
+                                        <Text style={[styles.infoLabelModern, { color: colors.textSecondary }]}>{item.label}</Text>
+                                        <Text style={[styles.infoValueModern, { color: item.valueColor || colors.text }]}>{item.value}</Text>
                                     </View>
-                                    <View style={styles.detailItem}>
-                                        <Icon name="car-side" size={24} color={vehicle.IsRented ? "#F44336" : "#4CAF50"} />
-                                        <Text style={styles.detailLabel}>Durum</Text>
-                                        <Text style={styles.detailValue}>{vehicle.IsRented ? 'Kirada' : 'Boşta'}</Text>
-                                    </View>
-                                </View>
-                                {vehicle.RentalHistories && vehicle.RentalHistories.length > 0 && (
-                                    <View style={styles.rentalHistoryContainer}>
-                                        <Text style={styles.rentalHistoryTitle}>Kiralama Geçmişi</Text>
-                                        {vehicle.RentalHistories.map((rental, index) => (
-                                            <View key={rental.Id} style={styles.rentalHistoryItem}>
-                                                <View style={styles.rentalHistoryHeader}>
-                                                    <Icon 
-                                                        name={rental.IsActive ? "clock-check" : "clock-check-outline"} 
-                                                        size={24} 
-                                                        color={rental.IsActive ? "#4CAF50" : "#9E9E9E"} 
-                                                    />
-                                                    <Text style={styles.rentalHistoryStatus}>
-                                                        {rental.IsActive ? 'Aktif Kiralama' : 'Tamamlanmış Kiralama'}
-                                                    </Text>
-                                                </View>
-                                                <View style={styles.rentalHistoryDetails}>
-                                                    <View style={styles.rentalHistoryRow}>
-                                                        <Text style={styles.rentalHistoryLabel}>Kiralama Tarihi:</Text>
-                                                        <Text style={styles.rentalHistoryValue}>
-                                                            {new Date(rental.RentalDate).toLocaleDateString('tr-TR')}
-                                                        </Text>
-                                                    </View>
-                                                    <View style={styles.rentalHistoryRow}>
-                                                        <Text style={styles.rentalHistoryLabel}>İade Tarihi:</Text>
-                                                        <Text style={styles.rentalHistoryValue}>
-                                                            {new Date(rental.ReturnDate).toLocaleDateString('tr-TR')}
-                                                        </Text>
-                                                    </View>
-                                                    <View style={styles.rentalHistoryRow}>
-                                                        <Text style={styles.rentalHistoryLabel}>Toplam Tutar:</Text>
-                                                        <Text style={styles.rentalHistoryValue}>{rental.TotalPrice} TL</Text>
-                                                    </View>
-                                                    <View style={styles.rentalHistoryRow}>
-                                                        <Text style={styles.rentalHistoryLabel}>Müşteri:</Text>
-                                                        <Text style={styles.rentalHistoryValue}>
-                                                            {rental.User.Name} {rental.User.Surname}
-                                                        </Text>
-                                                    </View>
-                                                    <View style={styles.rentalHistoryRow}>
-                                                        <Text style={styles.rentalHistoryLabel}>E-posta:</Text>
-                                                        <Text style={styles.rentalHistoryValue}>{rental.User.Email}</Text>
-                                                    </View>
-                                                </View>
+                                ))}
+                            </View>
+                        );
+                    })()}
+
+                    {role === 'Admin' && vehicle.RentalHistories && vehicle.RentalHistories.length > 0 && (
+                        <View style={[styles.infoCard, { backgroundColor: colors.card, marginTop: 18 }] }>
+                            <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 8 }]}>Kiralama Geçmişi</Text>
+                            {vehicle.RentalHistories.map((rental, idx) => {
+                                const historyData = [
+                                    { icon: 'clock-check', label: 'Kiralama Tarihi', value: new Date(rental.RentalDate).toLocaleDateString('tr-TR') },
+                                    { icon: 'clock-end', label: 'İade Tarihi', value: new Date(rental.ReturnDate).toLocaleDateString('tr-TR') },
+                                    { icon: 'cash', label: 'Toplam Tutar', value: rental.TotalPrice + ' TL', valueColor: colors.success },
+                                    { icon: 'account', label: 'Müşteri', value: rental.User.Name + ' ' + rental.User.Surname },
+                                    { icon: 'email', label: 'E-posta', value: rental.User.Email },
+                                ];
+                                return (
+                                    <View key={rental.Id} style={{ marginBottom: idx !== vehicle.RentalHistories.length - 1 ? 18 : 0 }}>
+                                        {historyData.map((item, hidx) => (
+                                            <View key={item.label} style={[
+                                                styles.infoRowModern,
+                                                hidx !== historyData.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
+                                                idx !== vehicle.RentalHistories.length - 1 && hidx === historyData.length - 1 && {
+                                                    borderBottomWidth: 2,
+                                                    borderBottomColor: isDark ? '#fff' : '#111',
+                                                }
+                                            ]}>
+                                                {item.icon === 'id-card-fa' ? (
+                                                    <IconFA name="id-card" size={20} color={colors.primary} style={{ marginRight: 10 }} />
+                                                ) : (
+                                                    <Icon name={item.icon} size={22} color={item.iconColor || colors.primary} style={{ marginRight: 10 }} />
+                                                )}
+                                                <Text style={[styles.infoLabelModern, { color: colors.textSecondary }]}>{item.label}</Text>
+                                                <Text style={[styles.infoValueModern, { color: item.valueColor || colors.text }]}>{item.value}</Text>
                                             </View>
                                         ))}
                                     </View>
-                                )}
-                            </>
-                        )}
-                    </View>
+                                );
+                            })}
+                        </View>
+                    )}
 
                     {role === 'Customer' && (
                         <TouchableOpacity
-                            style={styles.rentButton}
+                            style={[styles.rentButton, { backgroundColor: colors.primary }]}
                             onPress={() => navigation.navigate('RentedScreen', { vehicleId: vehicle.Id })}
                         >
-                            <Text style={styles.rentButtonText}>Kiralama İsteği Oluştur</Text>
+                            <Text style={[styles.rentButtonText, { color: colors.white }]}>Kiralama İsteği Oluştur</Text>
                         </TouchableOpacity>
                     )}
                 </View>
@@ -340,7 +289,6 @@ const VehicleDetailsScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
     },
     loadingContainer: {
         flex: 1,
@@ -354,20 +302,17 @@ const styles = StyleSheet.create({
         padding: 20,
     },
     errorText: {
-        color: '#F44336',
         fontSize: 16,
         textAlign: 'center',
         marginTop: 12,
         marginBottom: 20,
     },
     retryButton: {
-        backgroundColor: '#2196F3',
         paddingHorizontal: 20,
         paddingVertical: 10,
         borderRadius: 8,
     },
     retryButtonText: {
-        color: '#fff',
         fontSize: 16,
         fontWeight: 'bold',
     },
@@ -380,57 +325,51 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: '#333',
     },
     subtitle: {
         fontSize: 18,
-        color: '#666',
         marginTop: 4,
     },
     priceContainer: {
         flexDirection: 'row',
         alignItems: 'baseline',
         marginBottom: 24,
+        marginTop: 12,
     },
     price: {
         fontSize: 28,
         fontWeight: 'bold',
-        color: '#2196F3',
     },
     priceLabel: {
         fontSize: 16,
-        color: '#666',
         marginLeft: 4,
     },
-    detailsContainer: {
-        backgroundColor: '#fff',
+    infoTable: {
         borderRadius: 12,
-        padding: 16,
-        marginBottom: 16,
-    },
-    detailRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 16,
-    },
-    detailItem: {
-        flex: 1,
-        alignItems: 'center',
         padding: 12,
-        backgroundColor: '#f8f9fa',
-        borderRadius: 8,
-        marginHorizontal: 4,
+        marginBottom: 16,
     },
-    detailLabel: {
-        fontSize: 14,
-        color: '#666',
-        marginTop: 8,
-        marginBottom: 4,
+    infoRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
     },
-    detailValue: {
-        fontSize: 16,
+    infoCellLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    infoLabel: {
+        marginLeft: 8,
+        color: '#888',
+        fontSize: 15,
+    },
+    infoValue: {
+        color: '#222',
         fontWeight: 'bold',
-        color: '#333',
+        fontSize: 16,
     },
     statusContainer: {
         alignItems: 'center',
@@ -444,10 +383,8 @@ const styles = StyleSheet.create({
         borderRadius: 20,
     },
     availableBadge: {
-        backgroundColor: '#E8F5E9',
     },
     unavailableBadge: {
-        backgroundColor: '#FFEBEE',
     },
     statusText: {
         fontSize: 16,
@@ -455,10 +392,8 @@ const styles = StyleSheet.create({
         marginLeft: 8,
     },
     availableText: {
-        color: '#4CAF50',
     },
     unavailableText: {
-        color: '#F44336',
     },
     historyContainer: {
         marginTop: 16,
@@ -469,16 +404,13 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#000',
         marginBottom: 15,
     },
     historyCard: {
-        backgroundColor: '#fff',
         borderRadius: 12,
         padding: 16,
         marginBottom: 14,
         elevation: 2,
-        shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.08,
         shadowRadius: 6,
@@ -492,7 +424,6 @@ const styles = StyleSheet.create({
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: '#f5f5f5',
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 12,
@@ -500,11 +431,9 @@ const styles = StyleSheet.create({
     historyUserName: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: '#222',
     },
     historyUserUsername: {
         fontSize: 13,
-        color: '#3393dc',
         fontWeight: '600',
     },
     statusBadge: {
@@ -514,48 +443,39 @@ const styles = StyleSheet.create({
         alignSelf: 'flex-start',
     },
     activeBadge: {
-        backgroundColor: '#E8F5E9',
     },
     completedBadge: {
-        backgroundColor: '#FFEBEE',
     },
     statusBadgeText: {
         fontSize: 13,
         fontWeight: 'bold',
     },
     activeBadgeText: {
-        color: '#43a047',
     },
     completedBadgeText: {
-        color: '#e53935',
     },
     historyCardBody: {
         marginTop: 2,
     },
     historyLabel: {
         fontSize: 13,
-        color: '#888',
         marginTop: 6,
     },
     historyValue: {
         fontSize: 15,
-        color: '#222',
         fontWeight: '500',
     },
     historyEmpty: {
-        color: '#666',
         textAlign: 'center',
         marginTop: 16,
     },
     rentButton: {
-        backgroundColor: '#2196F3',
         padding: 16,
-        borderRadius: 8,
+        borderRadius: 16,
         alignItems: 'center',
         marginTop: 24,
     },
     rentButtonText: {
-        color: 'white',
         fontSize: 18,
         fontWeight: 'bold',
     },
@@ -568,7 +488,6 @@ const styles = StyleSheet.create({
         width: '100%',
         height: '100%',
         resizeMode: 'contain',
-        // alignSelf: 'center',
     },
     navButton: {
         position: 'absolute',
@@ -600,14 +519,7 @@ const styles = StyleSheet.create({
         width: 8,
         height: 8,
         borderRadius: 4,
-        backgroundColor: 'rgba(255, 255, 255, 0.5)',
         marginHorizontal: 4,
-    },
-    paginationDotActive: {
-        backgroundColor: '#fff',
-        width: 10,
-        height: 10,
-        borderRadius: 5,
     },
     gradientHeader: {
         position: 'absolute',
@@ -630,13 +542,11 @@ const styles = StyleSheet.create({
         marginRight: 12,
     },
     backIcon: {
-        color: '#fff',
         fontSize: 34,
         fontWeight: 'bold',
         marginTop: -2,
     },
     gradientHeaderTitle: {
-        color: '#fff',
         fontSize: 22,
         fontWeight: 'bold',
         letterSpacing: 1,
@@ -653,9 +563,7 @@ const styles = StyleSheet.create({
     rentalHistoryContainer: {
         marginTop: 20,
         padding: 15,
-        backgroundColor: '#fff',
         borderRadius: 10,
-        shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 4,
@@ -664,13 +572,11 @@ const styles = StyleSheet.create({
     rentalHistoryTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#333',
         marginBottom: 15,
     },
     rentalHistoryItem: {
         marginBottom: 15,
         padding: 12,
-        backgroundColor: '#f8f9fa',
         borderRadius: 8,
     },
     rentalHistoryHeader: {
@@ -682,7 +588,6 @@ const styles = StyleSheet.create({
         marginLeft: 8,
         fontSize: 16,
         fontWeight: '600',
-        color: '#333',
     },
     rentalHistoryDetails: {
         marginLeft: 32,
@@ -694,14 +599,40 @@ const styles = StyleSheet.create({
     },
     rentalHistoryLabel: {
         fontSize: 14,
-        color: '#666',
         flex: 1,
     },
     rentalHistoryValue: {
         fontSize: 14,
-        color: '#333',
         fontWeight: '500',
         flex: 2,
+        textAlign: 'right',
+    },
+    infoCard: {
+        borderRadius: 18,
+        paddingVertical: 6,
+        paddingHorizontal: 10,
+        marginBottom: 18,
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOpacity: 0.06,
+        shadowRadius: 8,
+    },
+    infoRowModern: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 14,
+        paddingHorizontal: 4,
+        justifyContent: 'space-between',
+    },
+    infoLabelModern: {
+        flex: 1,
+        fontSize: 15,
+        marginLeft: 2,
+    },
+    infoValueModern: {
+        fontWeight: 'bold',
+        fontSize: 16,
+        minWidth: 80,
         textAlign: 'right',
     },
 });

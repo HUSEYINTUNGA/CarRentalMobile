@@ -11,15 +11,17 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePaymentMethods } from '../hooks/usePaymentMethods';
-import { colors } from '../theme/colors';
-import { typography } from '../theme/typography';
+import { useTheme } from '../theme/ThemeProvider';
 import { LinearGradient } from 'expo-linear-gradient';
+import ViewPaymentMethod from './ViewPaymentMethod';
 
 
 const PaymentMethodsScreen = () => {
   const navigation = useNavigation();
   const { paymentMethods, loading, error, fetchPaymentMethods, removePaymentMethod } = usePaymentMethods();
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const { colors } = useTheme();
+  const [selectedCardId, setSelectedCardId] = useState(null);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -70,7 +72,7 @@ const PaymentMethodsScreen = () => {
   };
 
   const handleView = (card) => {
-    navigation.navigate('ViewPaymentMethod', { cardId: card.Id });
+    setSelectedCardId(card.Id);
   };
 
   const handleAddNew = () => {
@@ -78,12 +80,12 @@ const PaymentMethodsScreen = () => {
   };
 
   const renderCard = ({ item }) => (
-    <View style={styles.cardContainer}>
+    <View style={[styles.cardContainer, { backgroundColor: colors.card, shadowColor: colors.shadow }] }>
       <View style={styles.cardInfo}>
-        <Text style={styles.cardName}>{item.MethodName}</Text>
-        <Text style={styles.cardNumber}>**** **** **** {item.Last4Digits}</Text>
-        <Text style={styles.cardHolder}>{item.CardHolderName}</Text>
-        <Text style={styles.expiryDate}>
+        <Text style={[styles.cardName, { color: colors.text }]}>{item.MethodName}</Text>
+        <Text style={[styles.cardNumber, { color: colors.textSecondary }]}>**** **** **** {item.Last4Digits}</Text>
+        <Text style={[styles.cardHolder, { color: colors.textSecondary }]}>{item.CardHolderName}</Text>
+        <Text style={[styles.expiryDate, { color: colors.textSecondary }] }>
           {item.ExpirationMonth}/{item.ExpirationYear % 100}
         </Text>
       </View>
@@ -92,7 +94,7 @@ const PaymentMethodsScreen = () => {
           style={styles.actionButton}
           onPress={() => handleView(item)}
         >
-          <Ionicons name="eye-outline" size={24} color={colors.primary} />
+          <Ionicons name="eye" size={24} color={colors.success} />
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.actionButton}
@@ -113,7 +115,7 @@ const PaymentMethodsScreen = () => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }] }>
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
@@ -121,36 +123,37 @@ const PaymentMethodsScreen = () => {
 
   if (error) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>{error}</Text>
+      <View style={[styles.container, { backgroundColor: colors.background }] }>
+        <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      {/* Gradient Header */}
+    <View style={[styles.container, { backgroundColor: colors.background }] }>
       <LinearGradient
-        colors={["#0066cc", "#2196F3"]}
+        colors={[colors.headerGradientStart, colors.headerGradientEnd]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.gradientHeader}
       >
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backIcon}>{'‹'}</Text>
+          <Text style={[styles.backIcon, { color: '#fff' }]}>{'‹'}</Text>
         </TouchableOpacity>
-        <Text style={styles.gradientHeaderTitle}>Ödeme Yöntemleriniz</Text>
+        <Text style={[styles.gradientHeaderTitle, { color: '#fff' }]}>Ödeme Yöntemleriniz</Text>
       </LinearGradient>
       <View style={{ height: 8 }} />
+      {selectedCardId && (
+        <ViewPaymentMethod cardId={selectedCardId} onClose={() => setSelectedCardId(null)} />
+      )}
       <FlatList
         data={paymentMethods}
         renderItem={renderCard}
         keyExtractor={(item) => item.Id.toString()}
-        contentContainerStyle={[styles.listContainer, { paddingTop: 112 }]}
+        contentContainerStyle={[styles.listContainer, { paddingTop: 100 }]}
       />
-      {/* Floating Action Button */}
-      <TouchableOpacity style={styles.fab} onPress={handleAddNew}>
-        <Text style={styles.fabIcon}>＋</Text>
+      <TouchableOpacity style={[styles.fab, { backgroundColor: colors.primary, shadowColor: colors.primary }]} onPress={handleAddNew}>
+        <Text style={[styles.fabIcon, { color: colors.white }]}>＋</Text>
       </TouchableOpacity>
     </View>
   );
@@ -159,7 +162,6 @@ const PaymentMethodsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   loadingContainer: {
     flex: 1,
@@ -187,13 +189,11 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   backIcon: {
-    color: '#fff',
     fontSize: 34,
     fontWeight: 'bold',
     marginTop: -2,
   },
   gradientHeaderTitle: {
-    color: '#fff',
     fontSize: 22,
     fontWeight: 'bold',
     letterSpacing: 1,
@@ -206,17 +206,14 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#2196F3',
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 6,
-    shadowColor: '#2196F3',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
   },
   fabIcon: {
-    color: '#fff',
     fontSize: 36,
     fontWeight: 'bold',
     marginTop: -2,
@@ -225,14 +222,12 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   cardContainer: {
-    backgroundColor: colors.white,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    shadowColor: colors.shadow,
     shadowOffset: {
       width: 0,
       height: 2,
@@ -245,22 +240,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cardName: {
-    ...typography.h3,
+    fontSize: 18,
+    fontWeight: 'bold',
     marginBottom: 4,
   },
   cardNumber: {
-    ...typography.body1,
-    color: colors.text,
+    fontSize: 16,
     marginBottom: 4,
   },
   cardHolder: {
-    ...typography.body2,
-    color: colors.textSecondary,
+    fontSize: 14,
     marginBottom: 2,
   },
   expiryDate: {
-    ...typography.body2,
-    color: colors.textSecondary,
+    fontSize: 14,
   },
   cardActions: {
     flexDirection: 'row',
@@ -277,14 +270,12 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   emptyText: {
-    ...typography.body1,
-    color: colors.textSecondary,
+    fontSize: 16,
     marginTop: 16,
     textAlign: 'center',
   },
   errorText: {
-    ...typography.body1,
-    color: colors.error,
+    fontSize: 16,
     marginTop: 16,
     textAlign: 'center',
   },
@@ -292,8 +283,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   cardExpiry: {
-    ...typography.body2,
-    color: colors.textSecondary,
+    fontSize: 14,
   },
   editButton: {
     padding: 8,

@@ -9,6 +9,7 @@ import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { resetToSignin } from '../RootNavigation';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../theme/ThemeProvider';
 
 const ProfileScreen = () => {
   const { loading, fetchProfile, updatePhoto } = useProfile();
@@ -22,6 +23,7 @@ const ProfileScreen = () => {
   const [photoModalVisible, setPhotoModalVisible] = useState(false);
   const [photoLoading, setPhotoLoading] = useState(false);
   const [userRole, setUserRole] = useState(null);
+  const { theme, setTheme, colors, isDark } = useTheme();
 
   const loadProfile = async () => {
     try {
@@ -164,105 +166,121 @@ const ProfileScreen = () => {
 
   if (loading || photoLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#2196F3" />
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }] }>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }] }>
       <LinearGradient
-        colors={['#0066cc', '#0052a3']}
+        colors={[colors.headerGradientStart, colors.headerGradientEnd]}
         style={styles.header}
       >
+        <TouchableOpacity
+          style={{ position: 'absolute', top: 16, right: 16, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20, padding: 8, zIndex: 20 }}
+          onPress={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+        >
+          <Text style={{ color: '#fff', fontWeight: 'bold' }}>
+            {theme === 'light' ? '🌙 Koyu Mod' : '☀️ Açık Mod'}
+          </Text>
+        </TouchableOpacity>
         <View style={styles.profileImageContainer}>
           <Image
             source={
               profileData?.profilePicture
                 ? { uri: `data:image/jpeg;base64,${profileData.profilePicture}` }
-                : { uri: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(`${profileData?.name || ''}+${profileData?.surname || ''}`) + '&background=2196F3&color=fff&size=120' }
+                : { uri: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(`${profileData?.name || ''}+${profileData?.surname || ''}`) + `&background=${colors.primary.replace('#','')}&color=fff&size=120` }
             }
-            style={styles.profileImage}
+            style={[styles.profileImage, { borderColor: '#fff' }]}
           />
-          <TouchableOpacity style={styles.editImageButton} onPress={() => setPhotoModalVisible(true)}>
+          <TouchableOpacity style={[styles.editImageButton, { backgroundColor: colors.primary, borderColor: '#fff' }]} onPress={() => setPhotoModalVisible(true)}>
             <Icon name="edit" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
-        <Text style={styles.username}>{profileData?.name} {profileData?.surname}</Text>
-        <Text style={styles.email}>{profileData?.email}</Text>
-        <View style={styles.verifiedRow}>
+        <Text style={[styles.username, { color: '#fff' }]}>{profileData?.name} {profileData?.surname}</Text>
+        <Text style={[styles.email, { color: 'rgba(255,255,255,0.9)' }]}>{profileData?.email}</Text>
+        <View style={[styles.verifiedRow, { backgroundColor: 'rgba(255,255,255,0.2)' }] }>
           {profileData?.isVerified ? (
             <>
-              <Icon name="check-circle" size={18} color="#4CAF50" style={{ marginRight: 4 }} />
-              <Text style={styles.verifiedText}>Doğrulanmış</Text>
+              <Icon name="check-circle" size={22} color={colors.success} style={{ marginRight: 4 }} />
+              <Text style={[styles.verifiedText, { color: colors.success }]}>Doğrulanmış</Text>
             </>
           ) : (
-            <Text style={styles.notVerifiedText}>Doğrulanmamış</Text>
+            <Text style={[styles.notVerifiedText, { color: colors.error }]}>Doğrulanmamış</Text>
           )}
         </View>
       </LinearGradient>
 
       <View style={styles.content}>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Kişisel Bilgiler</Text>
+        <View style={[styles.section, { backgroundColor: colors.card, shadowColor: colors.shadow }] }>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Kişisel Bilgiler</Text>
           <View style={styles.infoItem}>
-            <Icon name="person" size={24} color="#0066cc" />
+            <Icon name="person" size={24} color={colors.primary} />
             <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Ad Soyad</Text>
-              <Text style={styles.infoValue}>{profileData ? `${profileData.name} ${profileData.surname}` : 'Belirtilmemiş'}</Text>
+              <Text style={[styles.infoLabel, { color: colors.text }]}>Ad Soyad</Text>
+              <Text style={[styles.infoValue, { color: colors.textSecondary }]}>{profileData ? `${profileData.name} ${profileData.surname}` : 'Belirtilmemiş'}</Text>
             </View>
           </View>
           <View style={styles.infoItem}>
-            <Icon name="phone" size={24} color="#0066cc" />
+            <Icon name="phone" size={24} color={colors.primary} />
             <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Telefon</Text>
-              <Text style={styles.infoValue}>{profileData?.phoneNumber || 'Belirtilmemiş'}</Text>
+              <Text style={[styles.infoLabel, { color: colors.text }]}>Telefon</Text>
+              <Text style={[styles.infoValue, { color: colors.textSecondary }]}>{profileData?.phoneNumber || 'Belirtilmemiş'}</Text>
             </View>
           </View>
           <View style={styles.infoItem}>
-            <Icon name="badge" size={24} color="#0066cc" />
+            <Icon name="badge" size={24} color={colors.primary} />
             <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>TC Kimlik No</Text>
-              <Text style={styles.infoValue}>{profileData?.tcNo || 'Belirtilmemiş'}</Text>
+              <Text style={[styles.infoLabel, { color: colors.text }]}>TC Kimlik No</Text>
+              <Text style={[styles.infoValue, { color: colors.textSecondary }]}>{profileData?.tcNo || 'Belirtilmemiş'}</Text>
             </View>
           </View>
           <View style={styles.infoItem}>
-            <Icon name="security" size={24} color="#0066cc" />
+            <Icon name="security" size={24} color={colors.primary} />
             <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Rol</Text>
-              <Text style={styles.infoValue}>{profileData?.role || 'Belirtilmemiş'}</Text>
+              <Text style={[styles.infoLabel, { color: colors.text }]}>Rol</Text>
+              <Text style={[styles.infoValue, { color: colors.textSecondary }]}>{profileData?.role || 'Belirtilmemiş'}</Text>
             </View>
           </View>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Hesap İşlemleri</Text>
+        <View style={[styles.section, { backgroundColor: colors.card, shadowColor: colors.shadow }] }>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Hesap İşlemleri</Text>
           {userRole !== 'Admin' && (
             <TouchableOpacity style={styles.infoItem} onPress={() => navigation.navigate('PaymentMethods')}>
-              <Icon name="credit-card" size={24} color="#0066cc" />
+              <Icon name="credit-card" size={24} color={colors.primary} />
               <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Ödeme Yöntemlerim</Text>
-                <Text style={styles.infoValue}>Ödeme yöntemlerinizi yönetin</Text>
+                <Text style={[styles.infoLabel, { color: colors.text }]}>Ödeme Yöntemlerim</Text>
+                <Text style={[styles.infoValue, { color: colors.textSecondary }]}>Ödeme yöntemlerinizi yönetin</Text>
               </View>
-              <Icon name="chevron-right" size={24} color="#ccc" />
+              <Icon name="chevron-right" size={24} color={isDark ? '#fff' : colors.border} />
             </TouchableOpacity>
           )}
           <TouchableOpacity style={styles.infoItem} onPress={() => navigation.navigate('EditProfile', { profileData })}>
-            <Icon name="edit" size={24} color="#0066cc" />
+            <Icon name="edit" size={24} color={colors.primary} />
             <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Profili Düzenle</Text>
-              <Text style={styles.infoValue}>Kişisel bilgilerinizi güncelleyin</Text>
+              <Text style={[styles.infoLabel, { color: colors.text }]}>Profili Düzenle</Text>
+              <Text style={[styles.infoValue, { color: colors.textSecondary }]}>Kişisel bilgilerinizi güncelleyin</Text>
             </View>
-            <Icon name="chevron-right" size={24} color="#ccc" />
+            <Icon name="chevron-right" size={24} color={isDark ? '#fff' : colors.border} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.infoItem} onPress={() => navigation.navigate('ChangePassword')}>
+            <Icon name="lock" size={24} color={colors.primary} />
+            <View style={styles.infoContent}>
+              <Text style={[styles.infoLabel, { color: colors.text }]}>Şifre Değiştir</Text>
+              <Text style={[styles.infoValue, { color: colors.textSecondary }]}>Şifrenizi güncelleyin</Text>
+            </View>
+            <Icon name="chevron-right" size={24} color={isDark ? '#fff' : colors.border} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.infoItem} onPress={() => setDeleteModalVisible(true)}>
-            <Icon name="delete" size={24} color="#F44336" />
+            <Icon name="delete" size={24} color={colors.error} />
             <View style={styles.infoContent}>
-              <Text style={[styles.infoLabel, { color: '#F44336' }]}>Hesabı Sil</Text>
-              <Text style={[styles.infoValue, { color: '#F44336' }]}>Hesabınızı kalıcı olarak silin</Text>
+              <Text style={[styles.infoLabel, { color: colors.error }]}>Hesabı Sil</Text>
+              <Text style={[styles.infoValue, { color: colors.error }]}>Hesabınızı kalıcı olarak silin</Text>
             </View>
-            <Icon name="chevron-right" size={24} color="#ccc" />
+            <Icon name="chevron-right" size={24} color={isDark ? '#fff' : colors.border} />
           </TouchableOpacity>
         </View>
       </View>
@@ -275,21 +293,21 @@ const ProfileScreen = () => {
         onRequestClose={() => setPhotoModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Profil Fotoğrafı</Text>
-            <Text style={styles.modalDesc}>Fotoğrafı nasıl eklemek istersin?</Text>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }] }>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Profil Fotoğrafı</Text>
+            <Text style={[styles.modalDesc, { color: colors.textSecondary }]}>Fotoğrafı nasıl eklemek istersin?</Text>
             <View style={styles.modalButtonRow}>
-              <TouchableOpacity style={styles.modalPhotoButton} onPress={() => handlePhotoPick('camera')}>
-                <Icon name="photo-camera" size={22} color="#2196F3" style={{ marginRight: 8 }} />
-                <Text style={styles.modalPhotoText}>Kameradan Çek</Text>
+              <TouchableOpacity style={[styles.modalPhotoButton, { backgroundColor: colors.infoBoxBg, borderColor: colors.primary }]} onPress={() => handlePhotoPick('camera')}>
+                <Icon name="photo-camera" size={22} color={colors.primary} style={{ marginRight: 8 }} />
+                <Text style={[styles.modalPhotoText, { color: colors.primary }]}>Kameradan Çek</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.modalPhotoButton} onPress={() => handlePhotoPick('gallery')}>
-                <Icon name="photo-library" size={22} color="#2196F3" style={{ marginRight: 8 }} />
-                <Text style={styles.modalPhotoText}>Galeriden Seç</Text>
+              <TouchableOpacity style={[styles.modalPhotoButton, { backgroundColor: colors.infoBoxBg, borderColor: colors.primary }]} onPress={() => handlePhotoPick('gallery')}>
+                <Icon name="photo-library" size={22} color={colors.primary} style={{ marginRight: 8 }} />
+                <Text style={[styles.modalPhotoText, { color: colors.primary }]}>Galeriden Seç</Text>
               </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.modalCancelButton} onPress={() => setPhotoModalVisible(false)}>
-              <Text style={styles.modalCancelText}>Vazgeç</Text>
+            <TouchableOpacity style={[styles.modalCancelButton, { backgroundColor: colors.background }]} onPress={() => setPhotoModalVisible(false)}>
+              <Text style={[styles.modalCancelText, { color: colors.text }]}>Vazgeç</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -303,23 +321,24 @@ const ProfileScreen = () => {
         onRequestClose={() => setDeleteModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Hesabını silmek istediğine emin misin?</Text>
-            <Text style={styles.modalDesc}>Hesabını silmek için kutuya <Text style={{ fontWeight: 'bold', color: '#F44336' }}>'delete'</Text> yazmalısın.</Text>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }] }>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Hesabını silmek istediğine emin misin?</Text>
+            <Text style={[styles.modalDesc, { color: colors.textSecondary }]}>Hesabını silmek için kutuya <Text style={{ fontWeight: 'bold', color: colors.error }}>'delete'</Text> yazmalısın.</Text>
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { borderColor: colors.border, backgroundColor: colors.background, color: colors.text }]}
               placeholder="delete"
+              placeholderTextColor={colors.textSecondary}
               value={deleteInput}
               onChangeText={setDeleteInput}
               autoCapitalize="none"
               autoCorrect={false}
             />
             <View style={styles.modalButtonRow}>
-              <TouchableOpacity style={styles.modalCancelButton} onPress={() => setDeleteModalVisible(false)} disabled={deleteLoading}>
-                <Text style={styles.modalCancelText}>Vazgeç</Text>
+              <TouchableOpacity style={[styles.modalCancelButton, { backgroundColor: colors.background }]} onPress={() => setDeleteModalVisible(false)} disabled={deleteLoading}>
+                <Text style={[styles.modalCancelText, { color: colors.text }]}>Vazgeç</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.modalDeleteButton} onPress={handleDeleteAccount} disabled={deleteLoading}>
-                <Text style={styles.modalDeleteText}>{deleteLoading ? 'Siliniyor...' : 'Hesabı Sil'}</Text>
+              <TouchableOpacity style={[styles.modalDeleteButton, { backgroundColor: colors.error }]} onPress={handleDeleteAccount} disabled={deleteLoading}>
+                <Text style={[styles.modalDeleteText, { color: colors.white }]}>{deleteLoading ? 'Siliniyor...' : 'Hesabı Sil'}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -332,7 +351,6 @@ const ProfileScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f4f6ff',
   },
   loadingContainer: {
     flex: 1,
@@ -355,44 +373,36 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 60,
     borderWidth: 3,
-    borderColor: '#fff',
   },
   editImageButton: {
     position: 'absolute',
     right: 0,
     bottom: 0,
-    backgroundColor: '#0066cc',
     padding: 8,
     borderRadius: 20,
     borderWidth: 2,
-    borderColor: '#fff',
   },
   username: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#fff',
     marginBottom: 5,
   },
   email: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.9)',
   },
   verifiedRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 20,
   },
   verifiedText: {
-    color: '#4CAF50',
     fontWeight: 'bold',
     fontSize: 14,
   },
   notVerifiedText: {
-    color: '#F44336',
     fontWeight: 'bold',
     fontSize: 14,
   },
@@ -400,12 +410,10 @@ const styles = StyleSheet.create({
     padding: 15,
   },
   section: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
     elevation: 2,
-    shadowColor: '#0066cc',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -413,7 +421,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
     marginBottom: 15,
   },
   infoItem: {
@@ -421,7 +428,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   infoContent: {
     marginLeft: 15,
@@ -429,12 +435,10 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 16,
-    color: '#333',
     fontWeight: '500',
   },
   infoValue: {
     fontSize: 14,
-    color: '#666',
     marginTop: 2,
   },
   actionSection: {
@@ -447,19 +451,13 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 20,
     borderRadius: 12,
-    backgroundColor: '#0066cc',
   },
   actionButtonText: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
   },
-  editButton: {
-    backgroundColor: '#2196F3',
-  },
-  deleteButton: {
-    backgroundColor: '#F44336',
-  },
+  editButton: {},
+  deleteButton: {},
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.3)',
@@ -467,7 +465,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#fff',
     borderRadius: 16,
     padding: 24,
     width: '85%',
@@ -477,25 +474,20 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 10,
-    color: '#222',
     textAlign: 'center',
   },
   modalDesc: {
     fontSize: 15,
-    color: '#444',
     marginBottom: 16,
     textAlign: 'center',
   },
   modalInput: {
     width: '100%',
     borderWidth: 1,
-    borderColor: '#ccc',
     borderRadius: 8,
     padding: 10,
     fontSize: 15,
     marginBottom: 18,
-    backgroundColor: '#f9f9f9',
-    color: '#000',
     textAlign: 'center',
   },
   modalButtonRow: {
@@ -505,27 +497,23 @@ const styles = StyleSheet.create({
   },
   modalCancelButton: {
     flex: 1,
-    backgroundColor: '#eee',
-    padding: 12,
     borderRadius: 8,
     marginRight: 8,
     alignItems: 'center',
+    padding: 12,
   },
   modalCancelText: {
-    color: '#333',
     fontWeight: 'bold',
     fontSize: 15,
   },
   modalDeleteButton: {
     flex: 1,
-    backgroundColor: '#F44336',
-    padding: 12,
     borderRadius: 8,
     marginLeft: 8,
     alignItems: 'center',
+    padding: 12,
   },
   modalDeleteText: {
-    color: '#fff',
     fontWeight: 'bold',
     fontSize: 15,
   },
@@ -533,16 +521,13 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f4f6ff',
     padding: 12,
     borderRadius: 8,
     margin: 6,
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#2196F3',
   },
   modalPhotoText: {
-    color: '#2196F3',
     fontWeight: 'bold',
     fontSize: 15,
   },

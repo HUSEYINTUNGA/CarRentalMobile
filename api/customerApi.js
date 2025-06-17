@@ -46,7 +46,14 @@ export const getProfile = () => {
 };
 
 export const updateProfile = (data) => api.put('customer/update-profile', data);
-export const changePassword = (data) => api.post('customer/change-password', data);
+export const changePassword = async ({ currentPassword, newPassword, confirmNewPassword }) => {
+  const res = await api.post('/customer/change-password', {
+    currentPassword,
+    newPassword,
+    confirmNewPassword,
+  });
+  return res.data;
+};
 export const changeProfilePhoto = (data) => {
   const formData = new FormData();
   formData.append('ProfilePicture', {

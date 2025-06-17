@@ -9,6 +9,7 @@ import { useRentalHistories } from '../hooks/useRentalHistories';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as jwtDecode from 'jwt-decode';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../theme/ThemeProvider';
 
 const HomeScreen = () => {
   const { fetchProfile } = useProfile();
@@ -21,6 +22,7 @@ const HomeScreen = () => {
   const [userId, setUserId] = useState(null);
   const [latestVehicle, setLatestVehicle] = useState(null);
   const [popularVehicles, setPopularVehicles] = useState([]);
+  const { colors } = useTheme();
 
   const processVehicleData = useCallback((vehicles) => {
     if (!vehicles || vehicles.length === 0) {
@@ -108,33 +110,33 @@ const HomeScreen = () => {
                 source={
                   profileData?.profilePicture
                     ? { uri: `data:image/jpeg;base64,${profileData.profilePicture}` }
-                    : { uri: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(`${profileData?.name || ''}+${profileData?.surname || ''}`) + '&background=2196F3&color=fff&size=120' }
+                    : { uri: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(`${profileData?.name || ''}+${profileData?.surname || ''}`) + `&background=${colors.primary.replace('#','')}&color=fff&size=120` }
                 }
-                style={styles.profileImage}
+                style={[styles.profileImage, { borderColor: colors.background }]}
               />
             </TouchableOpacity>
           }
-          contentStyle={styles.menuContent}
+          contentStyle={[styles.menuContent, { backgroundColor: colors.card, shadowColor: colors.shadow }]}
         >
-          <View style={styles.menuProfileTop}>
+          <View style={[styles.menuProfileTop, { backgroundColor: colors.card }] }>
             <Image
               source={
                 profileData?.profilePicture
                   ? { uri: `data:image/jpeg;base64,${profileData.profilePicture}` }
-                  : { uri: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(`${profileData?.name || ''}+${profileData?.surname || ''}`) + '&background=2196F3&color=fff&size=120' }
+                  : { uri: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(`${profileData?.name || ''}+${profileData?.surname || ''}`) + `&background=${colors.primary.replace('#','')}&color=fff&size=120` }
               }
-              style={styles.menuProfileImageLarge}
+              style={[styles.menuProfileImageLarge, { borderColor: colors.primary }]}
             />
-            <Text style={styles.menuUserNameCenter}>{profileData?.name} {profileData?.surname}</Text>
-            <Text style={styles.menuUserNameCenter}>{profileData?.email}</Text>
+            <Text style={[styles.menuUserNameCenter, { color: colors.text }]}>{profileData?.name} {profileData?.surname}</Text>
+            <Text style={[styles.menuUserNameCenter, { color: colors.text }]}>{profileData?.email}</Text>
             <View style={styles.menuVerifiedRowCenter}>
               {profileData?.isVerified ? (
                 <>
-                  <Icon name="check-circle" size={15} color="#4CAF50" style={{ marginRight: 4 }} />
-                  <Text style={styles.menuVerifiedTextCenter}>Doğrulanmış</Text>
+                  <Icon name="check-circle" size={15} color={colors.success} style={{ marginRight: 4 }} />
+                  <Text style={[styles.menuVerifiedTextCenter, { color: colors.success }]}>Doğrulanmış</Text>
                 </>
               ) : (
-                <Text style={styles.menuNotVerifiedTextCenter}>Doğrulanmamış</Text>
+                <Text style={[styles.menuNotVerifiedTextCenter, { color: colors.error }]}>Doğrulanmamış</Text>
               )}
             </View>
           </View>
@@ -143,10 +145,10 @@ const HomeScreen = () => {
       headerTitle: '',
       headerTransparent: true,
     });
-  }, [navigation, menuVisible, profileData]);
+  }, [navigation, menuVisible, profileData, colors]);
 
   if (vehiclesLoading || rentalLoading) {
-    return <ActivityIndicator size="large" color="#2196F3" style={{ marginTop: 40 }} />;
+    return <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />;
   }
 
   return (
@@ -158,69 +160,69 @@ const HomeScreen = () => {
         onRequestClose={() => setDrawerVisible(false)}
       >
         <TouchableOpacity style={styles.drawerOverlay} onPress={() => setDrawerVisible(false)} activeOpacity={1} />
-        <View style={styles.drawerMenu}>
-          <Text style={styles.drawerTitle}>Menü</Text>
+        <View style={[styles.drawerMenu, { backgroundColor: colors.card, shadowColor: colors.shadow }] }>
+          <Text style={[styles.drawerTitle, { color: colors.primary }]}>Menü</Text>
           <TouchableOpacity style={styles.drawerItem} onPress={() => handleDrawerNavigate('Home')}>
-            <Icon name="home" size={22} color="#1541e0" />
-            <Text style={styles.drawerItemText}>Anasayfa</Text>
+            <Icon name="home" size={22} color={colors.primary} />
+            <Text style={[styles.drawerItemText, { color: colors.text }]}>Anasayfa</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.drawerItem} onPress={() => handleDrawerNavigate('VehicleList')}>
-            <Icon name="car" size={22} color="#1541e0" />
-            <Text style={styles.drawerItemText}>Araçlar</Text>
+            <Icon name="car" size={22} color={colors.primary} />
+            <Text style={[styles.drawerItemText, { color: colors.text }]}>Araçlar</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.drawerItem} onPress={() => handleDrawerNavigate('RentalHistory', { type: 'history' })}>
-            <Icon name="history" size={22} color="#1541e0" />
-            <Text style={styles.drawerItemText}>Kiralama Geçmişim</Text>
+            <Icon name="history" size={22} color={colors.primary} />
+            <Text style={[styles.drawerItemText, { color: colors.text }]}>Kiralama Geçmişim</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.drawerItem} onPress={() => handleDrawerNavigate('RentalHistory', { type: 'pending' })}>
-            <Icon name="clock-outline" size={22} color="#1541e0" />
-            <Text style={styles.drawerItemText}>Bekleyen Kiralama İsteklerim</Text>
+            <Icon name="clock-outline" size={22} color={colors.primary} />
+            <Text style={[styles.drawerItemText, { color: colors.text }]}>Bekleyen Kiralama İsteklerim</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.drawerItem} onPress={() => handleDrawerNavigate('Settings')}>
-            <Icon name="cog" size={22} color="#1541e0" />
-            <Text style={styles.drawerItemText}>Ayarlar</Text>
+            <Icon name="cog" size={22} color={colors.primary} />
+            <Text style={[styles.drawerItemText, { color: colors.text }]}>Ayarlar</Text>
           </TouchableOpacity>
         </View>
       </Modal>
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }] }>
         <LinearGradient
-          colors={['#0066cc', '#0052a3']}
+          colors={[colors.headerGradientStart, colors.headerGradientEnd]}
           style={styles.header}
         >
-          <Text style={styles.headerTitleCentered}>Hoş Geldin, {profileData?.name}!</Text>
-          <Text style={styles.headerSubtitleCentered}>Bugün hangi aracı kiralamak istersin?</Text>
+          <Text style={[styles.headerTitleCentered, { color: '#fff' }]}>Hoş Geldin, {profileData?.name}!</Text>
+          <Text style={[styles.headerSubtitleCentered, { color: '#fff' }]}>Bugün hangi aracı kiralamak istersin?</Text>
         </LinearGradient>
 
         <View style={styles.content}>
           {latestVehicle && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Yeni Eklenen Araç</Text>
+            <View style={[styles.section, { backgroundColor: colors.card, shadowColor: colors.shadow }] }>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Yeni Eklenen Araç</Text>
               <TouchableOpacity
-                style={[styles.vehicleCardHorizontal, { borderLeftWidth: 6, borderLeftColor: '#0066cc' }]}
+                style={[styles.vehicleCardHorizontal, { borderLeftWidth: 6, borderLeftColor: colors.primary, backgroundColor: colors.card, shadowColor: colors.shadow }]}
                 onPress={() => navigation.navigate('VehicleDetails', { vehicleId: latestVehicle.Id })}
               >
-                <View style={styles.vehicleImageWrapper}>
+                <View style={[styles.vehicleImageWrapper, { backgroundColor: colors.backgroundCard }] }>
                   {latestVehicle.Photo ? (
                     <Image
                       source={{ uri: latestVehicle.Photo }}
                       style={styles.vehicleImage}
                     />
                   ) : (
-                    <Icon name="car" size={32} color="#0066cc" />
+                    <Icon name="car" size={32} color={colors.primary} />
                   )}
                 </View>
                 <View style={styles.vehicleInfoHorizontal}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-                    <Icon name="car" size={18} color="#0066cc" style={{ marginRight: 6 }} />
-                    <Text style={styles.vehicleTitle}>{latestVehicle.Brand} {latestVehicle.Model}</Text>
+                    <Icon name="car" size={18} color={colors.primary} style={{ marginRight: 6 }} />
+                    <Text style={[styles.vehicleTitle, { color: colors.text }]}>{latestVehicle.Brand} {latestVehicle.Model}</Text>
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-                    <Icon name="tag" size={16} color="#0066cc" style={{ marginRight: 6 }} />
-                    <Text style={styles.vehicleDetailHorizontal}>Günlük: {latestVehicle.DailyPrice} TL</Text>
+                    <Icon name="tag" size={16} color={colors.primary} style={{ marginRight: 6 }} />
+                    <Text style={[styles.vehicleDetailHorizontal, { color: colors.success }]}>Günlük: {latestVehicle.DailyPrice} TL</Text>
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Icon name="calendar" size={16} color="#0066cc" style={{ marginRight: 6 }} />
-                    <Text style={styles.vehicleDetailHorizontal}>
+                    <Icon name="calendar" size={16} color={colors.primary} style={{ marginRight: 6 }} />
+                    <Text style={[styles.vehicleDetailHorizontal, { color: colors.textSecondary }] }>
                       {new Date(latestVehicle.CreatedAt).toLocaleDateString()}
                     </Text>
                   </View>
@@ -229,36 +231,36 @@ const HomeScreen = () => {
             </View>
           )}
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Popüler Araçlar</Text>
+          <View style={[styles.section, { backgroundColor: colors.card, shadowColor: colors.shadow }] }>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Popüler Araçlar</Text>
             {popularVehicles.map(vehicle => (
               <TouchableOpacity
                 key={vehicle.Id}
-                style={[styles.vehicleCardHorizontal, { borderLeftWidth: 6, borderLeftColor: '#3393dc' }]}
+                style={[styles.vehicleCardHorizontal, { borderLeftWidth: 6, borderLeftColor: colors.info, backgroundColor: colors.card, shadowColor: colors.shadow }]}
                 onPress={() => navigation.navigate('VehicleDetails', { vehicleId: vehicle.Id })}
               >
-                <View style={styles.vehicleImageWrapper}>
+                <View style={[styles.vehicleImageWrapper, { backgroundColor: colors.backgroundCard }] }>
                   {vehicle.Photo ? (
                     <Image
                       source={{ uri: vehicle.Photo }}
                       style={styles.vehicleImage}
                     />
                   ) : (
-                    <Icon name="car" size={32} color="#3393dc" />
+                    <Icon name="car" size={32} color={colors.info} />
                   )}
                 </View>
                 <View style={styles.vehicleInfoHorizontal}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-                    <Icon name="car" size={18} color="#3393dc" style={{ marginRight: 6 }} />
-                    <Text style={styles.vehicleTitle}>{vehicle.Brand} {vehicle.Model}</Text>
+                    <Icon name="car" size={18} color={colors.info} style={{ marginRight: 6 }} />
+                    <Text style={[styles.vehicleTitle, { color: colors.text }]}>{vehicle.Brand} {vehicle.Model}</Text>
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-                    <Icon name="tag" size={16} color="#3393dc" style={{ marginRight: 6 }} />
-                    <Text style={styles.vehicleDetailHorizontal}>Günlük: {vehicle.DailyPrice} TL</Text>
+                    <Icon name="tag" size={16} color={colors.info} style={{ marginRight: 6 }} />
+                    <Text style={[styles.vehicleDetailHorizontal, { color: colors.success }]}>Günlük: {vehicle.DailyPrice} TL</Text>
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Icon name="calendar" size={16} color="#3393dc" style={{ marginRight: 6 }} />
-                    <Text style={styles.vehicleDetailHorizontal}>
+                    <Icon name="calendar" size={16} color={colors.info} style={{ marginRight: 6 }} />
+                    <Text style={[styles.vehicleDetailHorizontal, { color: colors.textSecondary }] }>
                       {new Date(vehicle.CreatedAt).toLocaleDateString()}
                     </Text>
                   </View>
@@ -267,42 +269,42 @@ const HomeScreen = () => {
             ))}
           </View>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Kiralama Geçmişim</Text>
+          <View style={[styles.section, { backgroundColor: colors.card, shadowColor: colors.shadow }] }>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Kiralama Geçmişim</Text>
             {rentalLoading ? (
-              <ActivityIndicator size="large" color="#0066cc" />
+              <ActivityIndicator size="large" color={colors.primary} />
             ) : rentalHistories.length === 0 ? (
-              <Text style={styles.emptyText}>Onaylanmış kiralamanız yok.</Text>
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Onaylanmış kiralamanız yok.</Text>
             ) : (
               rentalHistories.slice(0, 3).map(rental => (
                 <View
                   key={rental.StartDate + rental.NumberPlate}
-                  style={[styles.vehicleCardHorizontal, { borderLeftWidth: 6, borderLeftColor: '#e53935' }]}
+                  style={[styles.vehicleCardHorizontal, { borderLeftWidth: 6, borderLeftColor: colors.error, backgroundColor: colors.card, shadowColor: colors.shadow }]}
                 >
-                  <View style={styles.vehicleImageWrapper}>
+                  <View style={[styles.vehicleImageWrapper, { backgroundColor: colors.backgroundCard }] }>
                     {rental.MainPhotoUrl ? (
                       <Image
                         source={{ uri: rental.MainPhotoUrl }}
                         style={styles.vehicleImage}
                       />
                     ) : (
-                      <Icon name="car" size={32} color="#e53935" />
+                      <Icon name="car" size={32} color={colors.error} />
                     )}
                   </View>
                   <View style={styles.vehicleInfoHorizontal}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-                      <Icon name="car" size={18} color="#e53935" style={{ marginRight: 6 }} />
-                      <Text style={styles.vehicleTitle}>{rental.Brand} {rental.Model}</Text>
+                      <Icon name="car" size={18} color={colors.error} style={{ marginRight: 6 }} />
+                      <Text style={[styles.vehicleTitle, { color: colors.text }]}>{rental.Brand} {rental.Model}</Text>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-                      <Icon name="calendar" size={16} color="#e53935" style={{ marginRight: 6 }} />
-                      <Text style={styles.vehicleDetailHorizontal}>
+                      <Icon name="calendar" size={16} color={colors.error} style={{ marginRight: 6 }} />
+                      <Text style={[styles.vehicleDetailHorizontal, { color: colors.textSecondary }] }>
                         {new Date(rental.StartDate).toLocaleDateString()} - {new Date(rental.EndDate).toLocaleDateString()}
                       </Text>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      <Icon name="cash" size={16} color="#e53935" style={{ marginRight: 6 }} />
-                      <Text style={styles.vehicleDetailHorizontal}>Toplam: {rental.TotalPrice} TL</Text>
+                      <Icon name="cash" size={16} color={colors.error} style={{ marginRight: 6 }} />
+                      <Text style={[styles.vehicleDetailHorizontal, { color: colors.success }]}>Toplam: {rental.TotalPrice} TL</Text>
                     </View>
                   </View>
                 </View>
@@ -310,42 +312,42 @@ const HomeScreen = () => {
             )}
           </View>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Bekleyen Kiralama İsteklerim</Text>
+          <View style={[styles.section, { backgroundColor: colors.card, shadowColor: colors.shadow }] }>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Bekleyen Kiralama İsteklerim</Text>
             {pendingLoading ? (
-              <ActivityIndicator size="large" color="#0066cc" />
+              <ActivityIndicator size="large" color={colors.primary} />
             ) : pendingRentalHistories.length === 0 ? (
-              <Text style={styles.emptyText}>Bekleyen kiralama isteğiniz yok.</Text>
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Bekleyen kiralama isteğiniz yok.</Text>
             ) : (
               pendingRentalHistories.slice(0, 3).map(rental => (
                 <View
                   key={rental.StartDate + rental.NumberPlate}
-                  style={[styles.vehicleCardHorizontal, { borderLeftWidth: 6, borderLeftColor: '#2196F3' }]}
+                  style={[styles.vehicleCardHorizontal, { borderLeftWidth: 6, borderLeftColor: colors.primary, backgroundColor: colors.card, shadowColor: colors.shadow }]}
                 >
-                  <View style={styles.vehicleImageWrapper}>
+                  <View style={[styles.vehicleImageWrapper, { backgroundColor: colors.backgroundCard }] }>
                     {rental.MainPhotoUrl ? (
                       <Image
                         source={{ uri: rental.MainPhotoUrl }}
                         style={styles.vehicleImage}
                       />
                     ) : (
-                      <Icon name="car" size={32} color="#2196F3" />
+                      <Icon name="car" size={32} color={colors.primary} />
                     )}
                   </View>
                   <View style={styles.vehicleInfoHorizontal}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-                      <Icon name="car" size={18} color="#2196F3" style={{ marginRight: 6 }} />
-                      <Text style={styles.vehicleTitle}>{rental.Brand} {rental.Model}</Text>
+                      <Icon name="car" size={18} color={colors.primary} style={{ marginRight: 6 }} />
+                      <Text style={[styles.vehicleTitle, { color: colors.text }]}>{rental.Brand} {rental.Model}</Text>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-                      <Icon name="calendar" size={16} color="#2196F3" style={{ marginRight: 6 }} />
-                      <Text style={styles.vehicleDetailHorizontal}>
+                      <Icon name="calendar" size={16} color={colors.primary} style={{ marginRight: 6 }} />
+                      <Text style={[styles.vehicleDetailHorizontal, { color: colors.textSecondary }] }>
                         {new Date(rental.StartDate).toLocaleDateString()} - {new Date(rental.EndDate).toLocaleDateString()}
                       </Text>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      <Icon name="cash" size={16} color="#2196F3" style={{ marginRight: 6 }} />
-                      <Text style={styles.vehicleDetailHorizontal}>Toplam: {rental.TotalPrice} TL</Text>
+                      <Icon name="cash" size={16} color={colors.primary} style={{ marginRight: 6 }} />
+                      <Text style={[styles.vehicleDetailHorizontal, { color: colors.success }]}>Toplam: {rental.TotalPrice} TL</Text>
                     </View>
                   </View>
                 </View>
@@ -361,7 +363,6 @@ const HomeScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    backgroundColor: '#f4f6ff',
   },
   header: {
     padding: 20,
@@ -373,12 +374,10 @@ const styles = StyleSheet.create({
   headerTitleCentered: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#ffffff',
     textAlign: 'center',
   },
   headerSubtitleCentered: {
     fontSize: 16,
-    color: '#ffffff',
     textAlign: 'center',
     marginTop: 5,
   },
@@ -715,23 +714,19 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   section: {
-    backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 16,
     marginTop: 15,
     elevation: 2,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
   },
   vehicleCardHorizontal: {
     flexDirection: 'row',
-    backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 15,
     marginBottom: 10,
     elevation: 2,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
   },
@@ -739,7 +734,6 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 12,
-    backgroundColor: '#f5f5f5',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 15,
@@ -752,12 +746,10 @@ const styles = StyleSheet.create({
   vehicleTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#000000',
     marginBottom: 5,
   },
   vehicleDetailHorizontal: {
     fontSize: 14,
-    color: '#666666',
     marginBottom: 3,
   },
   vehicleImage: {

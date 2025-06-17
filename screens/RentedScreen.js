@@ -7,7 +7,9 @@ import { useVehicles } from '../hooks/useVehicles';
 import { usePaymentMethods } from '../hooks/usePaymentMethods';
 import { TransmissionTypeOptions, FuelTypeOptions } from '../enums/enum';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import IconFA from 'react-native-vector-icons/FontAwesome5';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../theme/ThemeProvider';
 
 function formatPlate(plate) {
     if (!plate) return '-';
@@ -36,6 +38,7 @@ const RentedScreen = () => {
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
     const [customApiError, setCustomApiError] = useState(null);
     const [conflictData, setConflictData] = useState(null);
+    const { colors, isDark } = useTheme();
 
     useEffect(() => {
         if (vehicleId) {
@@ -103,58 +106,96 @@ const RentedScreen = () => {
     const showAlternativeVehicle = Boolean(conflictData?.alternativeVehicle?.id);
 
     return (
-        <View style={{ flex: 1, backgroundColor: '#f8fafd' }}>
+        <View style={{ flex: 1, backgroundColor: colors.background }}>
             <LinearGradient
-                colors={["#0066cc", "#2196F3"]}
+                colors={[colors.headerGradientStart, colors.headerGradientEnd]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.gradientHeader}
             >
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Text style={styles.backIcon}>{'‹'}</Text>
+                    <Text style={[styles.backIcon, { color: '#fff' }]}>{'‹'}</Text>
                 </TouchableOpacity>
-                <Text style={styles.gradientHeaderTitle}>Araç Kirala</Text>
+                <Text style={[styles.gradientHeaderTitle, { color: '#fff' }]}>Araç Kirala</Text>
             </LinearGradient>
             <ScrollView contentContainerStyle={{ flexGrow: 1, paddingTop: 100 }}>
-                <View style={styles.container}>
+                <View style={[styles.container, { backgroundColor: colors.background }] }>
                     {vehicleLoading ? (
-                        <ActivityIndicator size="large" color="#2196F3" style={{ marginBottom: 32 }} />
+                        <ActivityIndicator size="large" color={colors.primary} style={{ marginBottom: 32 }} />
                     ) : vehicle ? (
-                        <View style={styles.vehicleCard}>
-                            <View style={styles.imageWrapper}>
+                        <View style={[styles.vehicleCard, { backgroundColor: colors.card, shadowColor: colors.primary }] }>
+                            <View style={[styles.imageWrapper, { backgroundColor: colors.imageBg }] }>
                                 {photoUri ? (
                                     <Image 
                                         source={{ uri: photoUri }} 
                                         style={styles.vehicleImage}
                                     />
                                 ) : (
-                                    <View style={[styles.vehicleImage, { backgroundColor: '#e0e0e0', justifyContent: 'center', alignItems: 'center' }]}>
-                                        <Icon name="car" size={40} color="#666" />
+                                    <View style={[styles.vehicleImage, { backgroundColor: colors.imageBg, justifyContent: 'center', alignItems: 'center' }] }>
+                                        <Icon name="car" size={40} color={colors.textSecondary} />
                                     </View>
                                 )}
                             </View>
-                            <Text style={styles.vehicleTitle}>{vehicle.Brand || '-'} {vehicle.Model || '-'}</Text>
-                            <Text style={styles.vehicleSub}>{vehicle.ModelYear || '-'}</Text>
-                            <Text style={styles.vehiclePrice}>
-                                <Text style={{color:'#2196F3', fontWeight:'bold'}}>{vehicle.DailyPrice != null ? vehicle.DailyPrice + ' TL' : '-'}</Text>
-                                <Text style={{color:'#888', fontWeight:'normal'}}> / Günlük</Text>
-                            </Text>
-                            <View style={styles.vehicleDetailsRow}>
-                                <View style={styles.chip}><Icon name="car-cog" size={16} color="#2196F3" /><Text style={styles.chipText}>{transmissionTypeLabel}</Text></View>
-                                <View style={styles.chip}><Icon name="fuel" size={16} color="#2196F3" /><Text style={styles.chipText}>{fuelTypeLabel}</Text></View>
-                                <View style={styles.chip}><Icon name="car-key" size={16} color="#2196F3" /><Text style={styles.chipText}>{formatPlate(vehicle.NumberPlate)}</Text></View>
+                            <View style={[{ width: '100%', marginTop: 8, marginBottom: 8 }] }>
+                                <View style={{ borderRadius: 14, backgroundColor: colors.altCard, overflow: 'hidden' }}>
+                                    {(() => {
+                                        const infoData = [
+                                            { icon: 'car', label: 'Marka', value: vehicle.Brand || '-' },
+                                            { icon: 'car-info', label: 'Model', value: vehicle.Model || '-' },
+                                            { icon: 'calendar', label: 'Yıl', value: vehicle.ModelYear || '-' },
+                                            { icon: 'tag', label: 'Kategori', value: vehicle.Category || '-' },
+                                            { icon: 'palette', label: 'Renk', value: vehicle.Color || '-' },
+                                            { icon: 'car-cog', label: 'Vites', value: transmissionTypeLabel },
+                                            { icon: 'fuel', label: 'Yakıt', value: fuelTypeLabel },
+                                            { icon: 'id-card-fa', label: 'Plaka', value: formatPlate(vehicle.NumberPlate) },
+                                        ];
+                                        return infoData.map((item, idx) => (
+                                            <View key={item.label} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 8, borderBottomWidth: idx !== infoData.length - 1 ? 1 : 0, borderBottomColor: colors.border }}>
+                                                {item.icon === 'id-card-fa' ? (
+                                                    <IconFA name="id-card" size={20} color={colors.primary} style={{ marginRight: 10 }} />
+                                                ) : (
+                                                    <Icon name={item.icon} size={20} color={colors.primary} style={{ marginRight: 10 }} />
+                                                )}
+                                                <Text style={{ flex: 1, color: colors.textSecondary, fontSize: 14 }}>{item.label}</Text>
+                                                <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 15 }}>{item.value}</Text>
+                                            </View>
+                                        ));
+                                    })()}
+                                </View>
+                            </View>
+                            <View style={{
+                                width: '100%',
+                                alignItems: 'center',
+                                marginTop: 8,
+                                marginBottom: 8,
+                            }}>
+                                <View style={{
+                                    backgroundColor: 'rgba(67, 160, 71, 0.1)',
+                                    borderRadius: 22,
+                                    paddingHorizontal: 28,
+                                    paddingVertical: 10,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    minWidth: 120,
+                                }}>
+                                    <Text style={{ color: colors.success, fontWeight: 'bold', fontSize: 22, textAlign: 'center' }}>
+                                        {vehicle.DailyPrice != null ? vehicle.DailyPrice + ' TL' : '-'}
+                                    </Text>
+                                    <Text style={{ color: colors.textSecondary, fontWeight: 'normal', fontSize: 15 }}>/ Günlük</Text>
+                                </View>
                             </View>
                         </View>
+                        
                     ) : null}
-                    <Text style={styles.title}>Kiralama Tarihleri</Text>
+                    <Text style={[styles.title, { color: colors.text }]}>Kiralama Tarihleri</Text>
                     <View style={styles.dateRow}>
-                        <TouchableOpacity onPress={() => setShowStart(true)} style={styles.dateInput}>
-                            <Text style={styles.dateInputLabel}>Başlangıç:</Text>
-                            <Text style={styles.dateInputValue}>{startDate.toLocaleDateString()}</Text>
+                        <TouchableOpacity onPress={() => setShowStart(true)} style={[styles.dateInput, { backgroundColor: colors.card, borderColor: colors.primary }] }>
+                            <Text style={[styles.dateInputLabel, { color: colors.textSecondary }]}>Başlangıç:</Text>
+                            <Text style={[styles.dateInputValue, { color: colors.primary }]}>{startDate.toLocaleDateString()}</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => setShowEnd(true)} style={styles.dateInput}>
-                            <Text style={styles.dateInputLabel}>Bitiş:</Text>
-                            <Text style={styles.dateInputValue}>{endDate.toLocaleDateString()}</Text>
+                        <TouchableOpacity onPress={() => setShowEnd(true)} style={[styles.dateInput, { backgroundColor: colors.card, borderColor: colors.primary }] }>
+                            <Text style={[styles.dateInputLabel, { color: colors.textSecondary }]}>Bitiş:</Text>
+                            <Text style={[styles.dateInputValue, { color: colors.primary }]}>{endDate.toLocaleDateString()}</Text>
                         </TouchableOpacity>
                     </View>
                     {showStart && (
@@ -179,25 +220,30 @@ const RentedScreen = () => {
                             }}
                         />
                     )}
-                    <TouchableOpacity style={styles.paymentButton} onPress={() => setShowPaymentModal(true)}>
-                        <Text style={styles.paymentButtonText}>{selectedPaymentMethod ? 'Ödeme Yöntemini Değiştir' : 'Ödeme Yöntemi Seç'}</Text>
+                    <TouchableOpacity style={[styles.paymentButton, { backgroundColor: colors.card, borderColor: colors.primary }]} onPress={() => setShowPaymentModal(true)}>
+                        <Text style={[styles.paymentButtonText, { color: colors.primary }]}>{selectedPaymentMethod ? 'Ödeme Yöntemini Değiştir' : 'Ödeme Yöntemi Seç'}</Text>
                     </TouchableOpacity>
                     {selectedPaymentMethod && (
-                        <View style={styles.cardView}>
-                            <Text style={styles.cardNumber}>•••• •••• •••• {selectedPaymentMethod.Last4Digits}</Text>
-                            <Text style={styles.cardName}>{selectedPaymentMethod.CardHolderName}</Text>
-                            <Text style={styles.cardInfo}>{selectedPaymentMethod.ExpirationMonth}/{selectedPaymentMethod.ExpirationYear}</Text>
+                        <View style={[
+                            styles.cardView,
+                            isDark
+                                ? { backgroundColor: '#23272F', borderWidth: 1, borderColor: colors.border, shadowColor: colors.primary }
+                                : { backgroundColor: colors.paymentCard, shadowColor: colors.paymentCardShadow }
+                        ]}>
+                            <Text style={[styles.cardNumber, { color: '#fff' }]}>•••• •••• •••• {selectedPaymentMethod.Last4Digits}</Text>
+                            <Text style={[styles.cardName, { color: '#fff' }]}>{selectedPaymentMethod.CardHolderName}</Text>
+                            <Text style={[styles.cardInfo, { color: '#fff' }]}>{selectedPaymentMethod.ExpirationMonth.toString().padStart(2, '0')}/{selectedPaymentMethod.ExpirationYear.toString().slice(-2)}</Text>
                         </View>
                     )}
-                    <TouchableOpacity style={styles.rentButton} onPress={handleRent} disabled={loading}>
-                        <Text style={styles.rentButtonText}>{loading ? 'Gönderiliyor...' : 'Kirala'}</Text>
+                    <TouchableOpacity style={[styles.rentButton, { backgroundColor: colors.primary, shadowColor: colors.primary }]} onPress={handleRent} disabled={loading}>
+                        <Text style={[styles.rentButtonText, { color: colors.white }]}>{loading ? 'Gönderiliyor...' : 'Kirala'}</Text>
                     </TouchableOpacity>
                     <Modal visible={showPaymentModal} transparent animationType="slide">
                         <View style={styles.modalContainer}>
-                            <View style={styles.modalContent}>
-                                <Text style={styles.modalTitle}>Ödeme Yöntemi Seç</Text>
+                            <View style={[styles.modalContent, { backgroundColor: colors.card }] }>
+                                <Text style={[styles.modalTitle, { color: colors.primary }]}>Ödeme Yöntemi Seç</Text>
                                 {paymentLoading ? (
-                                    <ActivityIndicator size="large" color="#2196F3" />
+                                    <ActivityIndicator size="large" color={colors.primary} />
                                 ) : (
                                     <FlatList
                                         data={paymentMethods}
@@ -210,13 +256,13 @@ const RentedScreen = () => {
                                                     setShowPaymentModal(false);
                                                 }}
                                             >
-                                                <Text style={styles.paymentItemText}>{item.MethodName} •••• {item.Last4Digits}</Text>
+                                                <Text style={[styles.paymentItemText, { color: colors.text }]}>{item.MethodName} •••• {item.Last4Digits}</Text>
                                             </TouchableOpacity>
                                         )}
                                     />
                                 )}
                                 <TouchableOpacity onPress={() => setShowPaymentModal(false)}>
-                                    <Text style={styles.modalClose}>Kapat</Text>
+                                    <Text style={[styles.modalClose, { color: colors.primary }]}>Kapat</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -231,49 +277,49 @@ const RentedScreen = () => {
                     onRequestClose={() => setShowErrorModal(false)}
                 >
                     <View style={styles.modalOverlay}>
-                        <View style={styles.errorModalContent}>
-                            <Icon name="alert-circle" size={40} color="#FF6B6B" style={styles.errorIcon} />
-                            <Text style={styles.errorTitle}>
+                        <View style={[styles.errorModalContent, { backgroundColor: colors.card, shadowColor: colors.shadow }] }>
+                            <Icon name="alert-circle" size={40} color={colors.error} style={styles.errorIcon} />
+                            <Text style={[styles.errorTitle, { color: colors.error }] }>
                                 {showAlternativeVehicle ? 'Tarih Çakışması' : 'Kiralama Hatası'}
                             </Text>
-                            <Text style={styles.errorMessage}>
+                            <Text style={[styles.errorMessage, { color: colors.textSecondary }] }>
                                 {customApiError}
                             </Text>
                             {showAlternativeVehicle && (
                                 <>
-                                    <Text style={{ fontWeight: 'bold', marginTop: 12 }}>
+                                    <Text style={{ fontWeight: 'bold', marginTop: 12, color: colors.text }}>
                                         Müsait Tarih Aralığı: {conflictData.suggestedStartDate} - {conflictData.maxAvailableEndDate}
                                     </Text>
                                     <View style={{ flexDirection: 'row', width: '100%', justifyContent: 'space-between', marginTop: 16 }}>
                                         <TouchableOpacity
-                                            style={[styles.useDatesButton, { flex: 1, marginRight: 8 }]}
+                                            style={[styles.useDatesButton, { backgroundColor: colors.success, flex: 1, marginRight: 8 }]}
                                             onPress={() => {
                                                 setStartDate(new Date(conflictData.suggestedStartDate));
                                                 setEndDate(new Date(conflictData.maxAvailableEndDate));
                                                 setShowErrorModal(false);
                                             }}
                                         >
-                                            <Icon name="calendar-check" size={20} color="#fff" style={styles.buttonIcon} />
-                                            <Text style={styles.buttonText}>Bu Tarihleri Kullan</Text>
+                                            <Icon name="calendar-check" size={20} color={colors.white} style={styles.buttonIcon} />
+                                            <Text style={[styles.buttonText, { color: colors.white }]}>Bu Tarihleri Kullan</Text>
                                         </TouchableOpacity>
                                         <TouchableOpacity
-                                            style={[styles.viewVehicleButton, { flex: 1, marginLeft: 8 }]}
+                                            style={[styles.viewVehicleButton, { backgroundColor: colors.primary, flex: 1, marginLeft: 8 }]}
                                             onPress={() => {
                                                 navigation.navigate('VehicleDetails', { vehicleId: conflictData.alternativeVehicle.id });
                                                 setShowErrorModal(false);
                                             }}
                                         >
-                                            <Icon name="car" size={20} color="#fff" style={styles.buttonIcon} />
-                                            <Text style={styles.buttonText}>Aracı Gör</Text>
+                                            <Icon name="car" size={20} color={colors.white} style={styles.buttonIcon} />
+                                            <Text style={[styles.buttonText, { color: colors.white }]}>Aracı Gör</Text>
                                         </TouchableOpacity>
                                     </View>
                                     <View style={{ marginTop: 16, width: '100%' }}>
-                                        <Text style={{ fontWeight: 'bold', marginBottom: 8 }}>Alternatif Araç:</Text>
-                                        <View style={styles.alternativeVehicleCard}>
-                                            <Text style={styles.alternativeVehicleTitle}>
+                                        <Text style={{ fontWeight: 'bold', marginBottom: 8, color: colors.text }}>Alternatif Araç:</Text>
+                                        <View style={[styles.alternativeVehicleCard, { backgroundColor: colors.altCard, borderColor: colors.border }] }>
+                                            <Text style={[styles.alternativeVehicleTitle, { color: colors.text }]}>
                                                 {conflictData.alternativeVehicle.brand} {conflictData.alternativeVehicle.model}
                                             </Text>
-                                            <Text style={styles.alternativeVehiclePrice}>
+                                            <Text style={[styles.alternativeVehiclePrice, { color: colors.primary }]}>
                                                 {conflictData.alternativeVehicle.dailyPrice} TL/gün
                                             </Text>
                                         </View>
@@ -284,7 +330,7 @@ const RentedScreen = () => {
                                 style={styles.closeButton}
                                 onPress={() => setShowErrorModal(false)}
                             >
-                                <Text style={styles.closeButtonText}>Kapat</Text>
+                                <Text style={[styles.closeButtonText, { color: colors.textSecondary }]}>Kapat</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -297,19 +343,16 @@ const RentedScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f8fafd',
         alignItems: 'center',
         padding: 16,
     },
     vehicleCard: {
-        backgroundColor: '#fff',
         borderRadius: 24,
         padding: 16,
         marginBottom: 28,
         alignItems: 'center',
         width: 340,
         elevation: 8,
-        shadowColor: '#2196F3',
         shadowOpacity: 0.10,
         shadowRadius: 24,
         shadowOffset: { width: 0, height: 8 },
@@ -320,7 +363,6 @@ const styles = StyleSheet.create({
         borderRadius: 18,
         overflow: 'hidden',
         marginBottom: 12,
-        backgroundColor: '#eaeaea',
         resizeMode: 'contain',
     },
     vehicleImage: {
@@ -331,17 +373,11 @@ const styles = StyleSheet.create({
     vehicleTitle: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: '#222',
         marginBottom: 2,
     },
     vehicleSub: {
         fontSize: 16,
-        color: '#888',
         marginBottom: 6,
-    },
-    vehiclePrice: {
-        fontSize: 22,
-        marginBottom: 12,
     },
     vehicleDetailsRow: {
         flexDirection: 'row',
@@ -354,7 +390,6 @@ const styles = StyleSheet.create({
     chip: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#eaf2ff',
         borderRadius: 16,
         paddingHorizontal: 12,
         paddingVertical: 6,
@@ -363,7 +398,6 @@ const styles = StyleSheet.create({
     },
     chipText: {
         fontSize: 15,
-        color: '#2196F3',
         marginLeft: 5,
         fontWeight: 'bold',
     },
@@ -371,7 +405,6 @@ const styles = StyleSheet.create({
         fontSize: 22,
         fontWeight: 'bold',
         marginBottom: 32,
-        color: '#222',
     },
     dateRow: {
         flexDirection: 'row',
@@ -380,10 +413,8 @@ const styles = StyleSheet.create({
         marginBottom: 24,
     },
     dateInput: {
-        backgroundColor: '#fff',
         borderRadius: 12,
         borderWidth: 2,
-        borderColor: '#2196F3',
         paddingHorizontal: 12,
         paddingVertical: 8,
         alignItems: 'center',
@@ -391,18 +422,14 @@ const styles = StyleSheet.create({
         marginHorizontal: 2,
     },
     dateInputLabel: {
-        color: '#888',
         fontSize: 13,
         marginBottom: 2,
     },
     dateInputValue: {
-        color: '#2196F3',
         fontSize: 16,
         fontWeight: 'bold',
     },
     paymentButton: {
-        backgroundColor: '#fff',
-        borderColor: '#2196F3',
         borderWidth: 2,
         borderRadius: 12,
         paddingVertical: 8,
@@ -412,47 +439,39 @@ const styles = StyleSheet.create({
         marginBottom: 4,
     },
     paymentButtonText: {
-        color: '#2196F3',
         fontSize: 16,
         fontWeight: 'bold',
     },
     cardView: {
-        backgroundColor: '#232946',
         borderRadius: 16,
         padding: 12,
         alignItems: 'center',
         marginBottom: 8,
         width: 300,
         alignSelf: 'center',
-        shadowColor: '#232946',
         shadowOpacity: 0.12,
         shadowRadius: 8,
         shadowOffset: { width: 0, height: 2 },
     },
     cardNumber: {
-        color: '#fff',
         fontSize: 20,
         letterSpacing: 2,
         marginBottom: 8,
     },
     cardName: {
-        color: '#fff',
         fontSize: 16,
         fontWeight: 'bold',
         marginBottom: 4,
     },
     cardInfo: {
-        color: '#fff',
         fontSize: 14,
     },
     modalContainer: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.3)',
         justifyContent: 'center',
         alignItems: 'center',
     },
     modalContent: {
-        backgroundColor: '#fff',
         borderRadius: 18,
         padding: 24,
         width: 320,
@@ -462,42 +481,35 @@ const styles = StyleSheet.create({
     modalTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#2196F3',
         marginBottom: 18,
     },
     paymentItem: {
         paddingVertical: 12,
         paddingHorizontal: 16,
         borderBottomWidth: 1,
-        borderBottomColor: '#f0f0f0',
         width: 260,
         alignItems: 'center',
     },
     paymentItemText: {
         fontSize: 16,
-        color: '#222',
     },
     modalClose: {
-        color: '#2196F3',
         fontWeight: 'bold',
         fontSize: 16,
         marginTop: 16,
     },
     rentButton: {
-        backgroundColor: '#2196F3',
         padding: 14,
         borderRadius: 16,
         alignItems: 'center',
         marginTop: 24,
         width: 320,
         elevation: 4,
-        shadowColor: '#2196F3',
         shadowOpacity: 0.18,
         shadowRadius: 12,
         shadowOffset: { width: 0, height: 4 },
     },
     rentButtonText: {
-        color: 'white',
         fontSize: 20,
         fontWeight: 'bold',
         letterSpacing: 1,
@@ -509,13 +521,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     errorModalContent: {
-        backgroundColor: '#fff',
         borderRadius: 20,
         padding: 24,
         width: '85%',
         alignItems: 'center',
         elevation: 5,
-        shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.25,
         shadowRadius: 3.84,
@@ -526,35 +536,28 @@ const styles = StyleSheet.create({
     errorTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#FF6B6B',
         marginBottom: 8,
     },
     errorMessage: {
         fontSize: 16,
-        color: '#666',
         textAlign: 'center',
         marginBottom: 24,
     },
     alternativeVehicleCard: {
-        backgroundColor: '#f8f9fa',
         borderRadius: 12,
         padding: 16,
         borderWidth: 1,
-        borderColor: '#e0e0e0',
     },
     alternativeVehicleTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#333',
         marginBottom: 4,
     },
     alternativeVehiclePrice: {
         fontSize: 16,
-        color: '#2196F3',
         fontWeight: 'bold',
     },
     useDatesButton: {
-        backgroundColor: '#4CAF50',
         flexDirection: 'row',
         alignItems: 'center',
         padding: 12,
@@ -564,7 +567,6 @@ const styles = StyleSheet.create({
         marginTop: 12,
     },
     buttonText: {
-        color: '#fff',
         fontSize: 16,
         fontWeight: 'bold',
         marginLeft: 8,
@@ -577,11 +579,9 @@ const styles = StyleSheet.create({
         padding: 8,
     },
     closeButtonText: {
-        color: '#666',
         fontSize: 16,
     },
     viewVehicleButton: {
-        backgroundColor: '#2196F3',
         flexDirection: 'row',
         alignItems: 'center',
         padding: 12,
@@ -611,13 +611,11 @@ const styles = StyleSheet.create({
         marginRight: 12,
     },
     backIcon: {
-        color: '#fff',
         fontSize: 34,
         fontWeight: 'bold',
         marginTop: -2,
     },
     gradientHeaderTitle: {
-        color: '#fff',
         fontSize: 22,
         fontWeight: 'bold',
         letterSpacing: 1,

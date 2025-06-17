@@ -15,8 +15,16 @@ import {
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import { useProfile } from '../hooks/useProfile';
-import { colors } from '../theme/colors';
+import { useTheme } from '../theme/ThemeProvider';
 import { LinearGradient } from 'expo-linear-gradient';
+
+// Helper function to convert hex to rgba
+function hexToRgba(hex, alpha) {
+  let c = hex.replace('#', '');
+  if (c.length === 3) c = c.split('').map(x => x + x).join('');
+  const num = parseInt(c, 16);
+  return `rgba(${(num >> 16) & 255},${(num >> 8) & 255},${num & 255},${alpha})`;
+}
 
 const EditProfileScreen = () => {
   const navigation = useNavigation();
@@ -27,6 +35,7 @@ const EditProfileScreen = () => {
     phoneNumber: '',
   });
   const [profile, setProfile] = useState(null);
+  const { colors, isDark } = useTheme();
 
   useEffect(() => {
     (async () => {
@@ -57,114 +66,111 @@ const EditProfileScreen = () => {
 
   if (loading || !profile) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }] }>
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Gradient Header */}
-        <LinearGradient
-          colors={["#0066cc", "#2196F3"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.gradientHeader}
-        >
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={styles.backIcon}>{'‹'}</Text>
-          </TouchableOpacity>
-          <Text style={styles.gradientHeaderTitle}>Profili Düzenle</Text>
-        </LinearGradient>
-        <View style={{ height: 8 }} />
+    <View style={[styles.container, { backgroundColor: colors.background }] }>
+      <LinearGradient
+        colors={[colors.headerGradientStart, colors.headerGradientEnd]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.gradientHeader}
+      >
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Text style={[styles.backIcon, { color: '#fff' }]}>{'‹'}</Text>
+        </TouchableOpacity>
+        <Text style={[styles.gradientHeaderTitle, { color: '#fff' }]}>Profili Düzenle</Text>
+      </LinearGradient>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        <View style={{ height: 50 }} />
+        <View style={styles.profileImageContainer}>
+          <Image
+            source={
+              profile?.profilePicture
+                ? { uri: `data:image/jpeg;base64,${profile.profilePicture}` }
+                : { uri: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(`${profile?.name || ''}+${profile?.surname || ''}`) + '&background=2196F3&color=fff&size=120' }
+            }
+            style={[styles.profileImage, { backgroundColor: colors.card, borderColor: colors.background }]}
+          />
+        </View>
         <View style={styles.formContainer}>
-          <View style={styles.profileImageContainer}>
-            <Image
-              source={
-                profile?.profilePicture
-                  ? { uri: `data:image/jpeg;base64,${profile.profilePicture}` }
-                  : { uri: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(`${profile?.name || ''}+${profile?.surname || ''}`) + '&background=2196F3&color=fff&size=120' }
-              }
-              style={styles.profileImage}
-            />
-          </View>
-
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Ad</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Ad</Text>
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }
+              ]}
               value={formData.name}
               onChangeText={(text) => setFormData(prev => ({ ...prev, name: text }))}
               placeholder="Adınız"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textSecondary}
             />
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Soyad</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Soyad</Text>
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }
+              ]}
               value={formData.surname}
               onChangeText={(text) => setFormData(prev => ({ ...prev, surname: text }))}
               placeholder="Soyadınız"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textSecondary}
             />
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Telefon Numarası</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Telefon Numarası</Text>
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }
+              ]}
               value={formData.phoneNumber}
               onChangeText={(text) => setFormData(prev => ({ ...prev, phoneNumber: text }))}
               placeholder="Telefon numaranız"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textSecondary}
               keyboardType="phone-pad"
             />
           </View>
 
-          <View style={styles.infoBox}>
-            <Icon name="info" size={20} color="#2196F3" style={styles.infoIcon} />
-            <Text style={styles.infoText}>
+          <View
+            style={[
+              styles.infoBox,
+              { backgroundColor: colors.text.startsWith('#') ? hexToRgba(colors.text, 0.1) : 'rgba(33,33,33,0.1)' }
+            ]}
+          >
+            <Icon name="info" size={20} color={colors.info} style={styles.infoIcon} />
+            <Text style={[styles.infoText, { color: colors.info }] }>
               Ad, soyad ve telefon numarası bilgilerinizi değiştirebilirsiniz. Profil fotoğrafı değiştirilemez. Diğer bilgileriniz güvenlik nedeniyle değiştirilemez.
             </Text>
           </View>
 
           <TouchableOpacity
-            style={styles.saveButton}
+            style={[styles.saveBtn, { backgroundColor: colors.primary }, loading && styles.buttonDisabled]}
             onPress={handleUpdateProfile}
             disabled={loading}
           >
-            <Text style={styles.saveButtonText}>
+            <Text style={[styles.saveButtonText, { color: isDark ? '#111' : '#fff' }]}>
               {loading ? 'Kaydediliyor...' : 'Değişiklikleri Kaydet'}
             </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f6fa',
-  },
-  scrollContent: {
-    flexGrow: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   gradientHeader: {
     position: 'absolute',
@@ -187,52 +193,54 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   backIcon: {
-    color: '#fff',
     fontSize: 34,
     fontWeight: 'bold',
     marginTop: -2,
   },
   gradientHeaderTitle: {
-    color: '#fff',
     fontSize: 22,
     fontWeight: 'bold',
     letterSpacing: 1,
     flex: 1,
   },
-  formContainer: {
-    padding: 20,
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingTop: 160, 
   },
   profileImageContainer: {
-    alignItems: 'center',
-    marginBottom: 24,
+    position: 'absolute',
+    top: 110,
+    alignSelf: 'center',
+    zIndex: 20,
   },
   profileImage: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: '#e0e0e0',
+    borderWidth: 4,
+  },
+  formContainer: {
+    padding: 20,
   },
   inputGroup: {
     marginBottom: 20,
   },
   label: {
     fontSize: 16,
-    color: '#333',
     marginBottom: 8,
     fontWeight: '500',
   },
   input: {
-    backgroundColor: '#fff',
     borderRadius: 10,
     padding: 15,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#ddd',
-    color: '#333',
   },
   infoBox: {
     flexDirection: 'row',
-    backgroundColor: '#e3f2fd',
     padding: 16,
     borderRadius: 10,
     marginBottom: 24,
@@ -243,20 +251,31 @@ const styles = StyleSheet.create({
   },
   infoText: {
     flex: 1,
-    color: '#1976D2',
     fontSize: 14,
     lineHeight: 20,
   },
-  saveButton: {
-    backgroundColor: '#2196F3',
-    padding: 16,
-    borderRadius: 10,
+  saveBtn: {
+    padding: 14,
+    borderRadius: 16,
     alignItems: 'center',
+    marginTop: 24,
+    width: 320,
+    elevation: 4,
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
   },
   saveButtonText: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  buttonDisabled: {
+    // Add any necessary styles for the disabled button
   },
 });
 

@@ -4,6 +4,7 @@ import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { getRentalRequests, approveRentalRequest, rejectRentalRequest } from '../api/rentalHistoriesApi';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../theme/ThemeProvider';
 
 const { width } = Dimensions.get('window');
 const CARD_PADDING = 32; // 16px left + 16px right
@@ -18,6 +19,7 @@ const RentalRequestsScreen = () => {
   const [rejectReason, setRejectReason] = useState('');
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const { colors } = useTheme();
 
   const fetchRequests = async () => {
     setLoading(true);
@@ -100,60 +102,59 @@ const RentalRequestsScreen = () => {
   };
 
   const renderCard = ({ item }) => {
+    // Prepare info table data
+    const infoData = [
+      { icon: 'car', label: 'Araç', value: `${item.Brand} ${item.Model}`, iconColor: colors.primary },
+      { icon: 'card-bulleted', label: 'Plaka', value: formatPlate(item.NumberPlate), iconColor: colors.primary, valueColor: colors.primary },
+      { icon: 'account', label: 'Kullanıcı', value: item.UserName, iconColor: colors.info },
+      { icon: 'email', label: 'E-posta', value: item.Email, iconColor: colors.info, valueColor: colors.textSecondary },
+      { icon: 'play-circle-outline', label: 'Başlangıç', value: `${new Date(item.StartDate).toLocaleDateString('tr-TR')} ${new Date(item.StartDate).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}`, iconColor: colors.success, valueColor: colors.textSecondary },
+      { icon: 'stop-circle-outline', label: 'Bitiş', value: `${new Date(item.EndDate).toLocaleDateString('tr-TR')} ${new Date(item.EndDate).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}`, iconColor: colors.error, valueColor: colors.textSecondary },
+    ];
+
     return (
-      <View style={styles.card}>
-        <View style={styles.cardRow}>
-          <MaterialCommunityIcons name="car" size={22} color="#0066cc" style={{ marginRight: 7 }} />
-          <Text style={styles.cardTitle}>{item.Brand} {item.Model}</Text>
-        </View>
-        <View style={styles.cardSecondaryRow}>
-          <MaterialIcons name="confirmation-number" size={16} color="#0066cc" style={{ marginRight: 7 }} />
-          <Text style={styles.plateText}>{formatPlate(item.NumberPlate)}</Text>
-        </View>
-        <View style={styles.cardRow}>
-          <MaterialIcons name="person" size={22} color="#3393dc" style={{ marginRight: 7 }} />
-          <Text style={styles.cardTitle}>{item.UserName}</Text>
-        </View>
-        <View style={styles.cardSecondaryRow}>
-          <MaterialIcons name="mail" size={16} color="#3393dc" style={{ marginRight: 7 }} />
-          <Text style={styles.cardInfo}>{item.Email}</Text>
-        </View>
-        <View style={styles.cardRow}>
-          <MaterialCommunityIcons name="clipboard-text-clock-outline" size={22} color="#000000" style={{ marginRight: 7 }} />
-          <Text style={styles.cardTitle}>Kiralama Tarihleri</Text>
-        </View>
-        <View style={styles.cardSecondaryRow}>
-          <MaterialIcons name="play-circle-outline" size={16} color="#43a047" style={{ marginRight: 7 }} />
-          <Text style={styles.cardInfo}>
-            {new Date(item.StartDate).toLocaleDateString('tr-TR')} {new Date(item.StartDate).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
-          </Text>
-        </View>
-        <View style={styles.cardSecondaryRow}>
-          <MaterialCommunityIcons name="stop-circle-outline" size={16} color="#e53935" style={{ marginRight: 7 }} />
-          <Text style={styles.cardInfo}>
-            {new Date(item.EndDate).toLocaleDateString('tr-TR')} {new Date(item.EndDate).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
-          </Text>
-        </View>
-        <View style={styles.priceAndButtonsRow}>
-          <View style={styles.priceBadgeLarge}>
-            <Text style={styles.priceBadgeTextLarge}>₺{item.TotalPrice.toLocaleString('tr-TR')}</Text>
+      <View style={[styles.infoCard, { backgroundColor: colors.card, shadowColor: colors.shadow }] }>
+        {infoData.map((row, idx) => (
+          <View key={row.label} style={[
+            styles.infoRowModern,
+            idx !== infoData.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }
+          ]}>
+            <MaterialCommunityIcons name={row.icon} size={22} color={row.iconColor || colors.primary} style={{ marginRight: 10 }} />
+            <Text style={[styles.infoLabelModern, { color: colors.textSecondary }]}>{row.label}</Text>
+            <Text style={[styles.infoValueModern, { color: row.valueColor || colors.text }]}>{row.value}</Text>
           </View>
-          <View style={styles.buttonRowInline}>
+        ))}
+        <View style={{
+          width: '100%',
+          backgroundColor: 'rgba(67, 160, 71, 0.1)',
+          paddingVertical: 10,
+          marginTop: 8,
+          marginBottom: 4,
+          borderRadius: 12,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+          <Text style={{ color: colors.success, fontWeight: 'bold', fontSize: 18, textAlign: 'center' }}>
+            ₺{item.TotalPrice.toLocaleString('tr-TR')}
+          </Text>
+        </View>
+        <View style={[styles.priceAndButtonsRow, { justifyContent: 'flex-end' }] }>
+          <View style={[styles.buttonRowInline, { justifyContent: 'flex-end' }] }>
             <TouchableOpacity 
-              style={[styles.approveBtnSmall, actionLoading && styles.disabledButton]} 
+              style={[styles.approveBtnSmall, { backgroundColor: colors.success }, actionLoading && styles.disabledButton]} 
               onPress={() => handleApprove(item.Id)} 
               disabled={actionLoading}
             >
-              <MaterialIcons name="check" size={18} color="#fff" />
-              <Text style={styles.btnText}>{actionLoading ? 'Onaylanıyor...' : 'Onayla'}</Text>
+              <MaterialIcons name="check" size={18} color={colors.white} />
+              <Text style={[styles.btnText, { color: colors.white }]}>{actionLoading ? 'Onaylanıyor...' : 'Onayla'}</Text>
             </TouchableOpacity>
             <TouchableOpacity 
-              style={[styles.rejectBtnSmall, actionLoading && styles.disabledButton]} 
+              style={[styles.rejectBtnSmall, { backgroundColor: colors.error }, actionLoading && styles.disabledButton]} 
               onPress={() => { setSelectedRequest(item.Id); setModalVisible(true); }} 
               disabled={actionLoading}
             >
-              <MaterialIcons name="close" size={18} color="#fff" />
-              <Text style={styles.btnText}>Reddet</Text>
+              <MaterialIcons name="close" size={18} color={colors.white} />
+              <Text style={[styles.btnText, { color: colors.white }]}>Reddet</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -162,31 +163,34 @@ const RentalRequestsScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }] }>
       <LinearGradient
-        colors={['#0066cc', '#0052a3']}
+        colors={[colors.headerGradientStart, colors.headerGradientEnd]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={styles.headerGradient}
       >
-        <View style={styles.headerContent}>
-          <MaterialCommunityIcons name="clipboard-text-clock-outline" size={28} color="#fff" style={styles.headerIcon} />
-          <Text style={styles.headerTitle}>Kiralama İstekleri</Text>
+        <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+          <MaterialCommunityIcons name="clipboard-text-clock-outline" size={28} color="#fff" style={{ marginRight: 10 }} />
+          <Text style={{ fontSize: 26, fontWeight: 'bold', textAlign: 'center', color: '#fff' }}>
+            Kiralama İstekleri
+          </Text>
         </View>
       </LinearGradient>
+      <View style={{ height: 100 }} />
 
       {loading ? (
-        <ActivityIndicator size="large" color="#3393dc" style={{ marginTop: 40 }} />
+        <ActivityIndicator size="large" color={colors.info} style={{ marginTop: 40 }} />
       ) : (
         <FlatList
           data={requests}
           renderItem={renderCard}
           keyExtractor={item => item.Id}
-          contentContainerStyle={{ paddingBottom: 30 }}
+          contentContainerStyle={{ paddingBottom: 30, marginTop: 48 }}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <MaterialCommunityIcons name="clipboard-text-clock-outline" size={48} color="#888" />
-              <Text style={styles.emptyText}>Bekleyen istek yok.</Text>
+              <MaterialCommunityIcons name="clipboard-text-clock-outline" size={48} color={colors.textSecondary} />
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Bekleyen istek yok.</Text>
             </View>
           }
         />
@@ -198,11 +202,12 @@ const RentalRequestsScreen = () => {
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modalBg}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Red Sebebi</Text>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }] }>
+            <Text style={[styles.modalTitle, { color: colors.error }]}>Red Sebebi</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { borderColor: colors.border, backgroundColor: colors.background, color: colors.text }]}
               placeholder="Red sebebini girin..."
+              placeholderTextColor={colors.textSecondary}
               value={rejectReason}
               onChangeText={setRejectReason}
               multiline
@@ -210,11 +215,11 @@ const RentalRequestsScreen = () => {
               autoCorrect={false}
             />
             <View style={styles.buttonRow}>
-              <TouchableOpacity style={styles.rejectBtn} onPress={handleReject} disabled={actionLoading}>
-                <Text style={styles.btnText}>Gönder</Text>
+              <TouchableOpacity style={[styles.rejectBtn, { backgroundColor: colors.error }]} onPress={handleReject} disabled={actionLoading}>
+                <Text style={[styles.btnText, { color: colors.white }]}>Gönder</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => { setModalVisible(false); setRejectReason(''); setSelectedRequest(null); }}>
-                <Text style={styles.btnText}>İptal</Text>
+              <TouchableOpacity style={[styles.cancelBtn, { backgroundColor: colors.info }]} onPress={() => { setModalVisible(false); setRejectReason(''); setSelectedRequest(null); }}>
+                <Text style={[styles.btnText, { color: colors.white }]}>İptal</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -227,15 +232,18 @@ const RentalRequestsScreen = () => {
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
-    backgroundColor: '#f5f5f5'
   },
   headerGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
     paddingTop: 70,
     paddingBottom: 30,
-    marginBottom:5,
+    marginBottom: 5,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
-    shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 2,
@@ -244,50 +252,53 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-  },
-  headerIcon: {
-    marginRight: 10,
-  },
   headerTitle: {
     fontSize: 26,
     fontWeight: 'bold',
-    color: '#fff',
     textAlign: 'center',
+    color: '#fff',
   },
-  card: { 
-    backgroundColor: '#fff', 
-    borderRadius: 12, 
-    padding: 12, 
-    marginBottom: 12, 
-    marginHorizontal: 16,
-    shadowColor: '#000', 
-    shadowOpacity: 0.08, 
-    shadowRadius: 6, 
-    shadowOffset: { width: 0, height: 2 }, 
-    elevation: 2 
+  infoCard: {
+    borderRadius: 14,
+    paddingVertical: 2,
+    paddingHorizontal: 4,
+    marginBottom: 14,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    marginHorizontal: 8,
   },
-  cardRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
-  cardSecondaryRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 3, marginLeft: 14 },
-  cardTitle: { fontSize: 16, fontWeight: 'bold', color: '#222' },
-  cardInfo: { fontSize: 13, color: '#444', marginBottom: 0 },
+  infoRowModern: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 2,
+    justifyContent: 'space-between',
+  },
+  infoLabelModern: {
+    flex: 1,
+    fontSize: 13,
+    marginLeft: 2,
+  },
+  infoValueModern: {
+    fontWeight: 'bold',
+    fontSize: 14,
+    minWidth: 60,
+    textAlign: 'right',
+  },
   buttonRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 8, gap: 8 },
-  approveBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#43a047', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, marginRight: 10 },
-  rejectBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#e53935', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
-  cancelBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#888', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, marginLeft: 10 },
-  btnText: { color: '#fff', fontWeight: 'bold', marginLeft: 6 },
+  approveBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, marginRight: 10 },
+  rejectBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
+  cancelBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, marginLeft: 10 },
+  btnText: { fontWeight: 'bold', marginLeft: 6 },
   modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center' },
-  modalContent: { backgroundColor: '#fff', borderRadius: 12, padding: 24, width: '85%' },
-  modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#e53935', marginBottom: 12 },
-  input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 10, minHeight: 60, textAlignVertical: 'top', marginBottom: 10, fontSize: 15 },
-  plateText: { fontSize: 15, color: '#1976d2', fontWeight: 'bold', letterSpacing: 1, marginBottom: 0 },
+  modalContent: { borderRadius: 12, padding: 24, width: '85%' },
+  modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 12 },
+  input: { borderWidth: 1, borderRadius: 8, padding: 10, minHeight: 60, textAlignVertical: 'top', marginBottom: 10, fontSize: 15 },
+  plateText: { fontSize: 15, fontWeight: 'bold', letterSpacing: 1, marginBottom: 0 },
   priceAndButtonsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, gap: 8, flexWrap: 'wrap' },
   priceBadgeLarge: { 
-    backgroundColor: '#e8f5e9', 
     borderRadius: 18, 
     paddingHorizontal: 22, 
     paddingVertical: 8, 
@@ -296,10 +307,10 @@ const styles = StyleSheet.create({
     marginRight: 8, 
     width: PRICE_BADGE_WIDTH
   },
-  priceBadgeTextLarge: { color: '#43a047', fontWeight: 'bold', fontSize: 20 },
+  priceBadgeTextLarge: { fontWeight: 'bold', fontSize: 20 },
   buttonRowInline: { flexDirection: 'row', gap: 8 },
-  approveBtnSmall: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#43a047', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 8, marginRight: 6 },
-  rejectBtnSmall: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#e53935', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 8 },
+  approveBtnSmall: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 8, marginRight: 6 },
+  rejectBtnSmall: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 8 },
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -309,7 +320,6 @@ const styles = StyleSheet.create({
   emptyText: {
     textAlign: 'center',
     marginTop: 12,
-    color: '#888',
     fontSize: 16,
   },
   disabledButton: {

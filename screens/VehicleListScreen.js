@@ -7,6 +7,9 @@ import { FuelTypeOptions, TransmissionTypeOptions } from '../enums/enum';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import IconFA from 'react-native-vector-icons/FontAwesome5';
+import { useTheme } from '../theme/ThemeProvider';
+import { LinearGradient } from 'expo-linear-gradient';
+import CustomDropdown from '../components/CustomDropdown';
 
 const sortOptions = [
     { label: 'Model Yılı (Artan)', value: 'modelYearAsc' },
@@ -46,6 +49,7 @@ const VehicleListScreen = () => {
     const [drawerType, setDrawerType] = useState('filter');
     const [tempFilters, setTempFilters] = useState(filters);
     const drawerAnim = useRef(new Animated.Value(SCREEN_WIDTH)).current;
+    const { colors } = useTheme();
 
     useEffect(() => {
         const getRole = async () => {
@@ -147,7 +151,7 @@ const VehicleListScreen = () => {
 
     const renderVehicleItem = ({ item }) => (
         <TouchableOpacity
-            style={styles.cardGridContainer}
+            style={[styles.cardGridContainer, { backgroundColor: colors.card, shadowColor: colors.shadow }]}
             activeOpacity={0.85}
             onPress={() => navigation.navigate('VehicleDetails', { vehicleId: item.Id })}
         >
@@ -160,35 +164,35 @@ const VehicleListScreen = () => {
                 </View>
                 <View style={styles.cardRightColFixed}>
                     <View style={styles.infoRowModernGridFixed}>
-                        <Text style={styles.vehicleBrandModelText}>{item.Brand} {item.Model}</Text>
+                        <Text style={[styles.vehicleBrandModelText, { color: colors.primary }]}>{item.Brand} {item.Model}</Text>
                     </View>
                     <View style={styles.infoRowModernGridFixed}>
-                        <IconFA name="check-circle" size={18} color="#43a047" style={styles.infoIconModern} />
-                        <Text style={styles.infoTextModernGridFixed}>Ücretsiz İptal</Text>
+                        <IconFA name="check-circle" size={18} color={colors.success} style={styles.infoIconModern} />
+                        <Text style={[styles.infoTextModernGridFixed, { color: colors.textSecondary }]}>Ücretsiz İptal</Text>
                     </View>
                     <View style={styles.infoRowModernGridFixed}>
-                        <IconFA name="gas-pump" size={18} color="#1976d2" style={styles.infoIconModern} />
-                        <Text style={styles.infoTextModernGridFixed}>{getFuelTypeLabel(item.FuelType)}</Text>
+                        <IconFA name="gas-pump" size={18} color={colors.primary} style={styles.infoIconModern} />
+                        <Text style={[styles.infoTextModernGridFixed, { color: colors.textSecondary }]}>{getFuelTypeLabel(item.FuelType)}</Text>
                     </View>
                     <View style={styles.infoRowModernGridFixed}>
-                        <IconFA name="cogs" size={18} color="#1976d2" style={styles.infoIconModern} />
-                        <Text style={styles.infoTextModernGridFixed}>{getTransmissionTypeLabel(item.TransmissionType)}</Text>
+                        <IconFA name="cogs" size={18} color={colors.primary} style={styles.infoIconModern} />
+                        <Text style={[styles.infoTextModernGridFixed, { color: colors.textSecondary }]}>{getTransmissionTypeLabel(item.TransmissionType)}</Text>
                     </View>
                     <View style={styles.infoRowModernGridFixed}>
-                        <IconFA name="handshake" size={18} color="#1976d2" style={styles.infoIconModern} />
-                        <Text style={styles.infoTextModernGridFixed}>Karşılama</Text>
+                        <IconFA name="handshake" size={18} color={colors.primary} style={styles.infoIconModern} />
+                        <Text style={[styles.infoTextModernGridFixed, { color: colors.textSecondary }]}>Karşılama</Text>
                     </View>
                     <View style={styles.infoRowModernGridFixed}>
-                        <IconFA name="id-card" size={18} color="#1976d2" style={styles.infoIconModern} />
-                        <Text style={styles.infoTextModernGridFixed}>{formatPlate(item.NumberPlate)}</Text>
+                        <IconFA name="id-card" size={18} color={colors.primary} style={styles.infoIconModern} />
+                        <Text style={[styles.infoTextModernGridFixed, { color: colors.primary }]}>{formatPlate(item.NumberPlate)}</Text>
                     </View>
                     <View style={styles.infoRowModernGridFixed}>
-                        <IconFA name="car-side" size={18} color="#1976d2" style={styles.infoIconModern} />
-                        <Text style={styles.infoTextModernGridFixed}>{item.Category}</Text>
+                        <IconFA name="car-side" size={18} color={colors.primary} style={styles.infoIconModern} />
+                        <Text style={[styles.infoTextModernGridFixed, { color: colors.textSecondary }]}>{item.Category}</Text>
                     </View>
                     <View style={styles.infoRowModernGridFixed}>
-                        <IconFA name="money-bill-wave" size={18} color="#1976d2" style={styles.infoIconModern} />
-                        <Text style={[styles.infoTextModernGridFixed, { color: '#1976d2', fontWeight: 'bold' }]}>{item.DailyPrice} TL / Gün</Text>
+                        <IconFA name="money-bill-wave" size={18} color={colors.success} style={styles.infoIconModern} />
+                        <Text style={[styles.infoTextModernGridFixed, { color: colors.success, fontWeight: 'bold' }]}>{item.DailyPrice} TL / Gün</Text>
                     </View>
                 </View>
             </View>
@@ -197,11 +201,11 @@ const VehicleListScreen = () => {
 
     const formatPlate = (plate) => {
         if (!plate) return '';
-        const match = plate.match(/^(\d{2})([A-Z]+)(\d+)$/i);
+        const match = plate.match(/^([0-9]{2})([A-ZÇĞİÖŞÜ]{1,3})([0-9]{2,4})$/i);
         if (match) {
             return `${match[1]} ${match[2].toUpperCase()} ${match[3]}`;
         }
-        return plate;
+        return plate.toUpperCase();
     };
 
     const getTransmissionTypeLabel = (value) => {
@@ -216,19 +220,18 @@ const VehicleListScreen = () => {
     const renderAdminVehicleItem = ({ item }) => {
         const isExpanded = expandedCardId === item.Id;
         
-        // Define action icons based on whether the vehicle is deleted
         const actionIcons = item.IsDeleted ? [
-            { name: 'restore', color: '#9C27B0', bg: 'rgba(156,39,176,0.15)', mode: 'restore' }
+            { name: 'restore', color: colors.purple, bg: colors.purpleBg, mode: 'restore' }
         ] : [
-            { name: 'eye', color: '#2196F3', bg: 'rgba(33,150,243,0.15)', mode: 'view' },
-            { name: 'pencil', color: '#FFC107', bg: 'rgba(255,193,7,0.15)', mode: 'edit' },
-            { name: 'currency-try', color: '#4CAF50', bg: 'rgba(76,175,80,0.15)', mode: 'price' },
-            { name: 'wrench', color: '#1976d2', bg: 'rgba(25,118,210,0.15)', mode: 'unavailable' },
-            { name: 'delete', color: '#F44336', bg: 'rgba(244,67,54,0.15)', mode: 'delete' },
+            { name: 'eye', color: colors.primary, bg: colors.primaryBg, mode: 'view' },
+            { name: 'pencil', color: colors.warning, bg: colors.warningBg, mode: 'edit' },
+            { name: 'currency-try', color: colors.success, bg: colors.successBg, mode: 'price' },
+            { name: 'wrench', color: colors.info, bg: colors.infoBg, mode: 'unavailable' },
+            { name: 'delete', color: colors.error, bg: colors.errorBg, mode: 'delete' },
         ];
 
         return (
-            <View style={styles.cardGridContainer}>
+            <View style={[styles.cardGridContainer, { backgroundColor: colors.card, shadowColor: colors.shadow }] }>
                 <View style={styles.cardGridRowFixed}>
                     <View style={styles.cardLeftColFixed}>
                         <Image
@@ -236,18 +239,18 @@ const VehicleListScreen = () => {
                             style={styles.cardPhotoRoundedFixed}
                         />
                         {item.IsDeleted && (
-                            <View style={styles.deletedBadgeTopRight}>
-                                <Text style={styles.deletedBadgeText}>Silinmiş</Text>
+                            <View style={[styles.deletedBadgeTopRight, { backgroundColor: colors.purple }] }>
+                                <Text style={[styles.deletedBadgeText, { color: colors.white }]}>Silinmiş</Text>
                             </View>
                         )}
                         <View style={styles.badgeColumnBigCenteredFixed}>
                             {!item.IsDeleted && (
                                 <>
-                                    <View style={[styles.statusBadgeBig, item.IsAvailable ? styles.availableBadge : styles.passiveBadge]}>
+                                    <View style={[styles.statusBadgeBig, item.IsAvailable ? { backgroundColor: colors.success } : { backgroundColor: colors.passive }] }>
                                         <Text style={styles.statusBadgeTextBig}>{item.IsAvailable ? 'Aktif' : 'Pasif'}</Text>
                                     </View>
                                     {item.IsRented && (
-                                        <View style={[styles.statusBadgeBig, styles.rentedBadgeModern]}>
+                                        <View style={[styles.statusBadgeBig, { backgroundColor: colors.error }] }>
                                             <Text style={styles.statusBadgeTextBig}>Kirada</Text>
                                         </View>
                                     )}
@@ -257,44 +260,56 @@ const VehicleListScreen = () => {
                     </View>
                     <View style={styles.cardRightColFixed}>
                         <View style={styles.infoRowModernGridFixed}>
-                            <Text style={{ fontWeight: 'bold', fontSize: 17, color: '#222', marginBottom: 2 }}>{item.Brand} {item.Model}</Text>
+                            <Text style={{ fontWeight: 'bold', fontSize: 17, color: colors.primary, marginBottom: 2 }}>
+                                {item.Brand} {item.Model} <Text style={{ color: colors.textSecondary, fontWeight: 'normal' }}>({item.ModelYear})</Text>
+                            </Text>
                         </View>
                         <View style={styles.infoRowModernGridFixed}>
-                            <IconFA name="gas-pump" size={18} color="#1976d2" style={styles.infoIconModern} />
-                            <Text style={styles.infoTextModernGridFixed}>{getFuelTypeLabel(item.FuelType)}</Text>
+                            <IconFA name="gas-pump" size={18} color={colors.primary} style={styles.infoIconModern} />
+                            <Text style={[styles.infoTextModernGridFixed, { color: colors.textSecondary }]}>{getFuelTypeLabel(item.FuelType)}</Text>
                         </View>
                         <View style={styles.infoRowModernGridFixed}>
-                            <IconFA name="cogs" size={18} color="#1976d2" style={styles.infoIconModern} />
-                            <Text style={styles.infoTextModernGridFixed}>{getTransmissionTypeLabel(item.TransmissionType)}</Text>
+                            <IconFA name="cogs" size={18} color={colors.primary} style={styles.infoIconModern} />
+                            <Text style={[styles.infoTextModernGridFixed, { color: colors.textSecondary }]}>{getTransmissionTypeLabel(item.TransmissionType)}</Text>
                         </View>
                         <View style={styles.infoRowModernGridFixed}>
-                            <IconFA name="id-card" size={18} color="#1976d2" style={styles.infoIconModern} />
-                            <Text style={styles.infoTextModernGridFixed}>{formatPlate(item.NumberPlate)}</Text>
+                            <IconFA name="id-card" size={18} color={colors.primary} style={styles.infoIconModern} />
+                            <Text style={[styles.infoTextModernGridFixed, { color: colors.primary }]}>{formatPlate(item.NumberPlate)}</Text>
                         </View>
                         <View style={styles.infoRowModernGridFixed}>
-                            <IconFA name="car-side" size={18} color="#1976d2" style={styles.infoIconModern} />
-                            <Text style={styles.infoTextModernGridFixed}>{item.Category}</Text>
+                            <IconFA name="car-side" size={18} color={colors.primary} style={styles.infoIconModern} />
+                            <Text style={[styles.infoTextModernGridFixed, { color: colors.textSecondary }]}>{item.Category}</Text>
                         </View>
                         <View style={styles.infoRowModernGridFixed}>
-                            <IconFA name="money-bill-wave" size={18} color="#1976d2" style={styles.infoIconModern} />
-                            <Text style={[styles.infoTextModernGridFixed, { color: '#1976d2', fontWeight: 'bold' }]}>{item.DailyPrice} TL / Gün</Text>
+                            <IconFA name="money-bill-wave" size={18} color={colors.success} style={styles.infoIconModern} />
+                            <Text style={[styles.infoTextModernGridFixed, { color: colors.success, fontWeight: 'bold' }]}>{item.DailyPrice} TL / Gün</Text>
                         </View>
                     </View>
                 </View>
                 <View style={styles.cardActionsAreaFixed}>
                     <TouchableOpacity
-                        style={styles.fullWidthActionBtnGridFixed}
+                        style={{
+                            width: '96%',
+                            alignSelf: 'center',
+                            height: 42,
+                            borderRadius: 24,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginTop: 2,
+                            marginBottom: 2,
+                            backgroundColor: 'rgba(33,150,243,0.1)',
+                        }}
                         onPress={() => setExpandedCardId(isExpanded ? null : item.Id)}
                         activeOpacity={0.7}
                     >
-                        <Text style={styles.fullWidthActionBtnTextGridFixed}>
+                        <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 17 }}>
                             {item.IsDeleted ? 'Geri Yükle' : 'İşlemler'}
                         </Text>
                         <Icon
                             name={isExpanded ? 'chevron-up' : 'chevron-down'}
                             size={24}
-                            color="#000000"
-                            fontWeight='bold'
+                            color={colors.primary}
                             style={{ marginLeft: 6 }}
                         />
                     </TouchableOpacity>
@@ -303,7 +318,21 @@ const VehicleListScreen = () => {
                             {actionIcons.map((icon, idx) => (
                                 <TouchableOpacity
                                     key={icon.name}
-                                    style={[styles.actionIconEllipseFixed, { backgroundColor: icon.bg }]}
+                                    style={{
+                                        width: 54,
+                                        height: 54,
+                                        borderRadius: 27,
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        backgroundColor:
+                                            icon.color === colors.primary ? 'rgba(33,150,243,0.1)'
+                                            : icon.color === colors.warning ? 'rgba(255,193,7,0.1)'
+                                            : icon.color === colors.success ? 'rgba(67,160,71,0.1)'
+                                            : icon.color === colors.info ? 'rgba(3,169,244,0.1)'
+                                            : icon.color === colors.error ? 'rgba(244,67,54,0.1)'
+                                            : icon.color === colors.purple ? 'rgba(156,39,176,0.1)'
+                                            : 'rgba(33,150,243,0.1)',
+                                    }}
                                     onPress={() => {
                                         if (icon.mode === 'view') {
                                             navigation.navigate('VehicleDetails', { vehicleId: item.Id });
@@ -336,109 +365,111 @@ const VehicleListScreen = () => {
             onRequestClose={closeDrawer}
         >
             <TouchableOpacity style={styles.drawerOverlay} onPress={closeDrawer} activeOpacity={1}>
-                <Animated.View style={styles.drawerContainer}>
+                <Animated.View style={[
+                    styles.drawerContainer,
+                    {
+                        backgroundColor: colors.card,
+                        shadowColor: colors.shadow,
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                        borderTopLeftRadius: 18,
+                        borderBottomLeftRadius: 18,
+                        elevation: 8,
+                    }
+                ]}>
                     <View style={styles.drawerHeader}>
-                        <Text style={styles.drawerTitle}>{drawerType === 'filter' ? 'Filtrele' : 'Sırala'}</Text>
+                        <Text style={{
+                            fontSize: 22,
+                            fontWeight: 'bold',
+                            color: colors.primary,
+                            letterSpacing: 0.5,
+                        }}>{drawerType === 'filter' ? 'Filtrele' : 'Sırala'}</Text>
                         <TouchableOpacity onPress={closeDrawer} hitSlop={{top:10, bottom:10, left:10, right:10}}>
-                            <Icon name="close" size={26} color="#1976d2" />
+                            <Icon name="close" size={26} color={colors.primary} />
                         </TouchableOpacity>
                     </View>
                     <View style={styles.drawerContent}>
                         {drawerType === 'filter' ? (
                             <>
-                                <Text style={styles.drawerLabel}>Yakıt Tipi</Text>
-                                <View style={styles.pickerBox}>
-                                    <Picker
-                                        selectedValue={tempFilters.fuelType}
-                                        onValueChange={value => setTempFilters(f => ({ ...f, fuelType: value }))}
-                                        style={styles.picker}
-                                        mode="dropdown"
-                                    >
-                                        <Picker.Item label="Tümü" value={null} />
-                                        {FuelTypeOptions.map((type, i) => (
-                                            <Picker.Item key={i} label={type.label} value={type.value} />
-                                        ))}
-                                    </Picker>
-                                </View>
-                                <Text style={styles.drawerLabel}>Vites Tipi</Text>
-                                <View style={styles.pickerBox}>
-                                    <Picker
-                                        selectedValue={tempFilters.transmissionType}
-                                        onValueChange={value => setTempFilters(f => ({ ...f, transmissionType: value }))}
-                                        style={styles.picker}
-                                        mode="dropdown"
-                                    >
-                                        <Picker.Item label="Tümü" value={null} />
-                                        {TransmissionTypeOptions.map((type, i) => (
-                                            <Picker.Item key={i} label={type.label} value={type.value} />
-                                        ))}
-                                    </Picker>
-                                </View>
+                                <CustomDropdown
+                                    label="Yakıt Tipi"
+                                    value={tempFilters.fuelType}
+                                    options={[{ label: 'Tümü', value: null }, ...FuelTypeOptions]}
+                                    onValueChange={value => setTempFilters(f => ({ ...f, fuelType: value }))}
+                                    placeholder="Tümü"
+                                />
+                                <CustomDropdown
+                                    label="Vites Tipi"
+                                    value={tempFilters.transmissionType}
+                                    options={[{ label: 'Tümü', value: null }, ...TransmissionTypeOptions]}
+                                    onValueChange={value => setTempFilters(f => ({ ...f, transmissionType: value }))}
+                                    placeholder="Tümü"
+                                />
                                 {role === 'Admin' && (
                                     <>
-                                        <Text style={styles.drawerLabel}>Müsaitlik Durumu</Text>
-                                        <View style={styles.pickerBox}>
-                                            <Picker
-                                                selectedValue={tempFilters.isAvailable}
-                                                onValueChange={value => setTempFilters(f => ({ ...f, isAvailable: value }))}
-                                                style={styles.picker}
-                                                mode="dropdown"
-                                            >
-                                                <Picker.Item label="Tümü" value={null} />
-                                                <Picker.Item label="Aktif" value={true} />
-                                                <Picker.Item label="Pasif" value={false} />
-                                            </Picker>
-                                        </View>
-                                        <Text style={styles.drawerLabel}>Kiralama Durumu</Text>
-                                        <View style={styles.pickerBox}>
-                                            <Picker
-                                                selectedValue={tempFilters.isRented}
-                                                onValueChange={value => setTempFilters(f => ({ ...f, isRented: value }))}
-                                                style={styles.picker}
-                                                mode="dropdown"
-                                            >
-                                                <Picker.Item label="Tümü" value={null} />
-                                                <Picker.Item label="Kirada" value={true} />
-                                                <Picker.Item label="Kirada Değil" value={false} />
-                                            </Picker>
-                                        </View>
-                                        <Text style={styles.drawerLabel}>Silinme Durumu</Text>
-                                        <View style={styles.pickerBox}>
-                                            <Picker
-                                                selectedValue={tempFilters.isDeleted}
-                                                onValueChange={value => setTempFilters(f => ({ ...f, isDeleted: value }))}
-                                                style={styles.picker}
-                                                mode="dropdown"
-                                            >
-                                                <Picker.Item label="Tümü" value={null} />
-                                                <Picker.Item label="Silinmiş" value={true} />
-                                                <Picker.Item label="Silinmemiş" value={false} />
-                                            </Picker>
-                                        </View>
+                                        <CustomDropdown
+                                            label="Müsaitlik Durumu"
+                                            value={tempFilters.isAvailable}
+                                            options={[
+                                                { label: 'Tümü', value: null },
+                                                { label: 'Aktif', value: true },
+                                                { label: 'Pasif', value: false },
+                                            ]}
+                                            onValueChange={value => setTempFilters(f => ({ ...f, isAvailable: value }))}
+                                            placeholder="Tümü"
+                                        />
+                                        <CustomDropdown
+                                            label="Kiralama Durumu"
+                                            value={tempFilters.isRented}
+                                            options={[
+                                                { label: 'Tümü', value: null },
+                                                { label: 'Kirada', value: true },
+                                                { label: 'Kirada Değil', value: false },
+                                            ]}
+                                            onValueChange={value => setTempFilters(f => ({ ...f, isRented: value }))}
+                                            placeholder="Tümü"
+                                        />
+                                        <CustomDropdown
+                                            label="Silinme Durumu"
+                                            value={tempFilters.isDeleted}
+                                            options={[
+                                                { label: 'Tümü', value: null },
+                                                { label: 'Silinmiş', value: true },
+                                                { label: 'Silinmemiş', value: false },
+                                            ]}
+                                            onValueChange={value => setTempFilters(f => ({ ...f, isDeleted: value }))}
+                                            placeholder="Tümü"
+                                        />
                                     </>
                                 )}
                             </>
                         ) : (
-                            <>
-                                <Text style={styles.drawerLabel}>Sıralama</Text>
-                                <View style={styles.pickerBox}>
-                                    <Picker
-                                        selectedValue={tempFilters.sort}
-                                        onValueChange={value => setTempFilters(f => ({ ...f, sort: value }))}
-                                        style={styles.picker}
-                                        mode="dropdown"
-                                    >
-                                        <Picker.Item label="Sıralama Yok" value={null} />
-                                        {sortOptions.map((opt, i) => (
-                                            <Picker.Item key={i} label={opt.label} value={opt.value} />
-                                        ))}
-                                    </Picker>
-                                </View>
-                            </>
+                            <CustomDropdown
+                                label="Sıralama"
+                                value={tempFilters.sort}
+                                options={[
+                                    { label: 'Sıralama Yok', value: null },
+                                    ...sortOptions,
+                                ]}
+                                onValueChange={value => setTempFilters(f => ({ ...f, sort: value }))}
+                                placeholder="Sıralama Yok"
+                            />
                         )}
                     </View>
-                    <TouchableOpacity style={styles.applyBtn} onPress={handleDrawerApply}>
-                        <Text style={styles.applyBtnText}>Uygula</Text>
+                    <TouchableOpacity style={{
+                        borderRadius: 8,
+                        paddingVertical: 14,
+                        alignItems: 'center',
+                        marginTop: 18,
+                        width: '100%',
+                        alignSelf: 'center',
+                        backgroundColor: colors.primary,
+                        shadowColor: colors.shadow,
+                        shadowOpacity: 0.12,
+                        shadowRadius: 4,
+                        elevation: 2,
+                    }} onPress={handleDrawerApply}>
+                        <Text style={{ fontWeight: 'bold', fontSize: 15, color: colors.white }}>Uygula</Text>
                     </TouchableOpacity>
                 </Animated.View>
             </TouchableOpacity>
@@ -448,47 +479,107 @@ const VehicleListScreen = () => {
     return (
         <View style={[
             styles.container,
+            { backgroundColor: colors.background },
             role === 'Admin' && { paddingTop: 0}
         ]}>
+            {/* Gradient Header */}
+            <LinearGradient
+                colors={[colors.headerGradientStart, colors.headerGradientEnd]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.gradientHeader}
+            >
+                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                    <Icon name="car" size={28} color="#fff" style={{ marginRight: 10 }} />
+                    <Text style={[styles.gradientHeaderTitle, { textAlign: 'center' }]}>Araçlar</Text>
+                </View>
+            </LinearGradient>
             {role === 'Admin' && (
                 <>
                     <TouchableOpacity
-                        style={styles.fab}
+                        style={[styles.fab, { backgroundColor: colors.primary }]}
                         onPress={() => navigation.navigate('ManageVehicles', { mode: 'Add' })}
                         activeOpacity={0.85}
                     >
-                        <Icon name="plus" size={32} color="#fff" />
+                        <Icon name="plus" size={28} color="#fff" />
                     </TouchableOpacity>
                 </>
             )}
-            
-            <View style={styles.searchContainer}>
-                <Icon name="magnify" size={24} color="#666" style={styles.searchIcon} />
+            {/* Add top padding to content to avoid overlap with header */}
+            <View style={{ height: 100 }} />
+            <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                borderRadius: 10,
+                borderWidth: 1,
+                paddingHorizontal: 12,
+                marginBottom: 12,
+                marginTop: 18,
+                alignSelf: 'center',
+                width: '92%',
+                height: 44,
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+            }}>
+                <Icon name="magnify" size={24} color={colors.textSecondary} style={styles.searchIcon} />
                 <TextInput
-                    style={styles.searchInput}
+                    style={{ flex: 1, height: '100%', fontSize: 16, color: colors.text }}
                     placeholder="Araç ara..."
+                    placeholderTextColor={colors.textSecondary}
                     value={filters.search}
                     onChangeText={(text) => setFilters(f => ({ ...f, search: text }))}
                 />
             </View>
 
             <View style={styles.filterButtonsContainer}>
-                <TouchableOpacity style={styles.drawerBtn} onPress={() => openDrawer('filter')}>
-                    <Text style={styles.drawerBtnText}>Filtrele</Text>
+                <TouchableOpacity
+                    style={{
+                        flex: 1,
+                        padding: 12,
+                        borderRadius: 8,
+                        marginHorizontal: 4,
+                        alignItems: 'center',
+                        backgroundColor: colors.primary,
+                        borderWidth: 1,
+                        borderColor: colors.primary,
+                        shadowColor: colors.shadow,
+                        shadowOpacity: 0.08,
+                        shadowRadius: 4,
+                        elevation: 2,
+                    }}
+                    onPress={() => openDrawer('filter')}
+                >
+                    <Text style={{ color: colors.white, fontWeight: 'bold', fontSize: 16 }}>Filtrele</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.drawerBtn} onPress={() => openDrawer('sort')}>
-                    <Text style={styles.drawerBtnText}>Sırala</Text>
+                <TouchableOpacity
+                    style={{
+                        flex: 1,
+                        padding: 12,
+                        borderRadius: 8,
+                        marginHorizontal: 4,
+                        alignItems: 'center',
+                        backgroundColor: colors.card,
+                        borderWidth: 1,
+                        borderColor: colors.primary,
+                        shadowColor: colors.shadow,
+                        shadowOpacity: 0.08,
+                        shadowRadius: 4,
+                        elevation: 2,
+                    }}
+                    onPress={() => openDrawer('sort')}
+                >
+                    <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 16 }}>Sırala</Text>
                 </TouchableOpacity>
             </View>
 
             {renderFilterDrawer()}
 
             {loading ? (
-                <ActivityIndicator size="large" color="#2196F3" style={{ marginTop: 24 }} />
+                <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 24 }} />
             ) : error ? (
-                <Text style={styles.errorText}>{error}</Text>
+                <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
             ) : vehicles.length === 0 ? (
-                <Text style={styles.emptyText}>Kriterlere uygun araç bulunamadı.</Text>
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Kriterlere uygun araç bulunamadı.</Text>
             ) : (
                 <FlatList
                     data={vehicles}
@@ -507,15 +598,33 @@ const VehicleListScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
+    },
+    gradientHeader: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 100,
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        paddingBottom: 18,
+        paddingHorizontal: 20,
+        zIndex: 10,
+        elevation: 8,
+        borderBottomLeftRadius: 24,
+        borderBottomRightRadius: 24,
+    },
+    gradientHeaderTitle: {
+        color: '#fff',
+        fontSize: 24,
+        fontWeight: 'bold',
+        letterSpacing: 1,
     },
     filterContainer: {
-        backgroundColor: '#fff',
         borderRadius: 16,
         margin: 16,
         padding: 16,
         elevation: 3,
-        shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.10,
         shadowRadius: 4,
@@ -523,10 +632,8 @@ const styles = StyleSheet.create({
     searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#fff',
         borderRadius: 10,
         borderWidth: 1,
-        borderColor: '#e0e0e0',
         paddingHorizontal: 12,
         marginBottom: 12,
         height: 50,
@@ -538,32 +645,26 @@ const styles = StyleSheet.create({
         flex: 1,
         height: '100%',
         fontSize: 16,
-        color: '#222',
     },
     pickerWrapper: {
         flex: 1,
         marginHorizontal: 4,
-        backgroundColor: '#fff',
         borderRadius: 10,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: '#e0e0e0',
     },
     picker: {
         height: 50,
         width: '100%',
-        color: '#222',
     },
     listContainer: {
         padding: 16,
     },
     vehicleCard: {
-        backgroundColor: 'white',
         borderRadius: 16,
         marginBottom: 18,
         overflow: 'hidden',
         elevation: 3,
-        shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.12,
         shadowRadius: 4,
@@ -572,7 +673,6 @@ const styles = StyleSheet.create({
         width: '100%',
         height: 180,
         resizeMode: 'cover',
-        backgroundColor: '#eaeaea',
     },
     vehicleInfo: {
         padding: 16,
@@ -580,12 +680,10 @@ const styles = StyleSheet.create({
     vehicleTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#333',
         marginBottom: 4,
     },
     vehiclePrice: {
         fontSize: 16,
-        color: '#2196F3',
         fontWeight: 'bold',
         marginBottom: 8,
     },
@@ -596,8 +694,6 @@ const styles = StyleSheet.create({
     },
     vehicleDetail: {
         fontSize: 14,
-        color: '#666',
-        backgroundColor: '#f0f0f0',
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 4,
@@ -605,13 +701,11 @@ const styles = StyleSheet.create({
         marginBottom: 4,
     },
     errorText: {
-        color: '#F44336',
         textAlign: 'center',
         marginTop: 24,
         fontSize: 16,
     },
     emptyText: {
-        color: '#888',
         textAlign: 'center',
         marginTop: 32,
         fontSize: 16,
@@ -629,7 +723,6 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         zIndex: 10,
-        backgroundColor: '#1976d2',
         paddingVertical: 10,
         paddingHorizontal: 16,
         flexDirection: 'row',
@@ -639,13 +732,11 @@ const styles = StyleSheet.create({
     addButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#43a047',
         paddingVertical: 8,
         paddingHorizontal: 18,
         borderRadius: 20,
     },
     addButtonText: {
-        color: '#fff',
         fontWeight: 'bold',
         fontSize: 16,
         marginLeft: 8,
@@ -665,22 +756,17 @@ const styles = StyleSheet.create({
     statusBadgeText: {
         fontSize: 13,
         fontWeight: 'bold',
-        color: '#fff',
     },
     rentedBadge: {
-        backgroundColor: '#F44336',
     },
     passiveBadge: {
-        backgroundColor: '#9E9E9E',
     },
     vehicleCardHorizontal: {
         flexDirection: 'row',
-        backgroundColor: 'white',
         borderRadius: 16,
         marginBottom: 18,
         overflow: 'hidden',
         elevation: 3,
-        shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.12,
         shadowRadius: 4,
@@ -690,7 +776,6 @@ const styles = StyleSheet.create({
         height: 120,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#eaeaea',
     },
     vehicleImageHorizontal: {
         width: 110,
@@ -705,12 +790,10 @@ const styles = StyleSheet.create({
     },
     vehicleDetailHorizontal: {
         fontSize: 14,
-        color: '#666',
         marginBottom: 2,
     },
     vehiclePriceHorizontal: {
         fontSize: 16,
-        color: '#2196F3',
         fontWeight: 'bold',
         marginVertical: 6,
     },
@@ -718,14 +801,12 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         alignSelf: 'flex-start',
-        backgroundColor: '#e3f2fd',
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 16,
         marginTop: 6,
     },
     expandButtonText: {
-        color: '#1976d2',
         fontWeight: 'bold',
         fontSize: 15,
         marginRight: 4,
@@ -741,13 +822,10 @@ const styles = StyleSheet.create({
         marginLeft: 8,
     },
     availableText: {
-        color: '#43a047',
     },
     passiveText: {
-        color: '#9E9E9E',
     },
     rentedText: {
-        color: '#F44336',
         fontWeight: 'bold',
         fontSize: 13,
         marginLeft: 8,
@@ -766,20 +844,16 @@ const styles = StyleSheet.create({
         marginHorizontal: 2,
     },
     statusBadgeTextModern: {
-        color: '#fff',
         fontWeight: 'bold',
         fontSize: 12,
     },
     availableBadge: {
-        backgroundColor: '#43a047',
         borderRadius: 20,
     },
     passiveBadge: {
-        backgroundColor: '#9E9E9E',
         borderRadius: 20,
     },
     rentedBadgeModern: {
-        backgroundColor: '#F44336',
         borderRadius: 20,
     },
     vehicleInfoModern: {
@@ -797,25 +871,21 @@ const styles = StyleSheet.create({
     },
     infoTextModern: {
         fontSize: 14,
-        color: '#444',
     },
     vehiclePriceModern: {
         fontSize: 15,
-        color: '#2196F3',
         fontWeight: 'bold',
     },
     expandButtonModern: {
         flexDirection: 'row',
         alignItems: 'center',
         alignSelf: 'flex-end',
-        backgroundColor: '#e3f2fd',
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 16,
         marginTop: 8,
     },
     expandButtonTextModern: {
-        color: '#1976d2',
         fontWeight: 'bold',
         fontSize: 15,
         marginRight: 4,
@@ -833,29 +903,24 @@ const styles = StyleSheet.create({
         marginVertical: 2,
     },
     statusBadgeTextModernBig: {
-        color: '#fff',
         fontWeight: 'bold',
         fontSize: 15,
     },
     vehicleTitleBig: {
         fontSize: 19,
         fontWeight: 'bold',
-        color: '#222',
         marginBottom: 2,
     },
     infoTextModernBig: {
         fontSize: 16,
-        color: '#222',
         fontWeight: 'bold',
     },
     vehiclePriceModernBig: {
         fontSize: 17,
-        color: '#1976d2',
         fontWeight: 'bold',
     },
     plateText: {
         fontSize: 16,
-        color: '#1976d2',
         fontWeight: 'bold',
         letterSpacing: 2,
     },
@@ -866,7 +931,6 @@ const styles = StyleSheet.create({
         width: 64,
         height: 64,
         borderRadius: 32,
-        backgroundColor: '#43a047',
         justifyContent: 'center',
         alignItems: 'center',
         elevation: 6,
@@ -888,14 +952,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     statusBadgeTextSmall: {
-        color: '#fff',
         fontWeight: 'bold',
         fontSize: 13,
     },
     fullWidthActionBtn: {
         width: '100%',
         height: 30,
-        backgroundColor: '#e3f2fd',
         borderRadius: 12,
         flexDirection: 'row',
         alignItems: 'center',
@@ -903,7 +965,6 @@ const styles = StyleSheet.create({
         marginTop: 10,
     },
     fullWidthActionBtnText: {
-        color: '#1976d2',
         fontWeight: 'bold',
         fontSize: 16,
         textAlign: 'center',
@@ -956,13 +1017,11 @@ const styles = StyleSheet.create({
         marginBottom: 0,
     },
     cardGridContainer: {
-        backgroundColor: '#fff',
         borderRadius: 18,
         marginBottom: 10,
         marginHorizontal: 8,
         padding: 0,
         elevation: 3,
-        shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.10,
         shadowRadius: 4,
@@ -1003,7 +1062,6 @@ const styles = StyleSheet.create({
     },
     infoTextModernGridFixed: {
         fontSize: 15,
-        color: '#222',
         fontWeight: 'bold',
         marginLeft: 8,
     },
@@ -1017,7 +1075,6 @@ const styles = StyleSheet.create({
         width: '96%',
         alignSelf: 'center',
         height: 42,
-        backgroundColor: 'rgba(77, 208, 225, 0.1)',
         borderRadius: 14,
         flexDirection: 'row',
         alignItems: 'center',
@@ -1026,7 +1083,6 @@ const styles = StyleSheet.create({
         marginBottom: 2,
     },
     fullWidthActionBtnTextGridFixed: {
-        color: '#222',
         fontWeight: 'bold',
         fontSize: 17,
         textAlign: 'center',
@@ -1047,7 +1103,6 @@ const styles = StyleSheet.create({
     vehicleBrandModelText: {
         fontSize: 17,
         fontWeight: 'bold',
-        color: '#1976d2',
         marginBottom: 2,
     },
     filterRow: {
@@ -1063,12 +1118,10 @@ const styles = StyleSheet.create({
     },
     drawerContainer: {
         width: DRAWER_WIDTH,
-        backgroundColor: '#fafbfc',
         height: '100%',
         paddingTop: 0,
         paddingHorizontal: 20,
         paddingBottom: 20,
-        shadowColor: '#000',
         shadowOpacity: 0.2,
         shadowRadius: 8,
         elevation: 8,
@@ -1081,13 +1134,11 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingVertical: 18,
         borderBottomWidth: 1,
-        borderColor: '#e0e0e0',
         marginBottom: 10,
     },
     drawerTitle: {
         fontSize: 22,
         fontWeight: 'bold',
-        color: '#1976d2',
     },
     drawerContent: {
         flex: 1,
@@ -1095,72 +1146,23 @@ const styles = StyleSheet.create({
     drawerLabel: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#444',
         marginTop: 18,
         marginBottom: 4,
     },
     pickerBox: {
-        backgroundColor: '#fff',
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: '#e0e0e0',
         marginBottom: 12,
         overflow: 'hidden',
         elevation: 1,
         height: 48,
         justifyContent: 'center',
     },
-    applyBtn: {
-        backgroundColor: '#1976d2',
-        borderRadius: 8,
-        paddingVertical: 14,
-        alignItems: 'center',
-        marginTop: 18,
-        width: '100%',
-        alignSelf: 'center',
-    },
-    applyBtnText: { 
-        color: '#fff', 
-        fontWeight: 'bold', 
-        fontSize: 15 
-    },
     filterButtonsContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         paddingHorizontal: 16,
         marginBottom: 16,
-    },
-    drawerBtn: {
-        flex: 1,
-        backgroundColor: '#e3f2fd',
-        padding: 12,
-        borderRadius: 8,
-        marginHorizontal: 4,
-        alignItems: 'center',
-    },
-    drawerBtnText: {
-        color: '#1976d2',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    deletedBadge: {
-        backgroundColor: '#9C27B0',
-        borderRadius: 20,
-    },
-    deletedBadgeTopRight: {
-        position: 'absolute',
-        top: 8,
-        right: 8,
-        backgroundColor: '#9C27B0',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 12,
-        zIndex: 2,
-    },
-    deletedBadgeText: {
-        color: '#fff',
-        fontWeight: 'bold',
-        fontSize: 13,
     },
 });
 
