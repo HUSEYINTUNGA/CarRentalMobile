@@ -19,7 +19,7 @@ const RentalRequestsScreen = () => {
   const [rejectReason, setRejectReason] = useState('');
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   const fetchRequests = async () => {
     setLoading(true);
@@ -215,11 +215,18 @@ const RentalRequestsScreen = () => {
               autoCorrect={false}
             />
             <View style={styles.buttonRow}>
-              <TouchableOpacity style={[styles.rejectBtn, { backgroundColor: colors.error }]} onPress={handleReject} disabled={actionLoading}>
-                <Text style={[styles.btnText, { color: colors.white }]}>Gönder</Text>
+              <TouchableOpacity
+                style={[styles.rentButton, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
+                onPress={handleReject}
+                disabled={actionLoading}
+              >
+                <Text style={[styles.rentButtonText, { color: isDark ? '#111' : '#fff' }]}>Gönder</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.cancelBtn, { backgroundColor: colors.info }]} onPress={() => { setModalVisible(false); setRejectReason(''); setSelectedRequest(null); }}>
-                <Text style={[styles.btnText, { color: colors.white }]}>İptal</Text>
+              <TouchableOpacity
+                style={[styles.rentButton, { backgroundColor: colors.error, shadowColor: colors.error }]}
+                onPress={() => { setModalVisible(false); setRejectReason(''); setSelectedRequest(null); }}
+              >
+                <Text style={[styles.rentButtonText, { color: isDark ? '#111' : '#fff' }]}>İptal</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -324,6 +331,22 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.6,
+  },
+  rentButton: {
+    padding: 10,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 8,
+    width: 100,
+    elevation: 3,
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  rentButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
 });
 

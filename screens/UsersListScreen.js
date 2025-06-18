@@ -52,7 +52,7 @@ const UsersListScreen = () => {
   const [adminPassword, setAdminPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
 
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   useEffect(() => {
     const params = {};
@@ -410,18 +410,18 @@ const UsersListScreen = () => {
             {passwordError ? <Text style={[styles.passwordError, { color: colors.error }]}>{passwordError}</Text> : null}
             <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 16 }}>
               <TouchableOpacity
-                style={[styles.passwordBtn, { backgroundColor: colors.altCard, marginRight: 10 }]}
-                onPress={() => { setPasswordModalVisible(false); setRoleSwitchValue(!pendingRoleValue); }}
-                disabled={roleSwitchLoading}
-              >
-                <Text style={{ color: colors.text, fontWeight: 'bold' }}>İptal</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.passwordBtn, { backgroundColor: colors.primary }]}
+                style={[styles.rentButton, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
                 onPress={handlePasswordConfirm}
                 disabled={roleSwitchLoading || !adminPassword}
               >
-                <Text style={{ color: colors.white, fontWeight: 'bold' }}>{roleSwitchLoading ? 'Onaylanıyor...' : 'Onayla'}</Text>
+                <Text style={[styles.rentButtonText, { color: isDark ? '#111' : '#fff' }]}>{roleSwitchLoading ? 'Onaylanıyor...' : 'Onayla'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.rentButton, { backgroundColor: colors.error, shadowColor: colors.error, marginLeft: 8 }]}
+                onPress={() => { setPasswordModalVisible(false); setRoleSwitchValue(!pendingRoleValue); }}
+                disabled={roleSwitchLoading}
+              >
+                <Text style={[styles.rentButtonText, { color: isDark ? '#111' : '#fff' }]}>İptal</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -655,13 +655,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     marginBottom: 6,
   },
-  passwordBtn: {
-    borderRadius: 8,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    alignItems: 'center',
-    minWidth: 80,
-  },
   passwordError: {
     fontSize: 13,
     marginTop: 2,
@@ -670,6 +663,22 @@ const styles = StyleSheet.create({
   unverifiedText: {
     fontWeight: 'bold',
     fontSize: 14,
+  },
+  rentButton: {
+    padding: 10,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 8,
+    width: 100,
+    elevation: 3,
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  rentButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
 });
 

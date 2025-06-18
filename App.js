@@ -7,7 +7,7 @@ import SigninScreen from './screens/SigninScreen';
 import SignupScreen from './screens/SignupScreen';
 import VerifyAccountScreen from './screens/VerifyAccountScreen';
 import HomeScreen from './screens/HomeScreen';
-import { StatusBar, ActivityIndicator, View} from 'react-native';
+import { StatusBar, ActivityIndicator, View, Modal, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
 import ResetPasswordScreen from './screens/ResetPasswordScreen';
@@ -30,7 +30,6 @@ import { decode as atob, encode as btoa } from 'base-64';
 import * as jwtDecode from 'jwt-decode';
 import { useAuth } from './hooks/useAuth';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { TouchableOpacity } from 'react-native';
 import { navigationRef} from './RootNavigation';
 import ChangePasswordScreen from './screens/ChangePasswordScreen';
 import { ThemeProvider, useTheme } from './theme/ThemeProvider';
@@ -51,12 +50,22 @@ const TabNavigator = (props) => {
   const navigation = useNavigation();
   const route = useRoute();
   const role = route?.params?.role;
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
 
   const handleLogout = async () => {
+    setLogoutModalVisible(true);
+  };
+
+  const confirmLogout = async () => {
+    setLogoutModalVisible(false);
     await logout();
     setIsLoggedIn(false);
     setRole(null);
+  };
+
+  const cancelLogout = () => {
+    setLogoutModalVisible(false);
   };
 
   useEffect(() => {
@@ -68,183 +77,269 @@ const TabNavigator = (props) => {
   }, [role]);
 
   return (
-    <Tab.Navigator
-      screenOptions={{
-        tabBarActiveTintColor: colors.tabBarActive,
-        tabBarInactiveTintColor: colors.tabBarInactive,
-        tabBarStyle: {
-          backgroundColor: colors.tabBarBackground,
-          borderTopWidth: 1,
-          borderTopColor: colors.tabBarBorder,
-          paddingBottom: 5,
-          paddingTop: 5,
-          height: 60,
-        },
-        headerStyle: {
-          backgroundColor: '#fff',
-          elevation: 0,
-          shadowOpacity: 0,
-          borderBottomWidth: 1,
-          borderBottomColor: '#eee',
-        },
-        headerTitleStyle: {
-          fontWeight: 'bold',
-          color: '#333',
-        },
-      }}
-    >
-      {role === 'Admin' ? (
-        <>
-          <Tab.Screen
-            name="DashboardTab"
-            component={DashboardScreen}
-            options={{
-              title: 'Dashboard',
-              headerShown: false,
-              tabBarIcon: ({ color, size }) => (
-                <Icon name="home" size={size} color={color} />
-              ),
-            }}
-          />
-          <Tab.Screen
-            name="VehicleListTab"
-            component={VehicleListScreen}
-            options={{
-              title: 'Araçlar',
-              headerShown: false,
-              tabBarIcon: ({ color, size }) => (
-                <Icon name="directions-car" size={size} color={color} />
-              ),
-            }}
-          />
-          <Tab.Screen
-            name="RentalRequestsTab"
-            component={RentalRequestsScreen}
-            options={{
-              title: 'Kiralama İstekleri',
-              headerShown: false,
-              tabBarIcon: ({ color, size }) => (
-                <Icon name="list" size={size} color={color} />
-              ),
-            }}
-          />
-          <Tab.Screen
-            name="UsersListTab"
-            component={UsersListScreen}
-            options={{
-              title: 'Kullanıcılar',
-              headerShown: false,
-              tabBarIcon: ({ color, size }) => (
-                <Icon name="group" size={size} color={color} />
-              ),
-            }}
-          />
-          <Tab.Screen
-            name="ProfileTab"
-            component={ProfileScreen}
-            options={{
-              title: 'Profil',
-              headerShown: false,
-              tabBarIcon: ({ color, size }) => (
-                <Icon name="person" size={size} color={color} />
-              ),
-            }}
-          />
-          <Tab.Screen
-            name="LogoutTab"
-            component={View}
-            options={{
-              title: 'Çıkış',
-              tabBarIcon: ({ color, size }) => (
-                <Icon name="logout" size={size} color="#F44336" />
-              ),
-              tabBarButton: (props) => (
-                <TouchableOpacity
-                  {...props}
-                  onPress={handleLogout}
-                />
-              ),
-            }}
-          />
-        </>
-      ) : (
-        <>
-          <Tab.Screen
-            name="HomeTab"
-            component={HomeScreen}
-            options={{
-              title: 'Anasayfa',
-              tabBarIcon: ({ color, size }) => (
-                <Icon name="home" size={size} color={color} />
-              ),
-            }}
-          />
-          <Tab.Screen
-            name="VehicleListTab"
-            component={VehicleListScreen}
-            options={{
-              title: 'Araçlar',
-              headerShown: false,
-              tabBarIcon: ({ color, size }) => (
-                <Icon name="directions-car" size={size} color={color} />
-              ),
-            }}
-          />
-          <Tab.Screen
-            name="RentalHistoryTab"
-            component={RentalHistoriesScreen}
-            initialParams={{ type: 'history' }}
-            options={{
-              title: 'Geçmiş Kiralama İstekleriniz',
-              headerShown: false,
-              tabBarIcon: ({ color, size }) => (
-                <Icon name="history" size={size} color={color} />
-              ),
-            }}
-          />
-          <Tab.Screen
-            name="PendingRequestsTab"
-            component={RentalHistoriesScreen}
-            initialParams={{ type: 'pending' }}
-            options={{
-              title: 'Bekleyen Kiralama İstekleriniz',
-              tabBarIcon: ({ color, size }) => (
-                <Icon name="schedule" size={size} color={color} />
-              ),
-            }}
-          />
-          <Tab.Screen
-            name="ProfileTab"
-            component={ProfileScreen}
-            options={{
-              title: 'Profil',
-              headerShown: false,
-              tabBarIcon: ({ color, size }) => (
-                <Icon name="person" size={size} color={color} />
-              ),
-            }}
-          />
-          <Tab.Screen
-            name="LogoutTab"
-            component={View}
-            options={{
-              title: 'Çıkış',
-              tabBarIcon: ({ color, size }) => (
-                <Icon name="logout" size={size} color="#F44336" />
-              ),
-              tabBarButton: (props) => (
-                <TouchableOpacity
-                  {...props}
-                  onPress={handleLogout}
-                />
-              ),
-            }}
-          />
-        </>
-      )}
-    </Tab.Navigator>
+    <>
+      <Tab.Navigator
+        screenOptions={{
+          tabBarActiveTintColor: colors.tabBarActive,
+          tabBarInactiveTintColor: colors.tabBarInactive,
+          tabBarStyle: {
+            backgroundColor: colors.tabBarBackground,
+            borderTopWidth: 1,
+            borderTopColor: colors.tabBarBorder,
+            paddingBottom: 5,
+            paddingTop: 5,
+            height: 60,
+          },
+          headerStyle: {
+            backgroundColor: '#fff',
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 1,
+            borderBottomColor: '#eee',
+          },
+          headerTitleStyle: {
+            fontWeight: 'bold',
+            color: '#333',
+          },
+        }}
+      >
+        {role === 'Admin' ? (
+          <>
+            <Tab.Screen
+              name="DashboardTab"
+              component={DashboardScreen}
+              options={{
+                title: 'Dashboard',
+                headerShown: false,
+                tabBarIcon: ({ color, size }) => (
+                  <Icon name="home" size={size} color={color} />
+                ),
+              }}
+            />
+            <Tab.Screen
+              name="VehicleListTab"
+              component={VehicleListScreen}
+              options={{
+                title: 'Araçlar',
+                headerShown: false,
+                tabBarIcon: ({ color, size }) => (
+                  <Icon name="directions-car" size={size} color={color} />
+                ),
+              }}
+            />
+            <Tab.Screen
+              name="RentalRequestsTab"
+              component={RentalRequestsScreen}
+              options={{
+                title: 'Kiralama İstekleri',
+                headerShown: false,
+                tabBarIcon: ({ color, size }) => (
+                  <Icon name="list" size={size} color={color} />
+                ),
+              }}
+            />
+            <Tab.Screen
+              name="UsersListTab"
+              component={UsersListScreen}
+              options={{
+                title: 'Kullanıcılar',
+                headerShown: false,
+                tabBarIcon: ({ color, size }) => (
+                  <Icon name="group" size={size} color={color} />
+                ),
+              }}
+            />
+            <Tab.Screen
+              name="ProfileTab"
+              component={ProfileScreen}
+              options={{
+                title: 'Profil',
+                headerShown: false,
+                tabBarIcon: ({ color, size }) => (
+                  <Icon name="person" size={size} color={color} />
+                ),
+              }}
+            />
+            <Tab.Screen
+              name="LogoutTab"
+              component={View}
+              options={{
+                title: 'Çıkış',
+                tabBarIcon: ({ color, size }) => (
+                  <Icon name="logout" size={size} color="#F44336" />
+                ),
+                tabBarButton: (props) => (
+                  <TouchableOpacity
+                    {...props}
+                    onPress={handleLogout}
+                  />
+                ),
+              }}
+            />
+          </>
+        ) : (
+          <>
+            <Tab.Screen
+              name="HomeTab"
+              component={HomeScreen}
+              options={{
+                title: 'Anasayfa',
+                tabBarIcon: ({ color, size }) => (
+                  <Icon name="home" size={size} color={color} />
+                ),
+              }}
+            />
+            <Tab.Screen
+              name="VehicleListTab"
+              component={VehicleListScreen}
+              options={{
+                title: 'Araçlar',
+                headerShown: false,
+                tabBarIcon: ({ color, size }) => (
+                  <Icon name="directions-car" size={size} color={color} />
+                ),
+              }}
+            />
+            <Tab.Screen
+              name="RentalHistoryTab"
+              component={RentalHistoriesScreen}
+              initialParams={{ type: 'history' }}
+              options={{
+                title: 'Geçmiş Kiralama İstekleriniz',
+                headerShown: false,
+                tabBarIcon: ({ color, size }) => (
+                  <Icon name="history" size={size} color={color} />
+                ),
+              }}
+            />
+            <Tab.Screen
+              name="PendingRequestsTab"
+              component={RentalHistoriesScreen}
+              initialParams={{ type: 'pending' }}
+              options={{
+                title: 'Bekleyen Kiralama İstekleriniz',
+                tabBarIcon: ({ color, size }) => (
+                  <Icon name="schedule" size={size} color={color} />
+                ),
+              }}
+            />
+            <Tab.Screen
+              name="ProfileTab"
+              component={ProfileScreen}
+              options={{
+                title: 'Profil',
+                headerShown: false,
+                tabBarIcon: ({ color, size }) => (
+                  <Icon name="person" size={size} color={color} />
+                ),
+              }}
+            />
+            <Tab.Screen
+              name="LogoutTab"
+              component={View}
+              options={{
+                title: 'Çıkış',
+                tabBarIcon: ({ color, size }) => (
+                  <Icon name="logout" size={size} color="#F44336" />
+                ),
+                tabBarButton: (props) => (
+                  <TouchableOpacity
+                    {...props}
+                    onPress={handleLogout}
+                  />
+                ),
+              }}
+            />
+          </>
+        )}
+      </Tab.Navigator>
+
+      {/* Logout Confirmation Modal */}
+      <Modal
+        visible={logoutModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={cancelLogout}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
+            <Icon name="logout" size={40} color={colors.error} style={styles.modalIcon} />
+            <Text style={[styles.modalTitle, { color: colors.error }]}>Çıkış Yap</Text>
+            <Text style={[styles.modalMessage, { color: colors.textSecondary }]}>
+              Çıkış yapmak istediğinizden emin misiniz?
+            </Text>
+            <View style={styles.modalButtonRow}>
+              <TouchableOpacity
+                style={[styles.rentButton, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
+                onPress={confirmLogout}
+              >
+                <Text style={[styles.rentButtonText, { color: isDark ? '#111' : '#fff' }]}>Çıkış Yap</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.rentButton, { backgroundColor: colors.error, shadowColor: colors.error, marginLeft: 8 }]}
+                onPress={cancelLogout}
+              >
+                <Text style={[styles.rentButtonText, { color: isDark ? '#111' : '#fff' }]}>İptal</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 };
+
+const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    borderRadius: 20,
+    padding: 24,
+    width: '85%',
+    alignItems: 'center',
+    elevation: 5,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  modalIcon: {
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  modalMessage: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  modalButtonRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  rentButton: {
+    padding: 10,
+    borderRadius: 12,
+    alignItems: 'center',
+    width: 100,
+    elevation: 3,
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  rentButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+  },
+});
 
 const App = () => {
   const [isAuthChecked, setIsAuthChecked] = useState(false);

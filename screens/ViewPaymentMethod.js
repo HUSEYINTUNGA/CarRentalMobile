@@ -33,7 +33,7 @@ const ViewPaymentMethod = ({ cardId, onClose }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [flipAnimation] = useState(new Animated.Value(0));
 
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   useEffect(() => {
     if (!cardId) {
@@ -57,7 +57,7 @@ const ViewPaymentMethod = ({ cardId, onClose }) => {
 
   if (loading) {
     return (
-      <View style={panelStyles.panelContainer}>
+      <View style={[panelStyles.panelContainer, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
@@ -65,11 +65,11 @@ const ViewPaymentMethod = ({ cardId, onClose }) => {
 
   if (error || !card) {
     return (
-      <View style={panelStyles.panelContainer}>
-        <Text style={{ color: colors.error }}>{error || 'Kart bilgisi bulunamadı.'}</Text>
+      <View style={[panelStyles.panelContainer, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
         <TouchableOpacity onPress={onClose} style={panelStyles.closeButton}>
-          <Ionicons name="close" size={24} color={colors.text} />
+          <Ionicons name="close" size={24} color={colors.primary} />
         </TouchableOpacity>
+        <Text style={{ color: colors.error, textAlign: 'center' }}>{error || 'Kart bilgisi bulunamadı.'}</Text>
       </View>
     );
   }
@@ -123,12 +123,14 @@ const ViewPaymentMethod = ({ cardId, onClose }) => {
       },
     ]}>
       <View style={styles.cardHeader}>
-        <Text style={{ ...typography.h3, color: colors.white }}>{card.MethodName}</Text>
+        <Text style={{ ...typography.h3, color: isDark ? '#000' : '#fff' }}>{card.MethodName}</Text>
       </View>
       <View style={styles.cardBody}>
-        <Text style={{ ...typography.h2, color: colors.white, letterSpacing: 2 }}>{card.CardNumber}</Text>
-        <Text style={{ ...typography.body1, color: colors.white }}>{card.CardholderName}</Text>
-        <Text style={{ ...typography.body1, color: colors.white }}>
+        <Text style={{ ...typography.h2, color: isDark ? '#000' : '#fff', letterSpacing: 2 }}>
+          {card.CardNumber.replace(/(\d{4})(?=\d)/g, '$1 ')}
+        </Text>
+        <Text style={{ ...typography.body1, color: isDark ? '#000' : '#fff' }}>{card.CardholderName}</Text>
+        <Text style={{ ...typography.body1, color: isDark ? '#000' : '#fff' }}>
           {card.ExpirationMonth}/{card.ExpirationYear % 100}
         </Text>
       </View>
@@ -156,27 +158,27 @@ const ViewPaymentMethod = ({ cardId, onClose }) => {
         ],
       },
     ]}>
-      <View style={[styles.magneticStripe, { backgroundColor: colors.black }]} />
+      <View style={[styles.magneticStripe, { backgroundColor: isDark ? '#000' : '#333' }]} />
       <View style={[styles.signatureStrip, { backgroundColor: colors.white }] }>
-        <Text style={{ ...typography.body2, color: colors.white }}>CVV</Text>
-        <Text style={{ ...typography.h3, color: colors.white }}>{card.CVV}</Text>
+        <Text style={{ ...typography.body2, color: isDark ? '#000' : '#fff' }}>CVV</Text>
+        <Text style={{ ...typography.h3, color: isDark ? '#000' : '#fff' }}>{card.CVV}</Text>
       </View>
     </Animated.View>
   );
 
   return (
-    <View style={panelStyles.panelContainer}>
+    <View style={[panelStyles.panelContainer, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
       <View style={panelStyles.header}>
-        <Text style={{ ...typography.h2, color: colors.text }}>Kart Detayları</Text>
+        <Text style={{ ...typography.h2, color: colors.primary }}>Kart Detayları</Text>
         <TouchableOpacity onPress={onClose} style={panelStyles.closeButton}>
-          <Ionicons name="close" size={24} color={colors.text} />
+          <Ionicons name="close" size={24} color={colors.primary} />
         </TouchableOpacity>
       </View>
       <TouchableOpacity onPress={flipCard} style={panelStyles.cardContainer}>
         {renderFrontCard()}
         {renderBackCard()}
       </TouchableOpacity>
-      <Text style={{ ...typography.body2, color: colors.textSecondary, marginTop: 10 }}>Kartı çevirmek için dokunun</Text>
+      <Text style={{ ...typography.body2, color: colors.textSecondary, marginTop: 10, textAlign: 'center' }}>Kartı çevirmek için dokunun</Text>
     </View>
   );
 };
@@ -214,13 +216,11 @@ const panelStyles = StyleSheet.create({
   panelContainer: {
     width: width - 40,
     alignSelf: 'center',
-    backgroundColor: '#23262F', // fallback, will be overridden by colors.card
     borderRadius: 16,
     padding: 20,
     marginTop: 24,
     marginBottom: 16,
     alignItems: 'center',
-    shadowColor: '#000',
     shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 6,
@@ -234,7 +234,9 @@ const panelStyles = StyleSheet.create({
     marginBottom: 20,
   },
   closeButton: {
-    padding: 4,
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
   },
   cardContainer: {
     width: '100%',
