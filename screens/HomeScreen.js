@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Image, Ale
 import { useProfile } from '../hooks/useProfile';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import IconFA from 'react-native-vector-icons/FontAwesome5';
 import { Menu } from 'react-native-paper';
 import { useVehicles } from '../hooks/useVehicles';
 import { useRentalHistories } from '../hooks/useRentalHistories';
@@ -225,7 +226,7 @@ const HomeScreen = () => {
                     <Text style={[styles.vehicleTitle, { color: colors.text }]}>{latestVehicle.Brand} {latestVehicle.Model}</Text>
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-                    <Icon name="tag" size={16} color={colors.primary} style={{ marginRight: 6 }} />
+                    <IconFA name="money-bill-wave" size={16} color={colors.primary} style={{ marginRight: 6 }} />
                     <Text style={[styles.vehicleDetailHorizontal, { color: colors.success }]}>Günlük: {latestVehicle.DailyPrice} TL</Text>
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -263,7 +264,7 @@ const HomeScreen = () => {
                     <Text style={[styles.vehicleTitle, { color: colors.text }]}>{vehicle.Brand} {vehicle.Model}</Text>
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-                    <Icon name="tag" size={16} color={colors.info} style={{ marginRight: 6 }} />
+                    <IconFA name="money-bill-wave" size={16} color={colors.info} style={{ marginRight: 6 }} />
                     <Text style={[styles.vehicleDetailHorizontal, { color: colors.success }]}>Günlük: {vehicle.DailyPrice} TL</Text>
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -312,7 +313,8 @@ const HomeScreen = () => {
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <Icon name="cash" size={16} color={colors.error} style={{ marginRight: 6 }} />
-                      <Text style={[styles.vehicleDetailHorizontal, { color: colors.success }]}>Toplam: {rental.TotalPrice} TL</Text>
+                      <Text style={[styles.vehicleDetailHorizontal, { color: colors.text }]}>Toplam: </Text>
+                      <Text style={[styles.vehicleDetailHorizontal, { color: colors.success }]}>{rental.TotalPrice} TL</Text>
                     </View>
                   </View>
                 </View>

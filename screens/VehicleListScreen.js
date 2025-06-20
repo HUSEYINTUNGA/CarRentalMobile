@@ -2,7 +2,6 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, ActivityIndicator, Alert, TextInput, Modal, Animated, Dimensions} from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useVehicles } from '../hooks/useVehicles';
-import { Picker } from '@react-native-picker/picker';
 import { FuelTypeOptions, TransmissionTypeOptions } from '../enums/enum';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -29,9 +28,7 @@ const VehicleListScreen = () => {
         fetchVehicles,
         fetchAllVehicles,
         loading,
-        error,
         removeVehicle,
-        restoreVehicle
     } = useVehicles();
 
     const [filters, setFilters] = useState({
@@ -56,7 +53,6 @@ const VehicleListScreen = () => {
     const drawerAnim = useRef(new Animated.Value(SCREEN_WIDTH)).current;
     const { colors, isDark } = useTheme();
 
-    // Silme modalı için state
     const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
     useEffect(() => {

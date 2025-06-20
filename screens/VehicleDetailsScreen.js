@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Image, Modal, SafeAreaView } from 'react-native';
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useVehicles } from '../hooks/useVehicles';
+import { getVehicle3DModel } from '../api/vehicleApi';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import IconFA from 'react-native-vector-icons/FontAwesome5';
 import { TransmissionTypeOptions, FuelTypeOptions } from '../enums/enum';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../theme/ThemeProvider';
+import { Linking } from 'react-native';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 function formatPlate(plate) {
     if (!plate) return '-';
@@ -27,7 +30,16 @@ const VehicleDetailsScreen = () => {
     const [localError, setLocalError] = useState(null);
     const [role, setRole] = useState(null);
     const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+    const [models3D, setModels3D] = useState(null);
+    const [selectedModelIndex, setSelectedModelIndex] = useState(0);
+    const [loading3DModel, setLoading3DModel] = useState(false);
     const { colors, isDark } = useTheme();
+    const [showModelSelection, setShowModelSelection] = useState(false);
+    const [foundModels, setFoundModels] = useState([]);
+    const [modelSearchStats, setModelSearchStats] = useState(null);
+    const [modelSearchError, setModelSearchError] = useState(null);
+    const [selected3DModel, setSelected3DModel] = useState(null);
+    const [show3DModel, setShow3DModel] = useState(false);
 
     useEffect(() => {
         const fetchRole = async () => {
@@ -40,6 +52,21 @@ const VehicleDetailsScreen = () => {
         };
         fetchRole();
     }, []);
+
+    const load3DModel = async (brand, model, year, category) => {
+        if (!brand || !model || !year) return;
+        
+        setLoading3DModel(true);
+        try {
+            const modelData = await getVehicle3DModel(brand, model, year, category);
+            setModels3D(modelData);
+            setSelectedModelIndex(0); // İlk modeli seç
+        } catch (error) {
+            console.error('3D model yükleme hatası:', error);
+        } finally {
+            setLoading3DModel(false);
+        }
+    };
 
     useFocusEffect(
         React.useCallback(() => {
@@ -55,6 +82,7 @@ const VehicleDetailsScreen = () => {
                                 })) || []
                             };
                             setVehicle(normalizedData);
+                            load3DModel(data.Brand, data.Model, data.ModelYear, data.Category);
                         })
                         .catch((error) => {
                             console.error('Error fetching vehicle details:', error);
@@ -73,6 +101,7 @@ const VehicleDetailsScreen = () => {
                                 IsRented: false
                             };
                             setVehicle(normalizedData);
+                            load3DModel(data.Brand, data.Model, data.ModelYear, data.Category);
                         })
                         .catch((error) => {
                             console.error('Error fetching basic vehicle details:', error);
@@ -95,6 +124,43 @@ const VehicleDetailsScreen = () => {
         setCurrentPhotoIndex((prevIndex) => 
             prevIndex === photoList.length - 1 ? 0 : prevIndex + 1
         );
+    };
+
+    const handle3DModelSearch = async () => {
+        if (!vehicle) return;
+        
+        setLoading3DModel(true);
+        setModelSearchError(null);
+        setModelSearchStats(null);
+        
+        try {
+            const result = await getVehicle3DModel(
+                vehicle.Brand,
+                vehicle.Model,
+                vehicle.ModelYear.toString(),
+                vehicle.Category
+            );
+            
+            if (result && result.models && result.models.length > 0) {
+                setFoundModels(result.models);
+                setModelSearchStats(result.searchStats);
+                setShowModelSelection(true);
+            } else {
+                setModelSearchError('Bu araç için 3D model bulunamadı');
+                setModelSearchStats(result?.searchStats || null);
+            }
+        } catch (error) {
+            console.error('3D model arama hatası:', error);
+            setModelSearchError('3D model arama sırasında bir hata oluştu');
+        } finally {
+            setLoading3DModel(false);
+        }
+    };
+
+    const handleModelSelect = (model) => {
+        setSelected3DModel(model);
+        setShowModelSelection(false);
+        setShow3DModel(true);
     };
 
     if (loading) {
@@ -140,6 +206,101 @@ const VehicleDetailsScreen = () => {
     
     const currentPhoto = photoList[currentPhotoIndex] || null;
     const photoUri = currentPhoto?.Photo || currentPhoto?.photo || undefined;
+
+    const renderNoModelFound = () => (
+        <View style={[styles.noModelContainer, { backgroundColor: colors.background }]}>
+            <View style={styles.noModelContent}>
+                <View style={[styles.noModelIconContainer, { backgroundColor: colors.card }]}>
+                    <MaterialIcons name="3d-rotation" size={48} color={colors.textSecondary} />
+                </View>
+                
+                <Text style={[styles.noModelTitle, { color: colors.text }]}>3D Model Bulunamadı</Text>
+            </View>
+        </View>
+    );
+
+    const renderModelSelection = () => (
+        <Modal
+            visible={showModelSelection}
+            animationType="slide"
+            presentationStyle="pageSheet"
+        >
+            <SafeAreaView style={styles.modalContainer}>
+                <View style={styles.modalHeader}>
+                    <Text style={styles.modalTitle}>3D Model Seçin</Text>
+                    <TouchableOpacity onPress={() => setShowModelSelection(false)}>
+                        <MaterialIcons name="close" size={24} color="#333" />
+                    </TouchableOpacity>
+                </View>
+                
+                <ScrollView style={styles.modalContent}>
+                    {modelSearchStats && (
+                        <View style={styles.searchSummary}>
+                            <Text style={styles.searchSummaryText}>
+                                {foundModels.length} model bulundu • 
+                                {modelSearchStats.totalSearches} arama yapıldı
+                            </Text>
+                        </View>
+                    )}
+                    
+                    {foundModels.map((model, index) => (
+                        <TouchableOpacity
+                            key={index}
+                            style={styles.modelCard}
+                            onPress={() => handleModelSelect(model)}
+                        >
+                            <View style={styles.modelCardHeader}>
+                                <Text style={styles.modelTitle} numberOfLines={2}>
+                                    {model.title}
+                                </Text>
+                            </View>
+                            
+                            {model.thumbnailUrl && (
+                                <Image
+                                    source={{ uri: model.thumbnailUrl }}
+                                    style={styles.modelThumbnail}
+                                    resizeMode="cover"
+                                />
+                            )}
+                            
+                            <View style={styles.modelDetails}>
+                                <View style={styles.modelMeta}>
+                                    <Text style={styles.modelAuthor}>👤 {model.author}</Text>
+                                    <Text style={styles.modelDownloads}>⬇️ {model.downloadCount || 0}</Text>
+                                    <Text style={styles.modelViews}>👁️ {model.viewCount || 0}</Text>
+                                </View>
+                                
+                                <View style={styles.modelStrategy}>
+                                    <Text style={styles.strategyLabel}>Arama:</Text>
+                                    <Text style={styles.strategyText}>"{model.searchStrategy}"</Text>
+                                </View>
+                            </View>
+                            
+                            <View style={styles.modelActions}>
+                                <TouchableOpacity
+                                    style={[styles.viewModelButton, { backgroundColor: '#007AFF' }]}
+                                    onPress={() => handleModelSelect(model)}
+                                >
+                                    <MaterialIcons name="visibility" size={18} color="#fff" />
+                                    <Text style={styles.viewModelButtonText}>Görüntüle</Text>
+                                </TouchableOpacity>
+                                
+                                {model.downloadUrl && (
+                                    <TouchableOpacity
+                                        style={[styles.downloadButton, { borderColor: '#007AFF' }]}
+                                        onPress={() => Linking.openURL(model.downloadUrl)}
+                                    >
+                                        <MaterialIcons name="download" size={18} color="#007AFF" />
+                                        <Text style={[styles.downloadButtonText, { color: '#007AFF' }]}>İndir</Text>
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+            </SafeAreaView>
+        </Modal>
+    );
 
     return (
         <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -272,6 +433,89 @@ const VehicleDetailsScreen = () => {
                         </View>
                     )}
 
+                    {/* 3D Model Bölümü */}
+                    <View style={[styles.infoCard, { backgroundColor: colors.card, marginTop: 18 }] }>
+                        <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 8 }]}>3D Model İnceleme</Text>
+                        
+                        {loading3DModel ? (
+                            <View style={styles.modelLoadingContainer}>
+                                <ActivityIndicator size="small" color={colors.primary} />
+                                <Text style={[styles.modelLoadingText, { color: colors.textSecondary }]}>3D modeller aranıyor...</Text>
+                            </View>
+                        ) : models3D && models3D.length > 0 ? (
+                            <View>
+                                {/* Model Seçici */}
+                                <View style={styles.modelSelector}>
+                                    <Text style={[styles.modelSelectorTitle, { color: colors.text }]}>
+                                        {models3D.length} model bulundu
+                                    </Text>
+                                    <ScrollView 
+                                        horizontal 
+                                        showsHorizontalScrollIndicator={false}
+                                        style={styles.modelThumbnailList}
+                                    >
+                                        {models3D.map((model, index) => (
+                                            <TouchableOpacity
+                                                key={index}
+                                                style={[
+                                                    styles.modelThumbnailItem,
+                                                    selectedModelIndex === index && { borderColor: colors.primary, borderWidth: 2 }
+                                                ]}
+                                                onPress={() => setSelectedModelIndex(index)}
+                                            >
+                                                <Image 
+                                                    source={{ uri: model.thumbnailUrl }} 
+                                                    style={styles.modelThumbnailSmall}
+                                                />
+                                                <Text style={[styles.modelThumbnailScore, { color: colors.textSecondary }]}>
+                                                    {model.score} puan
+                                                </Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </ScrollView>
+                                </View>
+
+                                {/* Seçili Model Detayları */}
+                                <View style={styles.modelContainer}>
+                                    <Image 
+                                        source={{ uri: models3D[selectedModelIndex].thumbnailUrl }} 
+                                        style={styles.modelThumbnail}
+                                    />
+                                    <View style={styles.modelInfo}>
+                                        <Text style={[styles.modelTitle, { color: colors.text }]}>
+                                            {models3D[selectedModelIndex].title}
+                                        </Text>
+                                        <Text style={[styles.modelAuthor, { color: colors.textSecondary }]}>
+                                            Yazar: {models3D[selectedModelIndex].author}
+                                        </Text>
+                                        <Text style={[styles.modelStats, { color: colors.textSecondary }]}>
+                                            📥 {models3D[selectedModelIndex].downloadCount} • 👁️ {models3D[selectedModelIndex].viewCount}
+                                        </Text>
+                                        {models3D[selectedModelIndex].searchStrategy && (
+                                            <Text style={[styles.modelStrategy, { color: colors.textSecondary }]}>
+                                                Bulunan: {models3D[selectedModelIndex].searchStrategy}
+                                            </Text>
+                                        )}
+                                        <TouchableOpacity 
+                                            style={[styles.view3DButton, { backgroundColor: colors.primary }]}
+                                            onPress={() => {
+                                                navigation.navigate('WebView', { 
+                                                    url: models3D[selectedModelIndex].modelUrl, 
+                                                    title: '3D Model İnceleme' 
+                                                });
+                                            }}
+                                        >
+                                            <Icon name="cube-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
+                                            <Text style={[styles.view3DButtonText, { color: '#fff' }]}>3D Modeli İncele</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            </View>
+                        ) : (
+                            renderNoModelFound()
+                        )}
+                    </View>
+
                     {role === 'Customer' && (
                         <TouchableOpacity
                             style={[styles.rentButton, { backgroundColor: colors.primary }]}
@@ -282,6 +526,7 @@ const VehicleDetailsScreen = () => {
                     )}
                 </View>
             </ScrollView>
+            {renderModelSelection()}
         </View>
     );
 };
@@ -308,13 +553,18 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     retryButton: {
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        borderRadius: 8,
+        flex: 1,
+        borderRadius: 12,
+        padding: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
     },
     retryButtonText: {
+        color: '#fff',
         fontSize: 16,
-        fontWeight: 'bold',
+        fontWeight: '600',
     },
     content: {
         padding: 16,
@@ -634,6 +884,354 @@ const styles = StyleSheet.create({
         fontSize: 16,
         minWidth: 80,
         textAlign: 'right',
+    },
+    modelLoadingContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 16,
+    },
+    modelLoadingText: {
+        fontSize: 16,
+        marginLeft: 8,
+    },
+    modelSelector: {
+        marginBottom: 16,
+    },
+    modelSelectorTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginBottom: 12,
+    },
+    modelThumbnailList: {
+        flex: 1,
+    },
+    modelThumbnailItem: {
+        width: 80,
+        height: 80,
+        borderWidth: 2,
+        borderColor: 'transparent',
+        borderRadius: 8,
+        marginRight: 12,
+        overflow: 'hidden',
+    },
+    modelThumbnailSmall: {
+        width: '100%',
+        height: '100%',
+        resizeMode: 'cover',
+    },
+    modelThumbnailScore: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        marginTop: 4,
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        color: '#fff',
+        paddingHorizontal: 4,
+        paddingVertical: 2,
+        borderRadius: 4,
+    },
+    modelContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+    },
+    modelThumbnail: {
+        width: '100%',
+        height: 200,
+        borderTopLeftRadius: 12,
+        borderTopRightRadius: 12,
+    },
+    modelInfo: {
+        flex: 1,
+    },
+    modelTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#333',
+        flex: 1,
+    },
+    modelAuthor: {
+        fontSize: 14,
+        color: '#666',
+    },
+    modelStats: {
+        fontSize: 14,
+        fontWeight: '600',
+        marginTop: 4,
+        marginBottom: 8,
+    },
+    view3DButton: {
+        padding: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    view3DButtonText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    noModelContainer: {
+        flex: 1,
+        padding: 20,
+    },
+    noModelContent: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    noModelIconContainer: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 20,
+    },
+    noModelTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    noModelSubtitle: {
+        fontSize: 16,
+        textAlign: 'center',
+        marginBottom: 30,
+        lineHeight: 22,
+    },
+    vehicleInfoGrid: {
+        borderRadius: 12,
+        padding: 20,
+        marginBottom: 20,
+        width: '100%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    vehicleInfoRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingVertical: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f0f0f0',
+    },
+    vehicleInfoLabel: {
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    vehicleInfoValue: {
+        fontSize: 16,
+        fontWeight: '500',
+    },
+    searchStatsContainer: {
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        padding: 20,
+        marginBottom: 20,
+        width: '100%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    searchStatsTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 15,
+        textAlign: 'center',
+    },
+    searchStatsGrid: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        marginBottom: 20,
+    },
+    statItem: {
+        alignItems: 'center',
+    },
+    statValue: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#007AFF',
+    },
+    statLabel: {
+        fontSize: 12,
+        color: '#666',
+        marginTop: 4,
+    },
+    strategyList: {
+        marginTop: 15,
+    },
+    strategyListTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#333',
+        marginBottom: 10,
+    },
+    strategyItem: {
+        backgroundColor: '#f8f9fa',
+        borderRadius: 8,
+        padding: 12,
+        marginBottom: 8,
+    },
+    strategyQuery: {
+        fontSize: 14,
+        color: '#333',
+        fontStyle: 'italic',
+        marginBottom: 4,
+    },
+    strategyMeta: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    strategyStatus: {
+        fontSize: 12,
+        fontWeight: '500',
+    },
+    strategySuccess: {
+        color: '#28a745',
+    },
+    strategyError: {
+        color: '#dc3545',
+    },
+    strategyScore: {
+        fontSize: 12,
+        color: '#666',
+    },
+    noModelActions: {
+        flexDirection: 'row',
+        gap: 12,
+        width: '100%',
+    },
+    modalContainer: {
+        flex: 1,
+        backgroundColor: '#f8f9fa',
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 20,
+        backgroundColor: '#fff',
+        borderBottomWidth: 1,
+        borderBottomColor: '#e9ecef',
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#333',
+    },
+    modalContent: {
+        flex: 1,
+        padding: 20,
+    },
+    searchSummary: {
+        backgroundColor: '#e3f2fd',
+        borderRadius: 8,
+        padding: 12,
+        marginBottom: 20,
+    },
+    searchSummaryText: {
+        fontSize: 14,
+        color: '#1976d2',
+        textAlign: 'center',
+    },
+    modelCard: {
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        marginBottom: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    modelCardHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        padding: 16,
+        paddingBottom: 12,
+    },
+    modelTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#333',
+        flex: 1,
+    },
+    modelThumbnail: {
+        width: '100%',
+        height: 200,
+        borderTopLeftRadius: 12,
+        borderTopRightRadius: 12,
+    },
+    modelDetails: {
+        padding: 16,
+    },
+    modelMeta: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 12,
+    },
+    modelDownloads: {
+        fontSize: 14,
+        color: '#666',
+    },
+    modelViews: {
+        fontSize: 14,
+        color: '#666',
+    },
+    modelStrategy: {
+        marginBottom: 12,
+    },
+    strategyLabel: {
+        fontSize: 12,
+        color: '#999',
+        marginBottom: 4,
+    },
+    strategyText: {
+        fontSize: 14,
+        color: '#333',
+        fontStyle: 'italic',
+    },
+    modelActions: {
+        flexDirection: 'row',
+        gap: 12,
+        padding: 16,
+        paddingTop: 0,
+    },
+    viewModelButton: {
+        flex: 1,
+        borderRadius: 8,
+        padding: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+    },
+    viewModelButtonText: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    downloadButton: {
+        flex: 1,
+        backgroundColor: '#fff',
+        borderRadius: 8,
+        padding: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        borderWidth: 1,
+    },
+    downloadButtonText: {
+        fontSize: 14,
+        fontWeight: '600',
     },
 });
 

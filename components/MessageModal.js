@@ -51,8 +51,8 @@ const MessageModal = ({
             style={[styles.modalIcon, { alignSelf: 'center' }]} 
           />
           <Text style={[styles.modalTitle, { color: getIconColor() }]}> {title} </Text>
-          <View style={[styles.modalMessage, { color: colors.textSecondary }]}> 
-            {typeof message === 'string' ? <Text style={{ color: colors.textSecondary }}>{message}</Text> : message}
+          <View style={styles.modalMessage}> 
+            {typeof message === 'string' ? <Text style={{ color: colors.textSecondary, textAlign: 'center' }}>{message}</Text> : message}
           </View>
           {(showCancel || showConfirm) ? (
             <View style={{ flexDirection: 'row', gap: 12, justifyContent: 'center', width: '100%' }}>
@@ -141,7 +141,6 @@ const styles = StyleSheet.create({
   },
   modalMessage: {
     fontSize: 16,
-    textAlign: 'center',
     marginBottom: 24,
     width: '100%',
     alignItems: 'stretch',

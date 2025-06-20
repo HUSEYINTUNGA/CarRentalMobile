@@ -24,6 +24,7 @@ import RentedScreen from './screens/RentedScreen';
 import ManageVehiclesScreen from './screens/ManageVehiclesScreen';
 import RentalRequestsScreen from './screens/RentalRequestsScreen';
 import UsersListScreen from './screens/UsersListScreen';
+import WebViewScreen from './screens/WebViewScreen';
 import { Provider as PaperProvider } from 'react-native-paper';
 import DashboardScreen from './screens/DashboardScreen';
 import { decode as atob, encode as btoa } from 'base-64';
@@ -438,6 +439,7 @@ const App = () => {
             <Stack.Screen name="RentalRequests" options={{ title: 'Kiralama İstekleri', headerShown: true }} component={RentalRequestsScreen} />
             <Stack.Screen name="UsersList" options={{ title: 'Kullanıcılar', headerShown: true }} component={UsersListScreen} />
             <Stack.Screen name="ChangePassword" options={{ headerShown: true, title: 'Şifre Değiştir' }} component={ChangePasswordScreen} />
+            <Stack.Screen name="WebView" options={{ headerShown: false }} component={WebViewScreen} />
           </Stack.Navigator>
         </NavigationContainer>
       </ThemeProvider>

@@ -450,6 +450,7 @@ export default function EditPaymentMethod() {
         icon={messageIcon}
         onClose={() => setMessageModalVisible(false)}
         onButtonPress={() => {
+          setMessageModalVisible(false);
           if (messageIcon === 'check-circle') {
             navigation.goBack();
           }

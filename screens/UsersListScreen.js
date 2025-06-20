@@ -319,20 +319,20 @@ const UsersListScreen = () => {
                   {/* Ad Soyad */}
                   <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 6, borderBottomWidth: 1, borderBottomColor: colors.border }}>
                     <Icon name="account" size={22} color={colors.primary} style={{ marginRight: 10 }} />
-                    <Text style={{ flex: 1, color: colors.textSecondary, fontSize: 15 }}>Ad Soyad</Text>
-                    <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16 }}>{selectedUser.Name} {selectedUser.Surname}</Text>
+                    <Text style={{ color: colors.textSecondary, fontSize: 15 }}>Ad Soyad</Text>
+                    <Text style={{ flex: 1, color: colors.text, fontWeight: 'bold', fontSize: 16, textAlign: 'right' }}>{selectedUser.Name} {selectedUser.Surname}</Text>
                   </View>
                   {/* Kullanıcı Adı */}
                   <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 6, borderBottomWidth: 1, borderBottomColor: colors.border }}>
                     <Icon name="account-circle" size={22} color={colors.primary} style={{ marginRight: 10 }} />
-                    <Text style={{ flex: 1, color: colors.textSecondary, fontSize: 15 }}>Kullanıcı Adı</Text>
-                    <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16 }}>{selectedUser.UserName}</Text>
+                    <Text style={{ color: colors.textSecondary, fontSize: 15 }}>Kullanıcı Adı</Text>
+                    <Text style={{ flex: 1, color: colors.text, fontWeight: 'bold', fontSize: 16, textAlign: 'right' }}>{selectedUser.UserName}</Text>
                   </View>
                   {/* E-posta */}
                   <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 6, borderBottomWidth: 1, borderBottomColor: colors.border }}>
                     <Icon name="email" size={22} color={colors.primary} style={{ marginRight: 10 }} />
-                    <Text style={{ flex: 1, color: colors.textSecondary, fontSize: 15 }}>E-posta</Text>
-                    <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16 }}>{selectedUser.Email}</Text>
+                    <Text style={{ color: colors.textSecondary, fontSize: 15 }}>E-posta</Text>
+                    <Text style={{ flex: 1, color: colors.text, fontWeight: 'bold', fontSize: 16, textAlign: 'right' }}>{selectedUser.Email}</Text>
                   </View>
                   {/* Rol + Switch */}
                   <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 6, borderBottomWidth: 1, borderBottomColor: colors.border }}>
@@ -408,9 +408,9 @@ const UsersListScreen = () => {
               editable={!roleSwitchLoading}
             />
             {passwordError ? <Text style={[styles.passwordError, { color: colors.error }]}>{passwordError}</Text> : null}
-            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 16 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 16 }}>
               <TouchableOpacity
-                style={[styles.rentButton, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
+                style={[styles.rentButton, { backgroundColor: colors.primary, shadowColor: colors.primary, minWidth: 120 }]}
                 onPress={handlePasswordConfirm}
                 disabled={roleSwitchLoading || !adminPassword}
               >

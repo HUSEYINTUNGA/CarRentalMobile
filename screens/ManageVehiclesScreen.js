@@ -589,6 +589,7 @@ const ManageVehiclesScreen = () => {
                 icon={messageIcon}
                 onClose={() => setMessageModalVisible(false)}
                 onButtonPress={() => {
+                    setMessageModalVisible(false);
                     if (messageIcon === 'check-circle') {
                         navigation.goBack();
                     }
