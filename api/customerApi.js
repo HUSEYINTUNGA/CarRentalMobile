@@ -31,12 +31,6 @@ api.interceptors.response.use(
     return response;
   },
   async (error) => {
-    console.error('API Hatası:', {
-      url: error.config?.url,
-      status: error.response?.status,
-      data: error.response?.data,
-      headers: error.config?.headers
-    });
     return Promise.reject(error);
   }
 );
@@ -68,7 +62,9 @@ export const changeProfilePhoto = (data) => {
   });
 };
 
-export const deleteAccount = () => api.delete('customer/delete-account');
+export const deleteAccount = (password) => api.delete('customer/delete-account', { 
+  data: { password } 
+});
 
 export const getUsers = (params = {}) => {
   const query = Object.entries(params)

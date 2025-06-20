@@ -101,7 +101,7 @@ const RentedScreen = () => {
 
     const isConflictDataValid = conflictData &&
         typeof conflictData.suggestedStartDate === 'string' &&
-        typeof conflictData.maxAvailableEndDate === 'string';
+        typeof conflictData.suggestedEndDate === 'string';
 
     const showAlternativeVehicle = Boolean(conflictData?.alternativeVehicle?.id);
 
@@ -228,15 +228,15 @@ const RentedScreen = () => {
                             styles.cardView,
                             isDark
                                 ? { backgroundColor: '#23272F', borderWidth: 1, borderColor: colors.border, shadowColor: colors.primary }
-                                : { backgroundColor: colors.paymentCard, shadowColor: colors.paymentCardShadow }
+                                : { backgroundColor: '#f3f6fa', borderWidth: 1, borderColor: '#e0e4ea', shadowColor: colors.paymentCardShadow }
                         ]}>
-                            <Text style={[styles.cardNumber, { color: '#fff' }]}>•••• •••• •••• {selectedPaymentMethod.Last4Digits}</Text>
-                            <Text style={[styles.cardName, { color: '#fff' }]}>{selectedPaymentMethod.CardHolderName}</Text>
-                            <Text style={[styles.cardInfo, { color: '#fff' }]}>{selectedPaymentMethod.ExpirationMonth.toString().padStart(2, '0')}/{selectedPaymentMethod.ExpirationYear.toString().slice(-2)}</Text>
+                            <Text style={[styles.cardNumber, { color: isDark ? '#fff' : '#222' }]}>•••• •••• •••• {selectedPaymentMethod.Last4Digits}</Text>
+                            <Text style={[styles.cardName, { color: isDark ? '#fff' : '#222' }]}>{selectedPaymentMethod.CardHolderName}</Text>
+                            <Text style={[styles.cardInfo, { color: isDark ? '#fff' : '#222' }]}>{selectedPaymentMethod.ExpirationMonth.toString().padStart(2, '0')}/{selectedPaymentMethod.ExpirationYear.toString().slice(-2)}</Text>
                         </View>
                     )}
                     <TouchableOpacity style={[styles.rentButton, { backgroundColor: colors.primary, shadowColor: colors.primary }]} onPress={handleRent} disabled={loading}>
-                        <Text style={[styles.rentButtonText, { color: colors.white }]}>{loading ? 'Gönderiliyor...' : 'Kirala'}</Text>
+                        <Text style={[styles.rentButtonText, { color: isDark ? '#111' : '#fff' }]}>{loading ? 'Gönderiliyor...' : 'Kirala'}</Text>
                     </TouchableOpacity>
                     <Modal visible={showPaymentModal} transparent animationType="slide">
                         <View style={styles.modalContainer}>
@@ -287,42 +287,55 @@ const RentedScreen = () => {
                             </Text>
                             {showAlternativeVehicle && (
                                 <>
-                                    <Text style={{ fontWeight: 'bold', marginTop: 12, color: colors.text }}>
-                                        Müsait Tarih Aralığı: {conflictData.suggestedStartDate} - {conflictData.maxAvailableEndDate}
-                                    </Text>
-                                    <View style={{ flexDirection: 'row', width: '100%', justifyContent: 'space-between', marginTop: 16 }}>
+                                    <View style={styles.availableDatesCard}>
+                                        <Icon name="calendar-check" size={28} color={colors.success} style={{ marginBottom: 6 }} />
+                                        <Text style={styles.availableDatesTitle}>Müsait Tarih Aralığı</Text>
+                                        <Text style={styles.availableDatesText}>
+                                            {new Date(conflictData.suggestedStartDate).toLocaleDateString()} - {new Date(conflictData.suggestedEndDate).toLocaleDateString()}
+                                        </Text>
+                                    </View>
+                                    <View style={styles.buttonRow}>
                                         <TouchableOpacity
-                                            style={[styles.useDatesButton, { backgroundColor: colors.success, flex: 1, marginRight: 8 }]}
+                                            style={[styles.useDatesButton, { backgroundColor: colors.success }]}
                                             onPress={() => {
                                                 setStartDate(new Date(conflictData.suggestedStartDate));
-                                                setEndDate(new Date(conflictData.maxAvailableEndDate));
+                                                setEndDate(new Date(conflictData.suggestedEndDate));
                                                 setShowErrorModal(false);
                                             }}
                                         >
-                                            <Icon name="calendar-check" size={20} color={colors.white} style={styles.buttonIcon} />
-                                            <Text style={[styles.buttonText, { color: colors.white }]}>Bu Tarihleri Kullan</Text>
+                                            <Icon name="calendar-check" size={20} color={isDark ? '#111' : '#fff'} style={styles.buttonIcon} />
+                                            <Text style={[styles.buttonText, { color: isDark ? '#111' : '#fff' }]}>Bu Tarihleri Kullan</Text>
                                         </TouchableOpacity>
                                         <TouchableOpacity
-                                            style={[styles.viewVehicleButton, { backgroundColor: colors.primary, flex: 1, marginLeft: 8 }]}
+                                            style={[styles.viewVehicleButton, { backgroundColor: colors.primary }]}
                                             onPress={() => {
                                                 navigation.navigate('VehicleDetails', { vehicleId: conflictData.alternativeVehicle.id });
                                                 setShowErrorModal(false);
                                             }}
                                         >
-                                            <Icon name="car" size={20} color={colors.white} style={styles.buttonIcon} />
-                                            <Text style={[styles.buttonText, { color: colors.white }]}>Aracı Gör</Text>
+                                            <Icon name="car" size={20} color={isDark ? '#111' : '#fff'} style={styles.buttonIcon} />
+                                            <Text style={[styles.buttonText, { color: isDark ? '#111' : '#fff' }]}>Aracı Gör</Text>
                                         </TouchableOpacity>
                                     </View>
-                                    <View style={{ marginTop: 16, width: '100%' }}>
-                                        <Text style={{ fontWeight: 'bold', marginBottom: 8, color: colors.text }}>Alternatif Araç:</Text>
-                                        <View style={[styles.alternativeVehicleCard, { backgroundColor: colors.altCard, borderColor: colors.border }] }>
-                                            <Text style={[styles.alternativeVehicleTitle, { color: colors.text }]}>
-                                                {conflictData.alternativeVehicle.brand} {conflictData.alternativeVehicle.model}
-                                            </Text>
-                                            <Text style={[styles.alternativeVehiclePrice, { color: colors.primary }]}>
-                                                {conflictData.alternativeVehicle.dailyPrice} TL/gün
-                                            </Text>
-                                        </View>
+                                    <Text style={styles.sectionTitle}>Alternatif Araç:</Text>
+                                    <View style={[
+                                        styles.alternativeVehicleCardModern,
+                                        isDark
+                                            ? { backgroundColor: '#23272F', borderColor: '#333' }
+                                            : { backgroundColor: '#f3f6fa', borderColor: '#e0e4ea' }
+                                    ]}>
+                                        <Text style={[
+                                            styles.alternativeVehicleTitleModern,
+                                            isDark ? { color: '#fff' } : { color: '#222' }
+                                        ]}>
+                                            {conflictData.alternativeVehicle.brand} {conflictData.alternativeVehicle.model}
+                                        </Text>
+                                        <Text style={[
+                                            styles.alternativeVehiclePriceModern,
+                                            isDark ? { color: '#4fc3f7' } : { color: '#1976d2' }
+                                        ]}>
+                                            {conflictData.alternativeVehicle.dailyPrice} TL/gün
+                                        </Text>
                                     </View>
                                 </>
                             )}
@@ -330,7 +343,7 @@ const RentedScreen = () => {
                                 style={styles.closeButton}
                                 onPress={() => setShowErrorModal(false)}
                             >
-                                <Text style={[styles.closeButtonText, { color: colors.textSecondary }]}>Kapat</Text>
+                                <Text style={[styles.closeButtonText, { color: isDark ? '#fff' : '#111' }]}>Kapat</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -543,28 +556,74 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginBottom: 24,
     },
-    alternativeVehicleCard: {
+    availableDatesCard: {
+        backgroundColor: '#e6f4ea',
+        borderRadius: 14,
+        padding: 16,
+        alignItems: 'center',
+        marginBottom: 18,
+    },
+    availableDatesTitle: {
+        fontWeight: 'bold',
+        fontSize: 16,
+        marginBottom: 4,
+        color: '#388e3c',
+    },
+    availableDatesText: {
+        fontSize: 15,
+        color: '#222',
+        fontWeight: '500',
+    },
+    buttonRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        gap: 14,
+        marginBottom: 18,
+        width: '100%',
+    },
+    useDatesButton: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 14,
+        borderRadius: 10,
+        justifyContent: 'center',
+    },
+    viewVehicleButton: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 14,
+        borderRadius: 10,
+        justifyContent: 'center',
+    },
+    sectionTitle: {
+        fontWeight: 'bold',
+        fontSize: 15,
+        marginBottom: 8,
+        marginTop: 6,
+        alignSelf: 'flex-start',
+        color: '#fff',
+    },
+    alternativeVehicleCardModern: {
+        backgroundColor: '#23272f',
         borderRadius: 12,
         padding: 16,
         borderWidth: 1,
+        borderColor: '#333',
+        marginBottom: 18,
+        width: '100%',
     },
-    alternativeVehicleTitle: {
-        fontSize: 18,
+    alternativeVehicleTitleModern: {
+        fontSize: 17,
         fontWeight: 'bold',
+        color: '#fff',
         marginBottom: 4,
     },
-    alternativeVehiclePrice: {
+    alternativeVehiclePriceModern: {
         fontSize: 16,
         fontWeight: 'bold',
-    },
-    useDatesButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 12,
-        borderRadius: 8,
-        width: '100%',
-        justifyContent: 'center',
-        marginTop: 12,
+        color: '#4fc3f7',
     },
     buttonText: {
         fontSize: 16,
@@ -580,15 +639,6 @@ const styles = StyleSheet.create({
     },
     closeButtonText: {
         fontSize: 16,
-    },
-    viewVehicleButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 12,
-        borderRadius: 8,
-        width: '100%',
-        justifyContent: 'center',
-        marginTop: 12,
     },
     gradientHeader: {
         position: 'absolute',
@@ -623,4 +673,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default RentedScreen; 
+export default RentedScreen;

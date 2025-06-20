@@ -7,18 +7,15 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
-  KeyboardAvoidingView,
-  Platform,
   Image,
-  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import { useProfile } from '../hooks/useProfile';
 import { useTheme } from '../theme/ThemeProvider';
 import { LinearGradient } from 'expo-linear-gradient';
+import MessageModal from '../components/MessageModal';
 
-// Helper function to convert hex to rgba
 function hexToRgba(hex, alpha) {
   let c = hex.replace('#', '');
   if (c.length === 3) c = c.split('').map(x => x + x).join('');
@@ -35,7 +32,18 @@ const EditProfileScreen = () => {
     phoneNumber: '',
   });
   const [profile, setProfile] = useState(null);
+  const [messageModalVisible, setMessageModalVisible] = useState(false);
+  const [messageTitle, setMessageTitle] = useState('');
+  const [messageText, setMessageText] = useState('');
+  const [messageIcon, setMessageIcon] = useState('info');
   const { colors, isDark } = useTheme();
+
+  const showMessage = (title, text, icon = 'info', onButtonPress = null) => {
+    setMessageTitle(title);
+    setMessageText(text);
+    setMessageIcon(icon);
+    setMessageModalVisible(true);
+  };
 
   useEffect(() => {
     (async () => {
@@ -48,19 +56,24 @@ const EditProfileScreen = () => {
           phoneNumber: profileData.phoneNumber || '',
         });
       } catch (err) {
-        Alert.alert('Hata', 'Profil bilgileri yüklenirken bir hata oluştu.');
-        navigation.goBack();
+        showMessage('Hata', 'Profil bilgileri yüklenirken bir hata oluştu.', 'error', () => navigation.goBack());
       }
     })();
   }, []);
 
   const handleUpdateProfile = async () => {
     try {
-      await updateProfileData(formData);
-      Alert.alert('Başarılı', 'Profil bilgileriniz güncellendi.');
-      navigation.goBack();
+      const updateData = {
+        Name: formData.name,
+        Surname: formData.surname,
+        PhoneNumber: formData.phoneNumber
+      };
+      
+      await updateProfileData(updateData);
+      showMessage('Başarılı', 'Profil bilgileriniz güncellendi.', 'check-circle', () => navigation.goBack());
     } catch (err) {
-      Alert.alert('Hata', error || 'Profil güncellenirken bir hata oluştu.');
+      const errorMessage = err.response?.data?.message || error || 'Profil güncellenirken bir hata oluştu.';
+      showMessage('Hata', errorMessage, 'error');
     }
   };
 
@@ -164,6 +177,20 @@ const EditProfileScreen = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Message Modal */}
+      <MessageModal
+        visible={messageModalVisible}
+        title={messageTitle}
+        message={messageText}
+        icon={messageIcon}
+        onClose={() => setMessageModalVisible(false)}
+        onButtonPress={() => {
+          if (messageIcon === 'check-circle') {
+            navigation.goBack();
+          }
+        }}
+      />
     </View>
   );
 };

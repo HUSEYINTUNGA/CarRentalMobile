@@ -7,6 +7,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import IconFA from 'react-native-vector-icons/FontAwesome5';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../theme/ThemeProvider';
+import MessageModal from '../components/MessageModal';
 
 const RentalHistoriesScreen = () => {
     const route = useRoute();
@@ -23,6 +24,8 @@ const RentalHistoriesScreen = () => {
     const { type = 'history' } = route.params || {};
     const [userId, setUserId] = useState(null);
     const { colors } = useTheme();
+    const [showCancelModal, setShowCancelModal] = useState(false);
+    const [cancelItem, setCancelItem] = useState(null);
 
     useLayoutEffect(() => {
         navigation.setOptions({
@@ -68,17 +71,25 @@ const RentalHistoriesScreen = () => {
         return plate;
     };
 
+    const handleCancel = (item) => {
+        setCancelItem(item);
+        setShowCancelModal(true);
+    };
+
+    const confirmCancel = () => {
+        if (cancelItem) {
+            removePendingRentalRequest(cancelItem.Id);
+        }
+        setShowCancelModal(false);
+        setCancelItem(null);
+    };
+
+    const closeCancelModal = () => {
+        setShowCancelModal(false);
+        setCancelItem(null);
+    };
+
     const renderRentalItem = ({ item }) => {
-        const handleCancel = () => {
-            Alert.alert(
-                'İsteği İptal Et',
-                'Bu isteği iptal etmek istediğinize emin misiniz?',
-                [
-                    { text: 'Hayır', style: 'cancel' },
-                    { text: 'Evet', style: 'destructive', onPress: () => removePendingRentalRequest(item.Id) }
-                ]
-            );
-        };
         return (
             <View style={[styles.rentalCard, { backgroundColor: colors.card, shadowColor: colors.shadow }] }>
                 {item.MainPhotoUrl ? (
@@ -104,7 +115,7 @@ const RentalHistoriesScreen = () => {
                     {type === 'pending' && (
                         <TouchableOpacity
                             style={[styles.cancelButton, { backgroundColor: colors.error }]}
-                            onPress={handleCancel}
+                            onPress={() => handleCancel(item)}
                             activeOpacity={0.8}
                         >
                             <Text style={[styles.cancelButtonText, { color: colors.white }]}>İsteği İptal Et</Text>
@@ -159,6 +170,20 @@ const RentalHistoriesScreen = () => {
                         </Text>
                     </View>
                 }
+            />
+            <MessageModal
+                visible={showCancelModal}
+                title="İsteği İptal Et"
+                message="İsteği iptal etmek istediğinize emin misiniz?"
+                icon="error"
+                showCancel={true}
+                cancelText="Hayır"
+                onCancel={closeCancelModal}
+                showConfirm={true}
+                confirmText="Evet"
+                onConfirm={confirmCancel}
+                reverseButtons={true}
+                onClose={closeCancelModal}
             />
         </View>
     );

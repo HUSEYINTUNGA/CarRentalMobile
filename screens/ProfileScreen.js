@@ -10,6 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { resetToSignin } from '../RootNavigation';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../theme/ThemeProvider';
+import MessageModal from '../components/MessageModal';
 
 const ProfileScreen = () => {
   const { loading, fetchProfile, updatePhoto } = useProfile();
@@ -18,12 +19,24 @@ const ProfileScreen = () => {
   const [profileData, setProfileData] = useState(null);
   const [retryCount, setRetryCount] = useState(0);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [passwordModalVisible, setPasswordModalVisible] = useState(false);
+  const [messageModalVisible, setMessageModalVisible] = useState(false);
+  const [messageTitle, setMessageTitle] = useState('');
+  const [messageText, setMessageText] = useState('');
+  const [messageIcon, setMessageIcon] = useState('info');
+  const [photoMessageVisible, setPhotoMessageVisible] = useState(false);
+  const [photoMessageTitle, setPhotoMessageTitle] = useState('');
+  const [photoMessageText, setPhotoMessageText] = useState('');
+  const [photoMessageIcon, setPhotoMessageIcon] = useState('info');
   const [deleteInput, setDeleteInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [photoModalVisible, setPhotoModalVisible] = useState(false);
   const [photoLoading, setPhotoLoading] = useState(false);
   const [userRole, setUserRole] = useState(null);
   const { theme, setTheme, colors, isDark } = useTheme();
+  const [errorModalVisible, setErrorModalVisible] = useState(false);
+  const [errorModalMessage, setErrorModalMessage] = useState('');
 
   const loadProfile = async () => {
     try {
@@ -34,20 +47,8 @@ const ProfileScreen = () => {
       setUserRole(role);
       setProfileData(profileData);
     } catch (err) {
-      Alert.alert(
-        'Hata',
-        'Profil bilgileri yüklenirken bir hata oluştu. Tekrar denemek ister misiniz?',
-        [
-          {
-            text: 'İptal',
-            style: 'cancel'
-          },
-          {
-            text: 'Tekrar Dene',
-            onPress: () => setRetryCount(prev => prev + 1)
-          }
-        ]
-      );
+      setErrorModalMessage('Profil bilgileri yüklenirken bir hata oluştu. Tekrar denemek ister misiniz?');
+      setErrorModalVisible(true);
     }
   };
 
@@ -63,6 +64,20 @@ const ProfileScreen = () => {
     }, [])
   );
 
+  const showMessage = (title, text, icon = 'info') => {
+    setMessageTitle(title);
+    setMessageText(text);
+    setMessageIcon(icon);
+    setMessageModalVisible(true);
+  };
+
+  const showPhotoMessage = (title, text, icon = 'info') => {
+    setPhotoMessageTitle(title);
+    setPhotoMessageText(text);
+    setPhotoMessageIcon(icon);
+    setPhotoMessageVisible(true);
+  };
+
   const handlePhotoPick = async (type) => {
     setPhotoModalVisible(false);
     setPhotoLoading(true);
@@ -71,7 +86,7 @@ const ProfileScreen = () => {
       if (type === 'camera') {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
         if (status !== 'granted') {
-          Alert.alert('Kamera izni gerekli!');
+          showPhotoMessage('Kamera İzni Gerekli', 'Kamera izni verilmedi. Ayarlardan izin verebilirsiniz.', 'warning');
           setPhotoLoading(false);
           return;
         }
@@ -83,7 +98,7 @@ const ProfileScreen = () => {
       } else {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
-          Alert.alert('Galeri izni gerekli!');
+          showPhotoMessage('Galeri İzni Gerekli', 'Galeri izni verilmedi. Ayarlardan izin verebilirsiniz.', 'warning');
           setPhotoLoading(false);
           return;
         }
@@ -105,63 +120,101 @@ const ProfileScreen = () => {
         base64: asset.base64,
       };
       await updatePhoto(imageData);
-      Alert.alert('Başarılı', 'Profil fotoğrafı güncellendi.');
+      showPhotoMessage('Başarılı', 'Profil fotoğrafı güncellendi.', 'check-circle');
       loadProfile();
     } catch (err) {
-      Alert.alert('Hata', 'Profil fotoğrafı güncellenirken bir hata oluştu.');
+      showPhotoMessage('Hata', 'Profil fotoğrafı güncellenirken bir hata oluştu.', 'error');
     } finally {
       setPhotoLoading(false);
     }
   };
 
-  const handleDeleteAccount = async () => {
+  const handleDeleteAccount = () => {
     if (deleteInput.trim().toLowerCase() !== 'delete') {
-      Alert.alert('Uyarı', 'Lütfen kutuya delete yazınız.');
+      showMessage('Uyarı', 'Lütfen kutuya delete yazınız.', 'warning');
       return;
     }
 
-    Alert.alert(
-      'Hesap Silme Onayı',
-      'Hesabınızı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz!',
-      [
-        {
-          text: 'İptal',
-          style: 'cancel'
-        },
-        {
-          text: 'Evet, Hesabımı Sil',
-          style: 'destructive',
-          onPress: async () => {
-            setDeleteLoading(true);
-            try {
-              await deleteAccount();
-              setDeleteModalVisible(false);
-              setDeleteInput('');
-              Alert.alert(
-                'Başarılı',
-                'Hesabınız başarıyla silindi. Uygulamadan çıkış yapılıyor...',
-                [{ text: 'Tamam' }]
-              );
-              await logout();
-              resetToSignin();
-            } catch (err) {
-              console.error('Hesap silme hatası:', err);
-              Alert.alert(
-                'Hata',
-                err.response?.data?.message || 'Hesap silinirken bir hata oluştu. Lütfen daha sonra tekrar deneyin.'
-              );
-            } finally {
-              setDeleteLoading(false);
-            }
-          }
-        }
-      ]
-    );
+    // Delete yazıldıysa şifre modalını aç
+    setDeleteModalVisible(false);
+    setPasswordModalVisible(true);
+  };
+
+  const handlePasswordConfirm = async () => {
+    if (!passwordInput.trim()) {
+      showMessage('Uyarı', 'Lütfen şifrenizi giriniz.', 'warning');
+      return;
+    }
+
+    setDeleteLoading(true);
+    try {
+      // Şifre doğrulaması ve hesap silme işlemi
+      const response = await deleteAccount(passwordInput);
+      
+      if (response.data.Success) {
+        setPasswordModalVisible(false);
+        setDeleteInput('');
+        setPasswordInput('');
+        showMessage(
+          'Başarılı',
+          response.data.data?.Message || response.data.Message || 'Hesabınız başarıyla silindi. Uygulamadan çıkış yapılıyor...',
+          'check-circle'
+        );
+        // 2 saniye sonra çıkış yap
+        setTimeout(async () => {
+          await logout();
+          resetToSignin();
+        }, 2000);
+      } else {
+        // Backend'den gelen hata mesajı
+        showMessage('Hata', response.data.data?.Message || response.data.Message || 'Bir hata oluştu.', 'error');
+      }
+    } catch (err) {
+      // Backend'den gelen response'u kontrol et
+      const errorMessage = err.response?.data?.data?.Message || err.response?.data?.Message || err.response?.data?.message;
+      
+      if (errorMessage?.includes('Aktif kiralamalarınız bulunmaktadır')) {
+        showMessage(
+          'Aktif Kiralamalar Mevcut',
+          'Hesabınızı silmek için önce aktif kiralamalarınızı sonlandırmanız gerekiyor.',
+          'warning'
+        );
+        setPasswordModalVisible(false);
+        setPasswordInput('');
+        setDeleteInput('');
+      } else {
+        // Diğer hatalar için genel mesaj
+        showMessage('Hata', errorMessage || 'Şifre yanlış veya hesap silinirken bir hata oluştu. Lütfen daha sonra tekrar deneyin.', 'error');
+      }
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const cancelPassword = () => {
+    setPasswordModalVisible(false);
+    setPasswordInput('');
+    setDeleteInput('');
   };
 
   const handleLogout = async () => {
     await logout();
     resetToSignin();
+  };
+
+  const cancelDelete = () => {
+    setDeleteModalVisible(false);
+    setDeleteInput('');
+    setPasswordInput('');
+  };
+
+  const handleRetry = () => {
+    setErrorModalVisible(false);
+    setRetryCount(prev => prev + 1);
+  };
+
+  const handleErrorModalClose = () => {
+    setErrorModalVisible(false);
   };
 
   if (loading || photoLoading) {
@@ -318,12 +371,15 @@ const ProfileScreen = () => {
         visible={deleteModalVisible}
         transparent
         animationType="fade"
-        onRequestClose={() => setDeleteModalVisible(false)}
+        onRequestClose={cancelDelete}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.card }] }>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Hesabını silmek istediğine emin misin?</Text>
-            <Text style={[styles.modalDesc, { color: colors.textSecondary }]}>Hesabını silmek için kutuya <Text style={{ fontWeight: 'bold', color: colors.error }}>'delete'</Text> yazmalısın.</Text>
+          <View style={[styles.modalContent, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
+            <Icon name="delete" size={40} color={colors.error} style={styles.modalIcon} />
+            <Text style={[styles.modalTitle, { color: colors.error }]}>Hesabı Sil</Text>
+            <Text style={[styles.modalDesc, { color: colors.textSecondary }]}>
+              Hesabını silmek için kutuya <Text style={{ fontWeight: 'bold', color: colors.error }}>'delete'</Text> yazmalısın.
+            </Text>
             <TextInput
               style={[styles.modalInput, { borderColor: colors.border, backgroundColor: colors.background, color: colors.text }]}
               placeholder="delete"
@@ -334,16 +390,145 @@ const ProfileScreen = () => {
               autoCorrect={false}
             />
             <View style={styles.modalButtonRow}>
-              <TouchableOpacity style={[styles.modalCancelButton, { backgroundColor: colors.background }]} onPress={() => setDeleteModalVisible(false)} disabled={deleteLoading}>
-                <Text style={[styles.modalCancelText, { color: colors.text }]}>Vazgeç</Text>
+              <TouchableOpacity
+                style={[styles.rentButton, { backgroundColor: colors.error, shadowColor: colors.error }]}
+                onPress={handleDeleteAccount}
+                disabled={deleteLoading}
+              >
+                {deleteLoading ? (
+                  <ActivityIndicator color={isDark ? '#111' : '#fff'} />
+                ) : (
+                  <Text style={[styles.rentButtonText, { color: isDark ? '#111' : '#fff' }]}>Hesabı Sil</Text>
+                )}
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.modalDeleteButton, { backgroundColor: colors.error }]} onPress={handleDeleteAccount} disabled={deleteLoading}>
-                <Text style={[styles.modalDeleteText, { color: colors.white }]}>{deleteLoading ? 'Siliniyor...' : 'Hesabı Sil'}</Text>
+              <TouchableOpacity
+                style={[styles.rentButton, { backgroundColor: colors.primary, shadowColor: colors.primary, marginLeft: 8 }]}
+                onPress={cancelDelete}
+                disabled={deleteLoading}
+              >
+                <Text style={[styles.rentButtonText, { color: isDark ? '#111' : '#fff' }]}>Vazgeç</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
+
+      {/* Şifre doğrulama modalı */}
+      <Modal
+        visible={passwordModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={cancelPassword}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
+            <Icon name="lock" size={40} color={colors.error} style={styles.modalIcon} />
+            <Text style={[styles.modalTitle, { color: colors.error }]}>Şifre Doğrulama</Text>
+            <Text style={[styles.modalDesc, { color: colors.textSecondary }]}>
+              Hesabınızı silmek için şifrenizi giriniz.
+            </Text>
+            <TextInput
+              style={[styles.modalInput, { borderColor: colors.border, backgroundColor: colors.background, color: colors.text }]}
+              placeholder="Şifrenizi girin"
+              placeholderTextColor={colors.textSecondary}
+              value={passwordInput}
+              onChangeText={setPasswordInput}
+              secureTextEntry={true}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <View style={styles.modalButtonRow}>
+              <TouchableOpacity
+                style={[styles.rentButton, { backgroundColor: colors.error, shadowColor: colors.error }]}
+                onPress={handlePasswordConfirm}
+                disabled={deleteLoading}
+              >
+                {deleteLoading ? (
+                  <ActivityIndicator color={isDark ? '#111' : '#fff'} />
+                ) : (
+                  <Text style={[styles.rentButtonText, { color: isDark ? '#111' : '#fff' }]}>Hesabı Sil</Text>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.rentButton, { backgroundColor: colors.primary, shadowColor: colors.primary, marginLeft: 8 }]}
+                onPress={cancelPassword}
+                disabled={deleteLoading}
+              >
+                <Text style={[styles.rentButtonText, { color: isDark ? '#111' : '#fff' }]}>Vazgeç</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Message Modal */}
+      <Modal
+        visible={messageModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMessageModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
+            <Icon 
+              name={messageIcon} 
+              size={40} 
+              color={
+                messageIcon === 'check-circle' ? '#43a047' :
+                messageIcon === 'error' ? colors.error :
+                messageIcon === 'warning' ? '#FFC107' : colors.primary
+              } 
+              style={styles.modalIcon} 
+            />
+            <Text style={[styles.modalTitle, { 
+              color: messageIcon === 'check-circle' ? '#43a047' :
+                     messageIcon === 'error' ? colors.error :
+                     messageIcon === 'warning' ? '#FFC107' : colors.primary
+            }]}>
+              {messageTitle}
+            </Text>
+            <Text style={[styles.modalMessage, { color: colors.textSecondary }]}>
+              {messageText}
+            </Text>
+            <TouchableOpacity
+              style={[styles.rentButton, { 
+                backgroundColor: messageIcon === 'check-circle' ? '#43a047' :
+                               messageIcon === 'error' ? colors.error :
+                               messageIcon === 'warning' ? '#FFC107' : colors.primary,
+                shadowColor: messageIcon === 'check-circle' ? '#43a047' :
+                            messageIcon === 'error' ? colors.error :
+                            messageIcon === 'warning' ? '#FFC107' : colors.primary
+              }]}
+              onPress={() => setMessageModalVisible(false)}
+            >
+              <Text style={[styles.rentButtonText, { color: isDark ? '#111' : '#fff' }]}>Tamam</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Photo Message Modal */}
+      <MessageModal
+        visible={photoMessageVisible}
+        title={photoMessageTitle}
+        message={photoMessageText}
+        icon={photoMessageIcon}
+        onClose={() => setPhotoMessageVisible(false)}
+      />
+
+      <MessageModal
+        visible={errorModalVisible}
+        title="Hata"
+        message={errorModalMessage}
+        icon="error"
+        showCancel={true}
+        cancelText="İptal"
+        onCancel={handleErrorModalClose}
+        showConfirm={true}
+        confirmText="Tekrar Dene"
+        onConfirm={handleRetry}
+        onClose={handleErrorModalClose}
+      />
     </ScrollView>
   );
 };
@@ -460,26 +645,32 @@ const styles = StyleSheet.create({
   deleteButton: {},
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContent: {
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 24,
     width: '85%',
     alignItems: 'center',
+    elevation: 5,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  modalIcon: {
+    marginBottom: 16,
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 10,
-    textAlign: 'center',
+    marginBottom: 8,
   },
   modalDesc: {
-    fontSize: 15,
-    marginBottom: 16,
+    fontSize: 16,
     textAlign: 'center',
+    marginBottom: 16,
   },
   modalInput: {
     width: '100%',
@@ -487,12 +678,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 10,
     fontSize: 15,
-    marginBottom: 18,
+    marginBottom: 24,
     textAlign: 'center',
   },
   modalButtonRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     width: '100%',
   },
   modalCancelButton: {
@@ -530,6 +721,26 @@ const styles = StyleSheet.create({
   modalPhotoText: {
     fontWeight: 'bold',
     fontSize: 15,
+  },
+  rentButton: {
+    padding: 10,
+    borderRadius: 12,
+    alignItems: 'center',
+    width: 100,
+    elevation: 3,
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  rentButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+  },
+  modalMessage: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 24,
   },
 });
 

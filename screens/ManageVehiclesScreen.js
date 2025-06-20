@@ -5,7 +5,6 @@ import {
     StyleSheet,
     ScrollView,
     TouchableOpacity,
-    Alert,
     ActivityIndicator,
     Switch,
     TextInput,
@@ -21,6 +20,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../theme/ThemeProvider';
+import MessageModal from '../components/MessageModal';
 
 const fieldIcons = {
     Brand: 'car',
@@ -42,6 +42,13 @@ const ManageVehiclesScreen = () => {
     const { mode, vehicleId } = route.params || {};
     const { fetchVehicleById, editVehicle, addVehicle, loading } = useVehicles();
     const { colors } = useTheme();
+
+    const showMessage = (title, text, icon = 'info', onButtonPress = null) => {
+        setMessageTitle(title);
+        setMessageText(text);
+        setMessageIcon(icon);
+        setMessageModalVisible(true);
+    };
 
     const isAddMode = mode === 'Add';
     const isEditMode = mode === 'Edit';
@@ -69,9 +76,14 @@ const ManageVehiclesScreen = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errors, setErrors] = useState({});
     const [selectedPhotos, setSelectedPhotos] = useState([]);
+    const [messageModalVisible, setMessageModalVisible] = useState(false);
+    const [messageTitle, setMessageTitle] = useState('');
+    const [messageText, setMessageText] = useState('');
+    const [messageIcon, setMessageIcon] = useState('info');
     const dailyPriceRef = useRef(null);
     const scrollViewRef = useRef(null);
     const isAvailableRef = useRef(null);
+    const isRentedRef = useRef(null);
 
     useEffect(() => {
         if (!isAddMode && vehicleId) {
@@ -85,14 +97,23 @@ const ManageVehiclesScreen = () => {
                 dailyPriceRef.current.focus();
             }, 350);
         }
-        if (isUnavailableMode && scrollViewRef.current && isAvailableRef.current) {
+        if (isUnavailableMode && scrollViewRef.current) {
             setTimeout(() => {
-                isAvailableRef.current.measureLayout(
-                    scrollViewRef.current.getInnerViewNode(),
-                    (x, y) => {
-                        scrollViewRef.current.scrollTo({ y: y - 16, animated: true });
-                    }
-                );
+                if (isAvailableRef.current) {
+                    isAvailableRef.current.measureLayout(
+                        scrollViewRef.current.getInnerViewNode(),
+                        (x, y) => {
+                            scrollViewRef.current.scrollTo({ y: y - 16, animated: true });
+                        }
+                    );
+                } else if (isRentedRef.current) {
+                    isRentedRef.current.measureLayout(
+                        scrollViewRef.current.getInnerViewNode(),
+                        (x, y) => {
+                            scrollViewRef.current.scrollTo({ y: y - 16, animated: true });
+                        }
+                    );
+                }
             }, 350);
         }
     }, [isPriceMode, isUnavailableMode, formData]);
@@ -118,8 +139,8 @@ const ManageVehiclesScreen = () => {
             setVehicle(vehicleData);
             setFormData(vehicleData);
         } catch (err) {
-            Alert.alert('Hata', 'Araç bilgileri yüklenirken bir hata oluştu.');
-            navigation.goBack();
+            const errorMessage = err.response?.data?.Message || err.response?.data?.message || err.message || 'Araç bilgileri yüklenirken bir hata oluştu.';
+            showMessage('Hata', errorMessage, 'error', () => navigation.goBack());
         }
     };
 
@@ -175,11 +196,11 @@ const ManageVehiclesScreen = () => {
 
     const handleSubmit = async () => {
         if (!hasChanges && !isAddMode) {
-            Alert.alert('Bilgi', 'Değişiklik yapılmadı.');
+            showMessage('Bilgi', 'Değişiklik yapılmadı.', 'info');
             return;
         }
-        if (!validateForm()) {
-            Alert.alert('Hata', 'Lütfen formu doğru doldurun.');
+        if (!isUnavailableMode && !validateForm()) {
+            showMessage('Hata', 'Lütfen formu doğru doldurun.', 'error');
             return;
         }
         try {
@@ -201,23 +222,40 @@ const ManageVehiclesScreen = () => {
                         await addVehiclePhoto(newVehicle.Id, photo.base64);
                     }
                 }
-                Alert.alert('Başarılı', 'Araç başarıyla eklendi.');
-                navigation.goBack();
+                showMessage('Başarılı', 'Araç başarıyla eklendi.', 'check-circle', () => navigation.goBack());
             } else {
-                await editVehicle(vehicleId, {
-                    Id: vehicleId,
-                    Brand: formData.Brand,
-                    Model: formData.Model,
-                    ModelYear: formData.ModelYear,
-                    Category: formData.Category,
-                    Color: formData.Color,
-                    DailyPrice: Number(formData.DailyPrice),
-                    TransmissionType: formData.TransmissionType,
-                    FuelType: formData.FuelType,
-                    NumberPlate: formData.NumberPlate,
-                    IsAvailable: formData.IsAvailable,
-                    IsRented: formData.IsRented
-                });
+                if (isUnavailableMode) {
+                    const updateData = {
+                        Id: vehicleId,
+                        Brand: vehicle.Brand,
+                        Model: vehicle.Model,
+                        ModelYear: vehicle.ModelYear,
+                        Category: vehicle.Category,
+                        Color: vehicle.Color,
+                        DailyPrice: vehicle.DailyPrice,
+                        TransmissionType: vehicle.TransmissionType,
+                        FuelType: vehicle.FuelType,
+                        NumberPlate: vehicle.NumberPlate,
+                        IsAvailable: formData.IsAvailable,
+                        IsRented: vehicle.IsRented
+                    };
+                    await editVehicle(vehicleId, updateData);
+                } else {
+                    await editVehicle(vehicleId, {
+                        Id: vehicleId,
+                        Brand: formData.Brand,
+                        Model: formData.Model,
+                        ModelYear: formData.ModelYear,
+                        Category: formData.Category,
+                        Color: formData.Color,
+                        DailyPrice: Number(formData.DailyPrice),
+                        TransmissionType: formData.TransmissionType,
+                        FuelType: formData.FuelType,
+                        NumberPlate: formData.NumberPlate,
+                        IsAvailable: formData.IsAvailable,
+                        IsRented: formData.IsRented
+                    });
+                }
                 if (selectedPhotos.length > 0) {
                     for (const photo of selectedPhotos) {
                         await addVehiclePhoto(vehicleId, photo.base64);
@@ -225,11 +263,11 @@ const ManageVehiclesScreen = () => {
                     setSelectedPhotos([]);
                     await loadVehicleData();
                 }
-                Alert.alert('Başarılı', 'Araç bilgileri güncellendi.');
-                navigation.goBack();
+                showMessage('Başarılı', 'Araç bilgileri güncellendi.', 'check-circle', () => navigation.goBack());
             }
         } catch (err) {
-            Alert.alert('Hata', isAddMode ? 'Araç eklenemedi.' : 'Güncelleme sırasında bir hata oluştu.');
+            const errorMessage = err.response?.data?.Message || err.response?.data?.message || err.message || (isAddMode ? 'Araç eklenemedi.' : 'Güncelleme sırasında bir hata oluştu.');
+            showMessage('Hata', errorMessage, 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -247,14 +285,14 @@ const ManageVehiclesScreen = () => {
                 VehiclePhotos: prev.VehiclePhotos.filter(p => p.PhotoId !== photoId)
             }));
         } catch (err) {
-            Alert.alert('Hata', 'Fotoğraf silinemedi.');
+            showMessage('Hata', 'Fotoğraf silinemedi.', 'error');
         }
     };
 
     const handleAddPhoto = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
-            Alert.alert('Galeri izni gerekli!');
+            showMessage('Galeri İzni Gerekli', 'Galeri izni verilmedi. Ayarlardan izin verebilirsiniz.', 'warning');
             return;
         }
         let result = await ImagePicker.launchImageLibraryAsync({
@@ -297,7 +335,8 @@ const ManageVehiclesScreen = () => {
 
         switch (type) {
             case 'boolean':
-                const refProp = (field === 'IsAvailable' && isUnavailableMode) ? { ref: isAvailableRef } : {};
+                const refProp = (field === 'IsAvailable' && isUnavailableMode) ? { ref: isAvailableRef } : 
+                               (field === 'IsRented' && isUnavailableMode) ? { ref: isRentedRef } : {};
                 return (
                     <View style={[styles.fieldContainer, { backgroundColor: colors.card, shadowColor: colors.shadow }] } {...refProp}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
@@ -541,6 +580,20 @@ const ManageVehiclesScreen = () => {
                     <Text style={[styles.buttonText, { color: colors.white }]}>Kaydet</Text>
                 </TouchableOpacity>
             </View>
+
+            {/* Message Modal */}
+            <MessageModal
+                visible={messageModalVisible}
+                title={messageTitle}
+                message={messageText}
+                icon={messageIcon}
+                onClose={() => setMessageModalVisible(false)}
+                onButtonPress={() => {
+                    if (messageIcon === 'check-circle') {
+                        navigation.goBack();
+                    }
+                }}
+            />
         </View>
     );
 };

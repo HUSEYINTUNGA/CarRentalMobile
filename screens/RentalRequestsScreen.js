@@ -5,6 +5,7 @@ import { getRentalRequests, approveRentalRequest, rejectRentalRequest } from '..
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../theme/ThemeProvider';
+import MessageModal from '../components/MessageModal';
 
 const { width } = Dimensions.get('window');
 const CARD_PADDING = 32; // 16px left + 16px right
@@ -19,6 +20,11 @@ const RentalRequestsScreen = () => {
   const [rejectReason, setRejectReason] = useState('');
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [messageModalVisible, setMessageModalVisible] = useState(false);
+  const [messageTitle, setMessageTitle] = useState('');
+  const [messageText, setMessageText] = useState('');
+  const [messageIcon, setMessageIcon] = useState('info');
+  const [showRejectModal, setShowRejectModal] = useState(false);
   const { colors, isDark } = useTheme();
 
   const fetchRequests = async () => {
@@ -31,7 +37,7 @@ const RentalRequestsScreen = () => {
         setRequests([]);
       }
     } catch (err) {
-      Alert.alert('Hata', 'İstekler yüklenemedi.');
+      showMessage('Hata', 'İstekler yüklenemedi.', 'error');
       setRequests([]);
     } finally {
       setLoading(false);
@@ -51,10 +57,21 @@ const RentalRequestsScreen = () => {
   const handleApprove = async (id) => {
     setActionLoading(true);
     try {
-      await approveRentalRequest({ rentalId: id });
+      const response = await approveRentalRequest({ rentalId: id });
+      setMessageTitle('Başarılı');
+      setMessageText(response?.data?.message || 'Kiralama isteği onaylandı.');
+      setMessageIcon('check-circle');
+      setMessageModalVisible(true);
       fetchRequests();
     } catch (err) {
-      Alert.alert('Hata', 'Onaylama işlemi başarısız.');
+      setMessageTitle('Hata');
+      setMessageText(
+        typeof err.response?.data === 'string'
+          ? err.response.data
+          : err.response?.data?.message || err.message || 'Onaylama işlemi başarısız.'
+      );
+      setMessageIcon('error');
+      setMessageModalVisible(true);
     } finally {
       setActionLoading(false);
     }
@@ -62,27 +79,43 @@ const RentalRequestsScreen = () => {
 
   const handleReject = async () => {
     if (!rejectReason.trim()) {
-      Alert.alert('Hata', 'Lütfen red sebebini girin.');
+      setMessageTitle('Hata');
+      setMessageText('Lütfen red sebebini girin.');
+      setMessageIcon('warning');
+      setMessageModalVisible(true);
       return;
     }
     try {
       setActionLoading(true);
       if (!selectedRequest || typeof selectedRequest !== 'string' || selectedRequest.length !== 36 || !/^[0-9a-fA-F-]{36}$/.test(selectedRequest)) {
-        Alert.alert('Hata', 'Geçersiz veya eksik ID!');
+        setMessageTitle('Hata');
+        setMessageText('Geçersiz veya eksik ID!');
+        setMessageIcon('error');
+        setMessageModalVisible(true);
         setActionLoading(false);
         return;
       }
-      await rejectRentalRequest({
+      const response = await rejectRentalRequest({
         rentalId: selectedRequest,
         rejectionReason: rejectReason.trim()
       });
-      Alert.alert('Başarılı', 'Kiralama isteği reddedildi.');
+      setMessageTitle('Başarılı');
+      setMessageText(response?.data?.message || 'Kiralama isteği reddedildi.');
+      setMessageIcon('check-circle');
+      setMessageModalVisible(true);
       setRejectReason('');
-      setModalVisible(false);
+      setShowRejectModal(false);
       setSelectedRequest(null);
       fetchRequests();
     } catch (error) {
-      Alert.alert('Hata', error.message || 'İstek reddedilirken bir hata oluştu.');
+      setMessageTitle('Hata');
+      setMessageText(
+        typeof error.response?.data === 'string'
+          ? error.response.data
+          : error.response?.data?.message || error.message || 'İstek reddedilirken bir hata oluştu.'
+      );
+      setMessageIcon('error');
+      setMessageModalVisible(true);
     } finally {
       setActionLoading(false);
     }
@@ -99,6 +132,19 @@ const RentalRequestsScreen = () => {
       return `${match2[1]} ${match2[2].toUpperCase()} ${match2[3]}`;
     }
     return plate.toUpperCase();
+  };
+
+  const showMessage = (title, text, icon = 'info') => {
+    setMessageTitle(title);
+    setMessageText(text);
+    setMessageIcon(icon);
+    setMessageModalVisible(true);
+  };
+
+  const openRejectModal = (id) => {
+    setSelectedRequest(id);
+    setShowRejectModal(true);
+    setRejectReason('');
   };
 
   const renderCard = ({ item }) => {
@@ -150,7 +196,7 @@ const RentalRequestsScreen = () => {
             </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.rejectBtnSmall, { backgroundColor: colors.error }, actionLoading && styles.disabledButton]} 
-              onPress={() => { setSelectedRequest(item.Id); setModalVisible(true); }} 
+              onPress={() => openRejectModal(item.Id)} 
               disabled={actionLoading}
             >
               <MaterialIcons name="close" size={18} color={colors.white} />
@@ -195,43 +241,54 @@ const RentalRequestsScreen = () => {
           }
         />
       )}
-      <Modal
-        visible={modalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalBg}>
-          <View style={[styles.modalContent, { backgroundColor: colors.card }] }>
-            <Text style={[styles.modalTitle, { color: colors.error }]}>Red Sebebi</Text>
-            <TextInput
-              style={[styles.input, { borderColor: colors.border, backgroundColor: colors.background, color: colors.text }]}
-              placeholder="Red sebebini girin..."
-              placeholderTextColor={colors.textSecondary}
-              value={rejectReason}
-              onChangeText={setRejectReason}
-              multiline
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={[styles.rentButton, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
-                onPress={handleReject}
-                disabled={actionLoading}
-              >
-                <Text style={[styles.rentButtonText, { color: isDark ? '#111' : '#fff' }]}>Gönder</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.rentButton, { backgroundColor: colors.error, shadowColor: colors.error }]}
-                onPress={() => { setModalVisible(false); setRejectReason(''); setSelectedRequest(null); }}
-              >
-                <Text style={[styles.rentButtonText, { color: isDark ? '#111' : '#fff' }]}>İptal</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <MessageModal
+        visible={showRejectModal}
+        title="Red Sebebi"
+        message={
+          <TextInput
+            style={[
+              styles.input,
+              {
+                borderColor: colors.border,
+                backgroundColor: colors.background,
+                color: colors.text,
+                minHeight: 120,
+                maxHeight: 200,
+                textAlignVertical: 'top',
+                marginBottom: 10,
+                marginTop: 8,
+                fontSize: 17,
+                borderWidth: 1.5,
+                borderRadius: 12,
+                padding: 14,
+              }
+            ]}
+            placeholder="Red sebebini girin..."
+            placeholderTextColor={colors.textSecondary}
+            value={rejectReason}
+            onChangeText={setRejectReason}
+            multiline
+            autoCapitalize="none"
+            autoCorrect={false}
+            editable={!actionLoading}
+          />
+        }
+        icon="error"
+        showCancel={true}
+        cancelText="İptal"
+        onCancel={() => { setShowRejectModal(false); setRejectReason(''); setSelectedRequest(null); }}
+        showConfirm={true}
+        confirmText={actionLoading ? 'Gönderiliyor...' : 'Gönder'}
+        onConfirm={handleReject}
+        onClose={() => setShowRejectModal(false)}
+      />
+      <MessageModal
+        visible={messageModalVisible}
+        title={messageTitle}
+        message={messageText}
+        icon={messageIcon}
+        onClose={() => setMessageModalVisible(false)}
+      />
     </View>
   );
 };

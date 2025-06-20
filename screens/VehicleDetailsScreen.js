@@ -277,7 +277,7 @@ const VehicleDetailsScreen = () => {
                             style={[styles.rentButton, { backgroundColor: colors.primary }]}
                             onPress={() => navigation.navigate('RentedScreen', { vehicleId: vehicle.Id })}
                         >
-                            <Text style={[styles.rentButtonText, { color: colors.white }]}>Kiralama İsteği Oluştur</Text>
+                            <Text style={[styles.rentButtonText, { color: isDark ? '#111' : '#fff' }]}>Kiralama İsteği Oluştur</Text>
                         </TouchableOpacity>
                     )}
                 </View>

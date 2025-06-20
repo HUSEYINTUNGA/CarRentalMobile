@@ -10,6 +10,7 @@ import IconFA from 'react-native-vector-icons/FontAwesome5';
 import { useTheme } from '../theme/ThemeProvider';
 import { LinearGradient } from 'expo-linear-gradient';
 import CustomDropdown from '../components/CustomDropdown';
+import MessageModal from '../components/MessageModal';
 
 const sortOptions = [
     { label: 'Model Yılı (Artan)', value: 'modelYearAsc' },
@@ -48,8 +49,15 @@ const VehicleListScreen = () => {
     const [drawerVisible, setDrawerVisible] = useState(false);
     const [drawerType, setDrawerType] = useState('filter');
     const [tempFilters, setTempFilters] = useState(filters);
+    const [messageModalVisible, setMessageModalVisible] = useState(false);
+    const [messageTitle, setMessageTitle] = useState('');
+    const [messageText, setMessageText] = useState('');
+    const [messageIcon, setMessageIcon] = useState('info');
     const drawerAnim = useRef(new Animated.Value(SCREEN_WIDTH)).current;
-    const { colors } = useTheme();
+    const { colors, isDark } = useTheme();
+
+    // Silme modalı için state
+    const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
     useEffect(() => {
         const getRole = async () => {
@@ -115,38 +123,45 @@ const VehicleListScreen = () => {
     };
 
     const handleDelete = (vehicleId) => {
-        Alert.alert(
-            'Aracı Sil',
-            'Bu aracı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.',
-            [
-                { text: 'İptal', style: 'cancel' },
-                {
-                    text: 'Sil', style: 'destructive', onPress: async () => {
-                        try {
-                            await removeVehicle(vehicleId);
-                        } catch (err) {}
-                    }
-                }
-            ]
-        );
+        setPendingDeleteId(vehicleId);
+        setMessageTitle('Aracı Sil');
+        setMessageText('Bu aracı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.\n\nNot: Bu aracı istediğin zaman geri yükleyebilirsin.');
+        setMessageIcon('warning');
+        setMessageModalVisible(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (pendingDeleteId) {
+            try {
+                await removeVehicle(pendingDeleteId);
+                setPendingDeleteId(null);
+                setMessageTitle('Başarılı');
+                setMessageText('Araç başarıyla silindi.');
+                setMessageIcon('check-circle');
+                setMessageModalVisible(true);
+            } catch (err) {
+                const errorMessage = err.response?.data?.Message || err.response?.data?.message || err.message || 'Araç silinirken bir hata oluştu.';
+                setPendingDeleteId(null);
+                setMessageTitle('Hata');
+                setMessageText(errorMessage);
+                setMessageIcon('error');
+                setMessageModalVisible(true);
+            }
+        }
+    };
+
+    const handleCancelDelete = () => {
+        setPendingDeleteId(null);
+        setMessageModalVisible(false);
     };
 
     const handleRestore = (vehicleId) => {
-        Alert.alert(
+        showMessage(
             'Aracı Geri Yükle',
             'Bu aracı geri yüklemek istediğinizden emin misiniz?',
-            [
-                { text: 'İptal', style: 'cancel' },
-                {
-                    text: 'Geri Yükle',
-                    onPress: async () => {
-                        try {
-                            await restoreVehicle(vehicleId);
-                        } catch (err) {}
-                    }
-                }
-            ]
+            'info'
         );
+        // TODO: Geri yükleme işlemi için onay butonu eklenebilir
     };
 
     const renderVehicleItem = ({ item }) => (
@@ -476,12 +491,15 @@ const VehicleListScreen = () => {
         </Modal>
     );
 
+    const showMessage = (title, text, icon = 'info') => {
+        setMessageTitle(title);
+        setMessageText(text);
+        setMessageIcon(icon);
+        setMessageModalVisible(true);
+    };
+
     return (
-        <View style={[
-            styles.container,
-            { backgroundColor: colors.background },
-            role === 'Admin' && { paddingTop: 0}
-        ]}>
+        <View style={{ flex: 1, backgroundColor: colors.background }}>
             {/* Gradient Header */}
             <LinearGradient
                 colors={[colors.headerGradientStart, colors.headerGradientEnd]}
@@ -549,7 +567,7 @@ const VehicleListScreen = () => {
                     }}
                     onPress={() => openDrawer('filter')}
                 >
-                    <Text style={{ color: colors.white, fontWeight: 'bold', fontSize: 16 }}>Filtrele</Text>
+                    <Text style={{ color: isDark ? '#111' : '#fff', fontWeight: 'bold', fontSize: 16 }}>Filtrele</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={{
@@ -576,8 +594,6 @@ const VehicleListScreen = () => {
 
             {loading ? (
                 <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 24 }} />
-            ) : error ? (
-                <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
             ) : vehicles.length === 0 ? (
                 <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Kriterlere uygun araç bulunamadı.</Text>
             ) : (
@@ -591,6 +607,20 @@ const VehicleListScreen = () => {
                     ]}
                 />
             )}
+            <MessageModal
+                visible={messageModalVisible}
+                title={messageTitle}
+                message={messageText}
+                icon={messageIcon}
+                showCancel={!!pendingDeleteId}
+                cancelText="İptal"
+                onCancel={handleCancelDelete}
+                showConfirm={!!pendingDeleteId}
+                confirmText="Sil"
+                onConfirm={handleConfirmDelete}
+                reverseButtons={!!pendingDeleteId}
+                onClose={handleCancelDelete}
+            />
         </View>
     );
 };

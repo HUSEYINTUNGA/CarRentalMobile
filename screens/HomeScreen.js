@@ -10,6 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as jwtDecode from 'jwt-decode';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../theme/ThemeProvider';
+import MessageModal from '../components/MessageModal';
 
 const HomeScreen = () => {
   const { fetchProfile } = useProfile();
@@ -23,6 +24,8 @@ const HomeScreen = () => {
   const [latestVehicle, setLatestVehicle] = useState(null);
   const [popularVehicles, setPopularVehicles] = useState([]);
   const { colors } = useTheme();
+  const [errorModalVisible, setErrorModalVisible] = useState(false);
+  const [errorModalMessage, setErrorModalMessage] = useState('');
 
   const processVehicleData = useCallback((vehicles) => {
     if (!vehicles || vehicles.length === 0) {
@@ -50,6 +53,10 @@ const HomeScreen = () => {
     }
   }, [vehicles, processVehicleData]);
 
+  const handleErrorModalClose = () => {
+    setErrorModalVisible(false);
+  };
+
   const loadData = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
@@ -66,7 +73,8 @@ const HomeScreen = () => {
       }
     } catch (error) {
       console.error('Veri yükleme hatası:', error);
-      Alert.alert('Hata', 'Veriler yüklenirken bir hata oluştu.');
+      setErrorModalMessage('Veriler yüklenirken bir hata oluştu.');
+      setErrorModalVisible(true);
     }
   };
 
@@ -356,6 +364,13 @@ const HomeScreen = () => {
           </View>
         </View>
       </ScrollView>
+      <MessageModal
+        visible={errorModalVisible}
+        title="Hata"
+        message={errorModalMessage}
+        icon="error"
+        onClose={handleErrorModalClose}
+      />
     </>
   );
 };

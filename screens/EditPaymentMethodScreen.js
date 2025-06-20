@@ -13,6 +13,7 @@ import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/nativ
 import { createPaymentMethod, updatePaymentMethod, getPaymentMethodById } from '../api/paymentMethodsApi';
 import { useTheme } from '../theme/ThemeProvider';
 import { LinearGradient } from 'expo-linear-gradient';
+import MessageModal from '../components/MessageModal';
 
 const styles = StyleSheet.create({
   container: {
@@ -136,8 +137,19 @@ export default function EditPaymentMethod() {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(mode === 'update');
   const [errors, setErrors] = useState({});
+  const [messageModalVisible, setMessageModalVisible] = useState(false);
+  const [messageTitle, setMessageTitle] = useState('');
+  const [messageText, setMessageText] = useState('');
+  const [messageIcon, setMessageIcon] = useState('info');
 
   const { colors, isDark } = useTheme();
+
+  const showMessage = (title, text, icon = 'info', onButtonPress = null) => {
+    setMessageTitle(title);
+    setMessageText(text);
+    setMessageIcon(icon);
+    setMessageModalVisible(true);
+  };
 
   useFocusEffect(
     React.useCallback(() => {
@@ -172,9 +184,7 @@ export default function EditPaymentMethod() {
         cardholderName: card.CardholderName || '',
       });
     } catch (error) {
-      console.error('Error fetching card details:', error);
-      Alert.alert('Error', 'Failed to load card details');
-      navigation.goBack();
+      showMessage('Hata', 'Kart detayları yüklenemedi.', 'error', () => navigation.goBack());
     } finally {
       setInitialLoading(false);
     }
@@ -182,6 +192,10 @@ export default function EditPaymentMethod() {
 
   const validateForm = () => {
     const newErrors = {};
+    
+    if (!formData.methodName) {
+      newErrors.methodName = 'Kart adı zorunludur';
+    }
     
     if (!formData.cardNumber) {
       newErrors.cardNumber = 'Card number is required';
@@ -219,7 +233,9 @@ export default function EditPaymentMethod() {
   };
 
   const handleSubmit = async () => {
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      return;
+    }
 
     try {
       setLoading(true);
@@ -231,20 +247,18 @@ export default function EditPaymentMethod() {
         ExpirationYear: parseInt(formData.expiryYear)+2000,
         CVV: formData.cvv,
       };
+      
       if (mode === 'create') {
         await createPaymentMethod(data);
-        Alert.alert('Başarılı', 'Ödeme yöntemi başarıyla eklendi');
+        showMessage('Başarılı', 'Ödeme yöntemi başarıyla eklendi.', 'check-circle', () => navigation.goBack());
       } else {
         await updatePaymentMethod({ 
           ...data, 
           PaymentMethodId: cardId
         });
-        Alert.alert('Başarılı', 'Ödeme yöntemi başarıyla güncellendi');
+        showMessage('Başarılı', 'Ödeme yöntemi başarıyla güncellendi.', 'check-circle', () => navigation.goBack());
       }
-
-      navigation.goBack();
     } catch (error) {
-      console.error('Error saving payment method:', error);
       let errorMsg = 'Ödeme yöntemi kaydedilemedi';
       if (error?.response?.data) {
         const data = error.response.data;
@@ -262,7 +276,7 @@ export default function EditPaymentMethod() {
           }
         }
       }
-      Alert.alert('Error', errorMsg);
+      showMessage('Hata', errorMsg, 'error');
     } finally {
       setLoading(false);
     }
@@ -366,7 +380,11 @@ export default function EditPaymentMethod() {
             editable={true}
           />
           <TextInput
-            style={[styles.input, { flex: 1, backgroundColor: colors.card, color: colors.text, borderColor: colors.border, borderWidth: 1 }]}
+            style={[
+              styles.input, 
+              { flex: 1, backgroundColor: colors.card, color: colors.text, borderColor: colors.border, borderWidth: 1 },
+              errors.cvv && { borderColor: colors.error }
+            ]}
             placeholder={mode === 'update' ? '' : 'CVV'}
             placeholderTextColor={isDark ? '#fff' : colors.textSecondary}
             value={formData.cvv}
@@ -379,6 +397,12 @@ export default function EditPaymentMethod() {
             editable={true}
           />
         </View>
+        {errors.cvv && (
+          <Text style={[styles.errorText, { color: colors.error, marginBottom: 16 }]}>
+            {errors.cvv === 'CVV is required' ? 'CVV zorunludur' :
+             errors.cvv === 'Invalid CVV' ? 'Geçersiz CVV (3-4 haneli olmalı)' : errors.cvv}
+          </Text>
+        )}
 
         <View style={styles.inputGroup}>
           <Text style={[styles.label, { color: colors.text }]}>Kart Sahibi Adı</Text>
@@ -409,14 +433,28 @@ export default function EditPaymentMethod() {
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color={colors.white} />
+            <ActivityIndicator color={isDark ? '#111' : '#fff'} />
           ) : (
-            <Text style={[styles.buttonText, { color: colors.white }]}>
+            <Text style={[styles.buttonText, { color: isDark ? '#111' : '#fff' }]}>
               {mode === 'create' ? 'Kartı Ekle' : 'Kartı Güncelle'}
             </Text>
           )}
         </TouchableOpacity>
       </View>
+
+      {/* Message Modal */}
+      <MessageModal
+        visible={messageModalVisible}
+        title={messageTitle}
+        message={messageText}
+        icon={messageIcon}
+        onClose={() => setMessageModalVisible(false)}
+        onButtonPress={() => {
+          if (messageIcon === 'check-circle') {
+            navigation.goBack();
+          }
+        }}
+      />
     </ScrollView>
   );
 } 

@@ -270,13 +270,13 @@ const TabNavigator = (props) => {
             </Text>
             <View style={styles.modalButtonRow}>
               <TouchableOpacity
-                style={[styles.rentButton, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
+                style={[styles.rentButton, { backgroundColor: colors.error, shadowColor: colors.error }]}
                 onPress={confirmLogout}
               >
                 <Text style={[styles.rentButtonText, { color: isDark ? '#111' : '#fff' }]}>Çıkış Yap</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.rentButton, { backgroundColor: colors.error, shadowColor: colors.error, marginLeft: 8 }]}
+                style={[styles.rentButton, { backgroundColor: colors.primary, shadowColor: colors.primary, marginLeft: 8 }]}
                 onPress={cancelLogout}
               >
                 <Text style={[styles.rentButtonText, { color: isDark ? '#111' : '#fff' }]}>İptal</Text>

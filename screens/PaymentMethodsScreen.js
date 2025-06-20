@@ -7,9 +7,11 @@ import {
   FlatList,
   Alert,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { usePaymentMethods } from '../hooks/usePaymentMethods';
 import { useTheme } from '../theme/ThemeProvider';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -20,8 +22,10 @@ const PaymentMethodsScreen = () => {
   const navigation = useNavigation();
   const { paymentMethods, loading, error, fetchPaymentMethods, removePaymentMethod } = usePaymentMethods();
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const [selectedCardId, setSelectedCardId] = useState(null);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [cardToDelete, setCardToDelete] = useState(null);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -35,33 +39,29 @@ const PaymentMethodsScreen = () => {
     }
   }, [error]);
 
-  const handleDelete = async (Id) => {
-    Alert.alert(
-      'Kartı Sil',
-      'Bu kartı silmek istediğinizden emin misiniz?',
-      [
-        {
-          text: 'İptal',
-          style: 'cancel',
-        },
-        {
-          text: 'Sil',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setDeleteLoading(true);
-              await removePaymentMethod(Id);
-              fetchPaymentMethods();
-              Alert.alert('Başarılı', 'Kart başarıyla silindi.');
-            } catch (err) {
-              Alert.alert('Hata', 'Kart silinirken bir hata oluştu.');
-            } finally {
-              setDeleteLoading(false);
-            }
-          },
-        },
-      ]
-    );
+  const handleDelete = (card) => {
+    setCardToDelete(card);
+    setDeleteModalVisible(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      setDeleteLoading(true);
+      await removePaymentMethod(cardToDelete.Id);
+      fetchPaymentMethods();
+      Alert.alert('Başarılı', 'Kart başarıyla silindi.');
+    } catch (err) {
+      Alert.alert('Hata', 'Kart silinirken bir hata oluştu.');
+    } finally {
+      setDeleteLoading(false);
+      setDeleteModalVisible(false);
+      setCardToDelete(null);
+    }
+  };
+
+  const cancelDelete = () => {
+    setDeleteModalVisible(false);
+    setCardToDelete(null);
   };
 
   const handleEdit = (card) => {
@@ -94,17 +94,17 @@ const PaymentMethodsScreen = () => {
           style={styles.actionButton}
           onPress={() => handleView(item)}
         >
-          <Ionicons name="eye" size={24} color={colors.success} />
+          <Ionicons name="eye" size={24} color={colors.primary} />
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.actionButton}
           onPress={() => handleEdit(item)}
         >
-          <Ionicons name="pencil-outline" size={24} color={colors.primary} />
+          <Ionicons name="pencil-outline" size={24} color={colors.success} />
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.actionButton}
-          onPress={() => handleDelete(item.Id)}
+          onPress={() => handleDelete(item)}
           disabled={deleteLoading}
         >
           <Ionicons name="trash-outline" size={24} color={colors.error} />
@@ -153,8 +153,43 @@ const PaymentMethodsScreen = () => {
         contentContainerStyle={[styles.listContainer, { paddingTop: 100 }]}
       />
       <TouchableOpacity style={[styles.fab, { backgroundColor: colors.primary, shadowColor: colors.primary }]} onPress={handleAddNew}>
-        <Text style={[styles.fabIcon, { color: colors.white }]}>＋</Text>
+        <Text style={[styles.fabIcon, { color: isDark ? '#111' : '#fff' }]}>＋</Text>
       </TouchableOpacity>
+      <Modal
+        visible={deleteModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={cancelDelete}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
+            <Icon name="delete" size={40} color={colors.error} style={styles.modalIcon} />
+            <Text style={[styles.modalTitle, { color: colors.error }]}>Kartı Sil</Text>
+            <Text style={[styles.modalMessage, { color: colors.textSecondary }]}>
+              Bu kartı silmek istediğinizden emin misiniz?
+            </Text>
+            <View style={styles.modalButtonRow}>
+              <TouchableOpacity
+                style={[styles.rentButton, { backgroundColor: colors.error, shadowColor: colors.error }]}
+                onPress={confirmDelete}
+                disabled={deleteLoading}
+              >
+                {deleteLoading ? (
+                  <ActivityIndicator color={isDark ? '#111' : '#fff'} />
+                ) : (
+                  <Text style={[styles.rentButtonText, { color: isDark ? '#111' : '#fff' }]}>Sil</Text>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.rentButton, { backgroundColor: colors.primary, shadowColor: colors.primary, marginLeft: 8 }]}
+                onPress={cancelDelete}
+              >
+                <Text style={[styles.rentButtonText, { color: isDark ? '#111' : '#fff' }]}>İptal</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -292,6 +327,55 @@ const styles = StyleSheet.create({
   deleteButton: {
     padding: 8,
     marginLeft: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    borderRadius: 20,
+    padding: 24,
+    width: '85%',
+    alignItems: 'center',
+    elevation: 5,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  modalIcon: {
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  modalMessage: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  modalButtonRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  rentButton: {
+    padding: 10,
+    borderRadius: 12,
+    alignItems: 'center',
+    width: 100,
+    elevation: 3,
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  rentButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
 });
 export default PaymentMethodsScreen; 

@@ -5,6 +5,7 @@ import { changePassword } from '../api/customerApi';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../theme/ThemeProvider';
+import MessageModal from '../components/MessageModal';
 
 const ChangePasswordScreen = () => {
   const navigation = useNavigation();
@@ -15,23 +16,32 @@ const ChangePasswordScreen = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [messageModalVisible, setMessageModalVisible] = useState(false);
+  const [messageTitle, setMessageTitle] = useState('');
+  const [messageText, setMessageText] = useState('');
+  const [messageIcon, setMessageIcon] = useState('info');
   const { colors, isDark } = useTheme();
+
+  const showMessage = (title, text, icon = 'info', onButtonPress = null) => {
+    setMessageTitle(title);
+    setMessageText(text);
+    setMessageIcon(icon);
+    setMessageModalVisible(true);
+  };
 
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmNewPassword) {
-      Alert.alert('Uyarı', 'Tüm alanları doldurmalısınız.');
+      showMessage('Uyarı', 'Tüm alanları doldurmalısınız.', 'warning');
       return;
     }
     if (newPassword !== confirmNewPassword) {
-      Alert.alert('Uyarı', 'Yeni şifreler eşleşmiyor.');
+      showMessage('Uyarı', 'Yeni şifreler eşleşmiyor.', 'warning');
       return;
     }
     setLoading(true);
     try {
       await changePassword({ currentPassword, newPassword, confirmNewPassword });
-      Alert.alert('Başarılı', 'Şifreniz başarıyla değiştirildi.', [
-        { text: 'Tamam', onPress: () => navigation.goBack() }
-      ]);
+      showMessage('Başarılı', 'Şifreniz başarıyla değiştirildi.', 'check-circle', () => navigation.goBack());
     } catch (err) {
       let msg = 'Şifre değiştirilirken bir hata oluştu.';
       if (err.response?.data) {
@@ -41,7 +51,7 @@ const ChangePasswordScreen = () => {
           msg = err.response.data.message;
         }
       }
-      Alert.alert('Hata', msg);
+      showMessage('Hata', msg, 'error');
     } finally {
       setLoading(false);
     }
@@ -110,6 +120,20 @@ const ChangePasswordScreen = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Message Modal */}
+      <MessageModal
+        visible={messageModalVisible}
+        title={messageTitle}
+        message={messageText}
+        icon={messageIcon}
+        onClose={() => setMessageModalVisible(false)}
+        onButtonPress={() => {
+          if (messageIcon === 'check-circle') {
+            navigation.goBack();
+          }
+        }}
+      />
     </View>
   );
 };
