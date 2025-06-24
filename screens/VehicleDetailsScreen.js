@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Image, Modal, SafeAreaView } from 'react-native';
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useVehicles } from '../hooks/useVehicles';
-import { getVehicle3DModel } from '../api/vehicleApi';
+import { getVehicle3DModel } from '../api/3DModelsApi';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import IconFA from 'react-native-vector-icons/FontAwesome5';
@@ -163,6 +163,15 @@ const VehicleDetailsScreen = () => {
         setShow3DModel(true);
     };
 
+    useEffect(() => {
+        if (models3D) {
+            if (models3D.models) {
+                models3D.models.forEach((model, idx) => {
+                });
+            }
+        }
+    }, [models3D]);
+
     if (loading) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
@@ -250,7 +259,7 @@ const VehicleDetailsScreen = () => {
                             onPress={() => handleModelSelect(model)}
                         >
                             <View style={styles.modelCardHeader}>
-                                <Text style={styles.modelTitle} numberOfLines={2}>
+                                <Text style={[styles.modelTitle, { color: colors.text }]} numberOfLines={2}>
                                     {model.title}
                                 </Text>
                             </View>
@@ -265,24 +274,34 @@ const VehicleDetailsScreen = () => {
                             
                             <View style={styles.modelDetails}>
                                 <View style={styles.modelMeta}>
-                                    <Text style={styles.modelAuthor}>👤 {model.author}</Text>
-                                    <Text style={styles.modelDownloads}>⬇️ {model.downloadCount || 0}</Text>
-                                    <Text style={styles.modelViews}>👁️ {model.viewCount || 0}</Text>
+                                    <Text style={[styles.modelAuthor, { color: colors.textSecondary }]}>👤 {model.author}</Text>
+                                    <Text style={[styles.modelDownloads, { color: colors.textSecondary }]}>⬇️ {model.downloadCount || 0}</Text>
+                                    <Text style={[styles.modelViews, { color: colors.textSecondary }]}>👁️ {model.viewCount || 0}</Text>
                                 </View>
                                 
                                 <View style={styles.modelStrategy}>
-                                    <Text style={styles.strategyLabel}>Arama:</Text>
-                                    <Text style={styles.strategyText}>"{model.searchStrategy}"</Text>
+                                    <Text style={[styles.strategyLabel, { color: colors.textSecondary }]}>Arama:</Text>
+                                    <Text style={[styles.strategyText, { color: colors.textSecondary }]}>"{model.searchStrategy}"</Text>
                                 </View>
                             </View>
                             
                             <View style={styles.modelActions}>
                                 <TouchableOpacity
-                                    style={[styles.viewModelButton, { backgroundColor: '#007AFF' }]}
-                                    onPress={() => handleModelSelect(model)}
+                                    style={[
+                                        styles.modelCardPrimaryButton,
+                                        { backgroundColor: colors.primary, shadowColor: colors.primary },
+                                        isDark ? { borderColor: '#fff' } : { borderColor: '#222' }
+                                    ]}
+                                    onPress={() => {
+                                        setSelectedModelIndex(index);
+                                        navigation.navigate('WebView', {
+                                            url: model.modelUrl,
+                                            title: '3D Model İnceleme'
+                                        });
+                                    }}
                                 >
-                                    <MaterialIcons name="visibility" size={18} color="#fff" />
-                                    <Text style={styles.viewModelButtonText}>Görüntüle</Text>
+                                    <Icon name="cube-outline" size={20} color={isDark ? '#111' : '#fff'} style={{ marginRight: 8 }} />
+                                    <Text style={[styles.modelCardPrimaryButtonText, { color: isDark ? '#111' : '#fff' }]}>3D Modeli İncele</Text>
                                 </TouchableOpacity>
                                 
                                 {model.downloadUrl && (
@@ -295,12 +314,28 @@ const VehicleDetailsScreen = () => {
                                     </TouchableOpacity>
                                 )}
                             </View>
+                            <View style={styles.modelCardStatsRow}>
+                                <Text style={[styles.modelCardStat, { color: colors.textSecondary }]}>👁️ {model.viewCount || 0}</Text>
+                                <Text style={[styles.modelCardStat, { color: colors.textSecondary }]}>⬇️ {model.downloadCount || 0}</Text>
+                            </View>
+                            <Text style={[styles.modelCardStrategy, { color: colors.textSecondary }]} numberOfLines={1}>🔎 {model.searchStrategy}</Text>
+                            <Text style={[styles.modelCardStat, { color: colors.textSecondary, marginTop: 8 }]}>
+                                🎯 Eşleşme: <Text style={{ color: colors.success, fontWeight: 'bold', fontSize: 15 }}>%{Math.round((model.matchScore / 10) * 100)}</Text>
+                            </Text>
                         </TouchableOpacity>
                     ))}
                 </ScrollView>
             </SafeAreaView>
         </Modal>
     );
+
+    // Model kartlarını filtrele: Sadece matchScore >= 6 olanlar
+    const filteredModels = models3D && models3D.models ? models3D.models.filter(model => (model.matchScore || 0) >= 6) : [];
+
+    // Yüzdelik puan için maxScore'u bul
+    const maxScore = models3D && models3D.models && models3D.models.length > 0
+        ? Math.max(...models3D.models.map(m => m.matchScore || 0))
+        : 1;
 
     return (
         <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -442,75 +477,56 @@ const VehicleDetailsScreen = () => {
                                 <ActivityIndicator size="small" color={colors.primary} />
                                 <Text style={[styles.modelLoadingText, { color: colors.textSecondary }]}>3D modeller aranıyor...</Text>
                             </View>
-                        ) : models3D && models3D.length > 0 ? (
-                            <View>
-                                {/* Model Seçici */}
-                                <View style={styles.modelSelector}>
-                                    <Text style={[styles.modelSelectorTitle, { color: colors.text }]}>
-                                        {models3D.length} model bulundu
-                                    </Text>
-                                    <ScrollView 
-                                        horizontal 
-                                        showsHorizontalScrollIndicator={false}
-                                        style={styles.modelThumbnailList}
+                        ) : models3D && models3D.models && models3D.models.length > 0 && filteredModels.length > 0 ? (
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 10 }}>
+                                {filteredModels.map((model, index) => (
+                                    <View
+                                        key={index}
+                                        style={[
+                                            styles.modelCardModern,
+                                            { backgroundColor: colors.card },
+                                            selectedModelIndex === index && styles.modelCardSelected
+                                        ]}
                                     >
-                                        {models3D.map((model, index) => (
-                                            <TouchableOpacity
-                                                key={index}
-                                                style={[
-                                                    styles.modelThumbnailItem,
-                                                    selectedModelIndex === index && { borderColor: colors.primary, borderWidth: 2 }
-                                                ]}
-                                                onPress={() => setSelectedModelIndex(index)}
-                                            >
-                                                <Image 
-                                                    source={{ uri: model.thumbnailUrl }} 
-                                                    style={styles.modelThumbnailSmall}
-                                                />
-                                                <Text style={[styles.modelThumbnailScore, { color: colors.textSecondary }]}>
-                                                    {model.score} puan
+                                        <TouchableOpacity onPress={() => setSelectedModelIndex(index)} activeOpacity={0.85}>
+                                            <Image
+                                                source={{ uri: model.thumbnailUrl }}
+                                                style={styles.modelCardImage}
+                                                resizeMode="cover"
+                                            />
+                                            <View style={styles.modelCardBody}>
+                                                <Text style={[styles.modelCardTitle, { color: colors.text }]} numberOfLines={2}>{model.title}</Text>
+                                                <Text style={[styles.modelCardAuthor, { color: colors.textSecondary }]}>{'👤 ' + model.author}</Text>
+                                                <View style={styles.modelCardStatsRow}>
+                                                    <Text style={[styles.modelCardStat, { color: colors.textSecondary }]}>👁️ {model.viewCount || 0}</Text>
+                                                    <Text style={[styles.modelCardStat, { color: colors.textSecondary }]}>⬇️ {model.downloadCount || 0}</Text>
+                                                </View>
+                                                <Text style={[styles.modelCardStrategy, { color: colors.textSecondary }]} numberOfLines={1}>🔎 {model.searchStrategy}</Text>
+                                                <Text style={[styles.modelCardStat, { color: colors.textSecondary, marginTop: 8 }]}>
+                                                    🎯 Eşleşme: <Text style={{ color: colors.success, fontWeight: 'bold', fontSize: 15 }}>%{Math.round((model.matchScore / 10) * 100)}</Text>
                                                 </Text>
-                                            </TouchableOpacity>
-                                        ))}
-                                    </ScrollView>
-                                </View>
-
-                                {/* Seçili Model Detayları */}
-                                <View style={styles.modelContainer}>
-                                    <Image 
-                                        source={{ uri: models3D[selectedModelIndex].thumbnailUrl }} 
-                                        style={styles.modelThumbnail}
-                                    />
-                                    <View style={styles.modelInfo}>
-                                        <Text style={[styles.modelTitle, { color: colors.text }]}>
-                                            {models3D[selectedModelIndex].title}
-                                        </Text>
-                                        <Text style={[styles.modelAuthor, { color: colors.textSecondary }]}>
-                                            Yazar: {models3D[selectedModelIndex].author}
-                                        </Text>
-                                        <Text style={[styles.modelStats, { color: colors.textSecondary }]}>
-                                            📥 {models3D[selectedModelIndex].downloadCount} • 👁️ {models3D[selectedModelIndex].viewCount}
-                                        </Text>
-                                        {models3D[selectedModelIndex].searchStrategy && (
-                                            <Text style={[styles.modelStrategy, { color: colors.textSecondary }]}>
-                                                Bulunan: {models3D[selectedModelIndex].searchStrategy}
-                                            </Text>
-                                        )}
-                                        <TouchableOpacity 
-                                            style={[styles.view3DButton, { backgroundColor: colors.primary }]}
-                                            onPress={() => {
-                                                navigation.navigate('WebView', { 
-                                                    url: models3D[selectedModelIndex].modelUrl, 
-                                                    title: '3D Model İnceleme' 
-                                                });
-                                            }}
-                                        >
-                                            <Icon name="cube-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
-                                            <Text style={[styles.view3DButtonText, { color: '#fff' }]}>3D Modeli İncele</Text>
+                                                <TouchableOpacity
+                                                    style={[
+                                                        styles.modelCardPrimaryButton,
+                                                        { backgroundColor: colors.primary, shadowColor: colors.primary },
+                                                        isDark ? { borderColor: '#fff' } : { borderColor: '#222' }
+                                                    ]}
+                                                    onPress={() => {
+                                                        setSelectedModelIndex(index);
+                                                        navigation.navigate('WebView', {
+                                                            url: model.modelUrl,
+                                                            title: '3D Model İnceleme'
+                                                        });
+                                                    }}
+                                                >
+                                                    <Icon name="cube-outline" size={20} color={isDark ? '#111' : '#fff'} style={{ marginRight: 8 }} />
+                                                    <Text style={[styles.modelCardPrimaryButtonText, { color: isDark ? '#111' : '#fff' }]}>3D Modeli İncele</Text>
+                                                </TouchableOpacity>
+                                            </View>
                                         </TouchableOpacity>
                                     </View>
-                                </View>
-                            </View>
+                                ))}
+                            </ScrollView>
                         ) : (
                             renderNoModelFound()
                         )}
@@ -1232,6 +1248,85 @@ const styles = StyleSheet.create({
     downloadButtonText: {
         fontSize: 14,
         fontWeight: '600',
+    },
+    modelCardModern: {
+        width: 260,
+        backgroundColor: '#fff',
+        borderRadius: 18,
+        marginRight: 18,
+        marginBottom: 10,
+        shadowColor: '#000',
+        shadowOpacity: 0.10,
+        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 2 },
+        elevation: 4,
+        overflow: 'hidden',
+        borderWidth: 2,
+        borderColor: 'transparent',
+    },
+    modelCardSelected: {
+        borderColor: '#007AFF',
+        shadowOpacity: 0.18,
+        elevation: 8,
+    },
+    modelCardImage: {
+        width: '100%',
+        height: 140,
+        borderTopLeftRadius: 18,
+        borderTopRightRadius: 18,
+    },
+    modelCardBody: {
+        padding: 14,
+    },
+    modelCardTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#222',
+        marginBottom: 4,
+    },
+    modelCardAuthor: {
+        fontSize: 13,
+        color: '#666',
+        marginBottom: 6,
+    },
+    modelCardStatsRow: {
+        flexDirection: 'row',
+        gap: 12,
+        marginBottom: 6,
+    },
+    modelCardStat: {
+        fontSize: 13,
+        color: '#444',
+    },
+    modelCardStrategy: {
+        fontSize: 12,
+        color: '#999',
+        fontStyle: 'italic',
+        marginBottom: 10,
+    },
+    modelCardPrimaryButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 14,
+        borderRadius: 16,
+        marginTop: 16,
+        width: '100%',
+        elevation: 4,
+        shadowOpacity: 0.18,
+        shadowRadius: 12,
+        shadowOffset: { width: 0, height: 4 },
+    },
+    modelCardPrimaryButtonText: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        letterSpacing: 1,
+    },
+    modelCardScore: {
+        fontSize: 15,
+        fontWeight: 'bold',
+        marginTop: 6,
+        marginBottom: 2,
     },
 });
 
