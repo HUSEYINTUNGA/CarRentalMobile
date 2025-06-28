@@ -1,4 +1,3 @@
-// Bu dosya artık 3DModelsApi.js olarak kullanılacak. Tüm 3D model işlemleri burada kalacak.
 export const getVehicle3DModel = async (brand, model, year, category) => {
   try {
     const normalizedCategory = normalizeCategory(category);
@@ -85,7 +84,6 @@ const generateSearchStrategies = (brand, model, year, category) => {
   const strategies = [];
   const modelParts = model.replace('-', ' ').split(' ').filter(p => p.length > 1);
   
-  // Strateji 1: Marka + Model + Kategori (en yüksek öncelik)
   if (category) {
     strategies.push({
       query: `${brand} ${model} ${category}`,
@@ -94,14 +92,12 @@ const generateSearchStrategies = (brand, model, year, category) => {
     });
   }
 
-  // Strateji 2: Tam Marka + Model
   strategies.push({
     query: `${brand} ${model}`,
     type: 'exact_brand_model',
     priority: 11
   });
 
-  // Strateji 3: Model Code tahminleri (yaygın model kodları)
   const modelCodes = generateModelCodes(brand, model);
   modelCodes.forEach(code => {
     strategies.push({
@@ -111,7 +107,6 @@ const generateSearchStrategies = (brand, model, year, category) => {
     });
   });
 
-  // Strateji 4: Marka + Model (tire olmadan)
   if (model.includes('-')) {
     strategies.push({ 
       query: `${brand} ${model.replace('-', ' ')}`, 
@@ -125,7 +120,6 @@ const generateSearchStrategies = (brand, model, year, category) => {
     });
   }
 
-  // Strateji 5: Marka + Model'in ana parçası
   if (modelParts.length > 1) {
     const mainModelPart = modelParts.sort((a, b) => b.length - a.length)[0];
     strategies.push({ 
@@ -135,7 +129,6 @@ const generateSearchStrategies = (brand, model, year, category) => {
     });
   }
 
-  // Strateji 6: Eşanlamlı kategori terimleri
   const categorySynonyms = getCategorySynonyms(category);
   categorySynonyms.forEach(synonym => {
     strategies.push({
@@ -145,7 +138,6 @@ const generateSearchStrategies = (brand, model, year, category) => {
     });
   });
 
-  // Strateji 7: Sadece marka ve kategori
   if (category) {
     strategies.push({ 
       query: `${brand} ${category}`, 
@@ -154,7 +146,6 @@ const generateSearchStrategies = (brand, model, year, category) => {
     });
   }
 
-  // Strateji 8: Yıl ile aramalar (son çare olarak)
   if (year) {
     strategies.push({
       query: `${brand} ${model} ${year}`,
@@ -168,7 +159,6 @@ const generateSearchStrategies = (brand, model, year, category) => {
     });
   }
 
-  // Strateji 9: Sadece marka
   strategies.push({ 
     query: `${brand}`, 
     type: 'brand_only', 
@@ -179,11 +169,9 @@ const generateSearchStrategies = (brand, model, year, category) => {
          .sort((a, b) => b.priority - a.priority);
 };
 
-// Model kodları tahmin fonksiyonu
 const generateModelCodes = (brand, model) => {
   const codes = [];
-  
-  // Yaygın model kodları
+
   const commonCodes = {
     'Toyota': {
       'Corolla': ['E210', 'E170', 'E160', 'E150', 'E140', 'E120', 'E110', 'E100'],
@@ -225,7 +213,6 @@ const generateModelCodes = (brand, model) => {
   return codes;
 };
 
-// Kategori eşanlamlıları
 const getCategorySynonyms = (category) => {
   if (!category) return [];
   
@@ -276,7 +263,6 @@ const normalizeCategory = (category) => {
   return categoryMap[category] || category.toLowerCase();
 };
 
-// Eşleşme puanlama fonksiyonu
 function calculateMatchScore(result, brand, model, year, category) {
   let score = 0;
   const title = (result.name || '').toLowerCase();
@@ -285,18 +271,15 @@ function calculateMatchScore(result, brand, model, year, category) {
   const yearStr = year ? String(year) : '';
   const categoryLc = (category || '').toLowerCase();
 
-  // Temel puanlama (mevcut sistem)
   if (title.includes(brandLc)) score += 2;
   if (title.includes(modelLc)) score += 3;
   if (yearStr && title.includes(yearStr)) score += 2;
   if (categoryLc && title.includes(categoryLc)) score += 2;
   
-  // Model parçaları için puanlama
   modelLc.split(/[- ]/).forEach(part => {
     if (part.length > 1 && title.includes(part)) score += 1;
   });
   
-  // Marka ve model yan yana bulunma kontrolü (+1 puan)
   const brandModelPatterns = [
     `${brandLc} ${modelLc}`,
     `${brandLc}${modelLc}`,
@@ -313,10 +296,8 @@ function calculateMatchScore(result, brand, model, year, category) {
     }
   }
 
-  // Title format kontrolü (+1 puan)
   let hasCorrectFormat = false;
   
-  // Marka Model Yıl formatı kontrolü
   if (yearStr) {
     const format1 = `${brandLc} ${modelLc} ${yearStr}`;
     const format2 = `${brandLc}${modelLc} ${yearStr}`;
@@ -328,7 +309,6 @@ function calculateMatchScore(result, brand, model, year, category) {
     }
   }
   
-  // Marka Model Kategori Yıl veya Marka Model Yıl Kategori formatı kontrolü
   if (categoryLc && yearStr) {
     const format4 = `${brandLc} ${modelLc} ${categoryLc} ${yearStr}`;
     const format5 = `${brandLc} ${modelLc} ${yearStr} ${categoryLc}`;
@@ -342,7 +322,6 @@ function calculateMatchScore(result, brand, model, year, category) {
     }
   }
 
-  // Eğer marka-model birlikte bulunmuyorsa veya doğru format yoksa, maksimum 8 puan
   if (!hasBrandModelTogether || !hasCorrectFormat) {
     score = Math.min(score, 8);
   }
@@ -352,21 +331,18 @@ function calculateMatchScore(result, brand, model, year, category) {
 
 const processResults = (allResults, searchStats, brand, model, year, category) => {
   const uniqueResults = removeDuplicates(allResults);
-  // Her modele puan ekle
   const resultsWithScore = uniqueResults.map(result => ({
     ...result,
     matchScore: calculateMatchScore(result, brand, model, year, category)
   }));
 
-  // Skora göre sırala, eşitse popülerliğe bak
   resultsWithScore.sort((a, b) => {
     if (b.matchScore !== a.matchScore) return b.matchScore - a.matchScore;
     const aQuality = (a.downloadCount || 0) + (a.viewCount || 0);
     const bQuality = (b.downloadCount || 0) + (b.viewCount || 0);
     return bQuality - aQuality;
   });
-
-  // İlk 10 modeli döndür
+  
   const topResults = resultsWithScore
     .slice(0, 10)
     .map(result => ({

@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Image, Modal, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Image, Modal, SafeAreaView, Alert } from 'react-native';
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useVehicles } from '../hooks/useVehicles';
 import { getVehicle3DModel } from '../api/3DModelsApi';
+import { getVehicleARModel } from '../api/vehicleARApi';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import IconFA from 'react-native-vector-icons/FontAwesome5';
@@ -40,6 +41,9 @@ const VehicleDetailsScreen = () => {
     const [modelSearchError, setModelSearchError] = useState(null);
     const [selected3DModel, setSelected3DModel] = useState(null);
     const [show3DModel, setShow3DModel] = useState(false);
+    const [arModelData, setArModelData] = useState(null);
+    const [arModelMessage, setArModelMessage] = useState('');
+    const [loadingARModel, setLoadingARModel] = useState(false);
 
     useEffect(() => {
         const fetchRole = async () => {
@@ -47,7 +51,6 @@ const VehicleDetailsScreen = () => {
                 const userRole = await AsyncStorage.getItem('userRole');
                 setRole(userRole);
             } catch (error) {
-                console.error('Error fetching role:', error);
             }
         };
         fetchRole();
@@ -60,11 +63,30 @@ const VehicleDetailsScreen = () => {
         try {
             const modelData = await getVehicle3DModel(brand, model, year, category);
             setModels3D(modelData);
-            setSelectedModelIndex(0); // İlk modeli seç
+            setSelectedModelIndex(0); 
         } catch (error) {
-            console.error('3D model yükleme hatası:', error);
         } finally {
             setLoading3DModel(false);
+        }
+    };
+
+    const loadARModelData = async (vehicleId) => {
+        if (!vehicleId) return;
+        setLoadingARModel(true);
+        try {
+            const arData = await getVehicleARModel(vehicleId);
+            if (arData && arData.success && arData.data) {
+                setArModelData(arData);
+                setArModelMessage('');
+            } else {
+                setArModelData(null);
+                setArModelMessage('Bu araca ait gerçek dünya AR modeli (OBJ formatında) henüz yüklenmemiş.');
+            }
+        } catch (error) {
+            setArModelData(null);
+            setArModelMessage('AR model bilgisi alınamadı.');
+        } finally {
+            setLoadingARModel(false);
         }
     };
 
@@ -83,9 +105,9 @@ const VehicleDetailsScreen = () => {
                             };
                             setVehicle(normalizedData);
                             load3DModel(data.Brand, data.Model, data.ModelYear, data.Category);
+                            loadARModelData(vehicleId); 
                         })
                         .catch((error) => {
-                            console.error('Error fetching vehicle details:', error);
                             setVehicle(null);
                         });
                 } else {
@@ -102,9 +124,9 @@ const VehicleDetailsScreen = () => {
                             };
                             setVehicle(normalizedData);
                             load3DModel(data.Brand, data.Model, data.ModelYear, data.Category);
+                            loadARModelData(vehicleId); 
                         })
                         .catch((error) => {
-                            console.error('Error fetching basic vehicle details:', error);
                             setVehicle(null);
                         });
                 }
@@ -150,7 +172,6 @@ const VehicleDetailsScreen = () => {
                 setModelSearchStats(result?.searchStats || null);
             }
         } catch (error) {
-            console.error('3D model arama hatası:', error);
             setModelSearchError('3D model arama sırasında bir hata oluştu');
         } finally {
             setLoading3DModel(false);
@@ -161,6 +182,27 @@ const VehicleDetailsScreen = () => {
         setSelected3DModel(model);
         setShowModelSelection(false);
         setShow3DModel(true);
+    };
+
+    const handleARView = () => {
+        if (arModelData && arModelData.success && arModelData.data && arModelData.data.GitHubModelUrl) {
+            const objUrl = arModelData.data.GitHubModelUrl;
+            if (objUrl && objUrl.toLowerCase().endsWith('.obj')) {
+                navigation.navigate('ARVehicleScreen', {
+                    vehicle: vehicle,
+                    arModelData: arModelData.data
+                });
+                return;
+            } else {
+                Alert.alert('Hata', 'AR model dosyası geçerli bir OBJ formatında değil.');
+                return;
+            }
+        }
+        
+        Alert.alert(
+            'AR Model Bulunamadı', 
+            'Bu araç için gerçek dünya AR modeli henüz yüklenmemiş. Admin panelinden AR model eklenebilir.'
+        );
     };
 
     useEffect(() => {
@@ -329,10 +371,8 @@ const VehicleDetailsScreen = () => {
         </Modal>
     );
 
-    // Model kartlarını filtrele: Sadece matchScore >= 6 olanlar
     const filteredModels = models3D && models3D.models ? models3D.models.filter(model => (model.matchScore || 0) >= 6) : [];
 
-    // Yüzdelik puan için maxScore'u bul
     const maxScore = models3D && models3D.models && models3D.models.length > 0
         ? Math.max(...models3D.models.map(m => m.matchScore || 0))
         : 1;
@@ -468,7 +508,6 @@ const VehicleDetailsScreen = () => {
                         </View>
                     )}
 
-                    {/* 3D Model Bölümü */}
                     <View style={[styles.infoCard, { backgroundColor: colors.card, marginTop: 18 }] }>
                         <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 8 }]}>3D Model İnceleme</Text>
                         
@@ -478,55 +517,79 @@ const VehicleDetailsScreen = () => {
                                 <Text style={[styles.modelLoadingText, { color: colors.textSecondary }]}>3D modeller aranıyor...</Text>
                             </View>
                         ) : models3D && models3D.models && models3D.models.length > 0 && filteredModels.length > 0 ? (
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 10 }}>
-                                {filteredModels.map((model, index) => (
-                                    <View
-                                        key={index}
-                                        style={[
-                                            styles.modelCardModern,
-                                            { backgroundColor: colors.card },
-                                            selectedModelIndex === index && styles.modelCardSelected
-                                        ]}
-                                    >
-                                        <TouchableOpacity onPress={() => setSelectedModelIndex(index)} activeOpacity={0.85}>
-                                            <Image
-                                                source={{ uri: model.thumbnailUrl }}
-                                                style={styles.modelCardImage}
-                                                resizeMode="cover"
-                                            />
-                                            <View style={styles.modelCardBody}>
-                                                <Text style={[styles.modelCardTitle, { color: colors.text }]} numberOfLines={2}>{model.title}</Text>
-                                                <Text style={[styles.modelCardAuthor, { color: colors.textSecondary }]}>{'👤 ' + model.author}</Text>
-                                                <View style={styles.modelCardStatsRow}>
-                                                    <Text style={[styles.modelCardStat, { color: colors.textSecondary }]}>👁️ {model.viewCount || 0}</Text>
-                                                    <Text style={[styles.modelCardStat, { color: colors.textSecondary }]}>⬇️ {model.downloadCount || 0}</Text>
+                            <>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 10 }}>
+                                    {filteredModels.map((model, index) => (
+                                        <View
+                                            key={index}
+                                            style={[
+                                                styles.modelCardModern,
+                                                { backgroundColor: colors.card },
+                                                selectedModelIndex === index && styles.modelCardSelected
+                                            ]}
+                                        >
+                                            <TouchableOpacity onPress={() => setSelectedModelIndex(index)} activeOpacity={0.85}>
+                                                <Image
+                                                    source={{ uri: model.thumbnailUrl }}
+                                                    style={styles.modelCardImage}
+                                                    resizeMode="cover"
+                                                />
+                                                <View style={styles.modelCardBody}>
+                                                    <Text style={[styles.modelCardTitle, { color: colors.text }]} numberOfLines={2}>{model.title}</Text>
+                                                    <Text style={[styles.modelCardAuthor, { color: colors.textSecondary }]}>{'👤 ' + model.author}</Text>
+                                                    <View style={styles.modelCardStatsRow}>
+                                                        <Text style={[styles.modelCardStat, { color: colors.textSecondary }]}>👁️ {model.viewCount || 0}</Text>
+                                                        <Text style={[styles.modelCardStat, { color: colors.textSecondary }]}>⬇️ {model.downloadCount || 0}</Text>
+                                                    </View>
+                                                    <Text style={[styles.modelCardStrategy, { color: colors.textSecondary }]} numberOfLines={1}>🔎 {model.searchStrategy}</Text>
+                                                    <Text style={[styles.modelCardStat, { color: colors.textSecondary, marginTop: 8 }]}>
+                                                        🎯 Eşleşme: <Text style={{ color: colors.success, fontWeight: 'bold', fontSize: 15 }}>%{Math.round((model.matchScore / 10) * 100)}</Text>
+                                                    </Text>
+                                                    <TouchableOpacity
+                                                        style={[
+                                                            styles.modelCardPrimaryButton,
+                                                            { backgroundColor: colors.primary, shadowColor: colors.primary },
+                                                            isDark ? { borderColor: '#fff' } : { borderColor: '#222' }
+                                                        ]}
+                                                        onPress={() => {
+                                                            setSelectedModelIndex(index);
+                                                            navigation.navigate('WebView', {
+                                                                url: model.modelUrl,
+                                                                title: '3D Model İnceleme'
+                                                            });
+                                                        }}
+                                                    >
+                                                        <Icon name="cube-outline" size={20} color={isDark ? '#111' : '#fff'} style={{ marginRight: 8 }} />
+                                                        <Text style={[styles.modelCardPrimaryButtonText, { color: isDark ? '#111' : '#fff' }]}>3D Modeli İncele</Text>
+                                                    </TouchableOpacity>
                                                 </View>
-                                                <Text style={[styles.modelCardStrategy, { color: colors.textSecondary }]} numberOfLines={1}>🔎 {model.searchStrategy}</Text>
-                                                <Text style={[styles.modelCardStat, { color: colors.textSecondary, marginTop: 8 }]}>
-                                                    🎯 Eşleşme: <Text style={{ color: colors.success, fontWeight: 'bold', fontSize: 15 }}>%{Math.round((model.matchScore / 10) * 100)}</Text>
-                                                </Text>
-                                                <TouchableOpacity
-                                                    style={[
-                                                        styles.modelCardPrimaryButton,
-                                                        { backgroundColor: colors.primary, shadowColor: colors.primary },
-                                                        isDark ? { borderColor: '#fff' } : { borderColor: '#222' }
-                                                    ]}
-                                                    onPress={() => {
-                                                        setSelectedModelIndex(index);
-                                                        navigation.navigate('WebView', {
-                                                            url: model.modelUrl,
-                                                            title: '3D Model İnceleme'
-                                                        });
-                                                    }}
-                                                >
-                                                    <Icon name="cube-outline" size={20} color={isDark ? '#111' : '#fff'} style={{ marginRight: 8 }} />
-                                                    <Text style={[styles.modelCardPrimaryButtonText, { color: isDark ? '#111' : '#fff' }]}>3D Modeli İncele</Text>
-                                                </TouchableOpacity>
-                                            </View>
+                                            </TouchableOpacity>
+                                        </View>
+                                    ))}
+                                </ScrollView>
+                                
+                                {(() => {
+                                    return arModelData && arModelData.success && arModelData.data && arModelData.data.GitHubModelUrl ? (
+                                        <TouchableOpacity
+                                            style={[styles.arButton, { backgroundColor: colors.success }]}
+                                            onPress={handleARView}
+                                            disabled={loadingARModel}
+                                        >
+                                            <Icon name="cube-outline" size={24} color={colors.white} style={{ marginRight: 12 }} />
+                                            <Text style={[styles.arButtonText, { color: colors.white }]}>
+                                                {loadingARModel ? 'AR Yükleniyor...' : 'AR ile Gerçek Dünyada Görüntüle'}
+                                            </Text>
                                         </TouchableOpacity>
-                                    </View>
-                                ))}
-                            </ScrollView>
+                                    ) : (
+                                        <View style={[styles.arStatusContainer, { backgroundColor: colors.warning + '20' }]}> 
+                                            <Icon name="alert-circle" size={18} color={colors.warning || '#FFA500'} />
+                                            <Text style={[styles.arStatusText, { color: colors.warning || '#FFA500' }]}>
+                                                {arModelMessage || 'Henüz gerçek dünya AR modeli (OBJ formatında) yüklenmedi.'}
+                                            </Text>
+                                        </View>
+                                    );
+                                })()}
+                            </>
                         ) : (
                             renderNoModelFound()
                         )}
@@ -1327,6 +1390,35 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         marginTop: 6,
         marginBottom: 2,
+    },
+    arButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 16,
+        borderRadius: 16,
+        marginTop: 24,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        elevation: 6,
+    },
+    arButtonText: {
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+    arStatusContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 8,
+        borderRadius: 8,
+        marginTop: 16,
+    },
+    arStatusText: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        marginLeft: 8,
     },
 });
 
