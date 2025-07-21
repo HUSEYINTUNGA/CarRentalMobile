@@ -4,6 +4,8 @@
 
 TUNGAuto, araç kiralama ve yönetimi için geliştirilen modern bir mobil uygulamadır. Kullanıcılar araçları inceleyebilir, kiralama talepleri oluşturabilir, ödeme yöntemlerini yönetebilir ve profil bilgilerini güncelleyebilir. Admin kullanıcılar ise araç ekleme/düzenleme, kullanıcı yönetimi ve istatistik görüntüleme gibi gelişmiş yetkilere sahiptir.
 
+🎥 [Uygulama Tanıtım Videosunu İzle](https://youtu.be/OCzVJQl2wug)
+
 Uygulama, ASP.NET ile geliştirilmiş bir RESTful Web API üzerinden veri alışverişi yapmaktadır. API hakkında detaylı bilgiye [buradan](https://github.com/HUSEYINTUNGA/APIOfCarRentalProject) ulaşabilirsiniz.
 
 ---
@@ -106,6 +108,9 @@ Her dosya, ilgili işlemler için ayrı ayrı fonksiyonlar ve axios ile HTTP ist
 5. **Ortam Değişkenleri**
    - Gerekli ise `.env` dosyası oluşturup API anahtarlarını ve özel ayarları ekleyebilirsin.
 
+Tüm bunlara ek olarak YouTube’da yayınlamış olduğum kurulum videosunu izleyebilirsiniz:
+
+🎥 [Kurulum Rehberi Videosunu İzle (API + Frontend bağlantısı)](https://youtu.be/6Dul9OGV4cM)
 ---
 
 ## Kullanım Senaryoları
