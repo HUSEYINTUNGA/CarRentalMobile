@@ -81,7 +81,7 @@ Her dosya, ilgili işlemler için ayrı ayrı fonksiyonlar ve axios ile HTTP ist
 
 1. **Projeyi Klonla**
    ```sh
-   git clone https://github.com/HUSEYINTUNGA/MobileProje.git
+   git clone https://github.com/HUSEYINTUNGA/CarRentalMobile.git
    cd MobileProje
    ```
 
