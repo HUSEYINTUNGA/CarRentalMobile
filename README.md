@@ -126,7 +126,7 @@ Her dosya, ilgili işlemler için ayrı ayrı fonksiyonlar ve axios ile HTTP ist
 
 - **Frontend:** React Native, Expo
 - **Backend:** ASP.NET RESTful Web API ([repo](https://github.com/HUSEYINTUNGA/APIOfCarRentalProject))
-- **Veritabanı:** SQL Server (API tarafında)
+- **Veritabanı:** PostgreSQL ve Cloudianry (API tarafında)
 - **Diğer:** Axios, React Navigation, Context API, Custom Hooks
 
 ---
@@ -135,7 +135,7 @@ Her dosya, ilgili işlemler için ayrı ayrı fonksiyonlar ve axios ile HTTP ist
 
 Uygulama, ASP.NET ile geliştirilmiş RESTful Web API ile haberleşmektedir. Tüm veri işlemleri (kullanıcı, araç, kiralama, ödeme vb.) API üzerinden yapılır.
 
-- API endpointleri `api/config.js` dosyasında tanımlanmıştır.
+- API baseUrl'i `api/config.js` dosyasında tanımlanmıştır.
 - API'nin detaylı dökümantasyonu ve kurulum adımları için [APIOfCarRentalProject](https://github.com/HUSEYINTUNGA/APIOfCarRentalProject) reposunun README dosyasını inceleyebilirsiniz.
 
 ---
